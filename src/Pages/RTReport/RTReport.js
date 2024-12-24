@@ -21,7 +21,7 @@ import { HEIGHT, MyStatusBar, WIDTH } from "../../constants/config";
 import { appStyles } from "../../styles/AppStyles";
 import { GETNETWORK } from "../../utils/Network";
 import { BAS_URL } from "../../constants/url";
-import { Icon } from "react-native-elements";
+import { CheckBox, Icon } from "react-native-elements";
 import DropDownPicker from "react-native-dropdown-picker";
 import { pick, keepLocalCopy, DocumentPicker } from "react-native-document-picker";
 import { Calendar } from "react-native-calendars";
@@ -32,14 +32,26 @@ const RTReport = ({ navigation }) => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false); // State for modal visibility
+    const [ApprovemodalVisible, SetApprovemodalVisible] = useState(false); // State for modal visibility
+
     const [filtermodalVisible, setfilterModalVisible] = useState(false); // State for modal visibility
     const [SelectedJob, setSelectedJob] = useState();
 
     const [scroll, setScroll] = useState(true);
     const [reportNumber, setReportNumber] = useState('');
+    const [remarks, setRemarks] = useState('');
     const [reportDate, setReportDate] = useState('');
     const [reportTime, setReportTime] = useState('');
     const [filterCriteria, setFilterCriteria] = useState({});
+
+    const [DefectOpen, setDefectOpen] = useState(false);
+    const [selectedDefect, setSelectedDefect] = useState(null);
+    const [DefectItems, setDefectItems] = useState([]);
+    const [JobStatusOpen, setJobStatusOpen] = useState(false);
+    const [selectedJobStatus, setSelectedJobStatus] = useState(null);
+    const [JobStatusItems, setJobStatusItems] = useState([]);
+    const [isChecked, setIsChecked] = useState(false);
+    const [isCheck, setIsCheck] = useState(false);
 
     const [startDate, setStartDate] = useState(
         new Date().toISOString().slice(0, 10)
@@ -84,10 +96,6 @@ const RTReport = ({ navigation }) => {
             setSelectedTube(null)
             setSelectedJoint(null)
             setSelectedWelder(null)
-
-
-
-
             fetchData()
             console.log('Filter cleared');
         }
@@ -163,6 +171,17 @@ const RTReport = ({ navigation }) => {
     const [neckItems, setneckItems] = useState([]);
     const [selectedneck, setSelectedneck] = useState(null);
     const [necktOpen, setneckOpen] = useState(false);
+
+    const [selectedJobs, setSelectedJobs] = useState([]);  // To hold selected job sl ids
+    const [selectAll, setSelectAll] = useState(false);
+
+    const handleCheckBoxPress = () => {
+        setIsChecked(!isChecked);
+    };
+    const handleCheckBoxPres = () => {
+        setIsCheck(!isCheck);
+    };
+
 
     // Fetch data when the component mounts
     useEffect(() => {
@@ -409,6 +428,173 @@ const RTReport = ({ navigation }) => {
         }, [navigation]) // dependencies of the useCallback
     );
 
+
+    const handleApproveAll = async () => {
+
+
+        if (selectedJobs.length > 0) {
+
+            console.log('selectedJobs', selectedJobs)
+
+            // Prepare the form data for the API
+            const formData = new FormData();
+            formData.append("sl", JSON.stringify(selectedJobs)); // Send jobslArray as a stringified array
+
+            formData.append("report_number", reportNumber);
+            formData.append("report_date", reportDate);
+            formData.append("file", selectedFile); // Assuming selectedFile is a File object
+            formData.append("defect_type", selectedDefect);
+            formData.append("job_status", selectedJobStatus); // Example value
+            formData.append("remarks", remarks); // Example value
+            formData.append("checkshot", isChecked); // Example value
+            formData.append("assign_welder", isCheck); // Example value
+
+            console.log('formData', formData)
+
+            try {
+                // API call using fetch
+                const response = await fetch(`${BAS_URL}welding/api/v1/bulk-rt-assignment/`, {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Token ${Token}`,
+                    },
+                    body: formData,
+                    redirect: "follow",
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.status === "success") {
+                    console.log("API Response:", result);
+                    setSelectAll(false); // Deselect Select All after approval
+                    SetApprovemodalVisible(false); // Close the modal
+                    setSelectedDefect(null);
+                    setSelectedJobStatus(null)
+                    setReportDate('')
+                    setReportNumber('')
+                    setRemarks('')
+                    setIsChecked(false);
+                    setIsCheck(false);
+
+
+                    fetchData()
+                    alert("Job successfully Approved");
+                } else {
+                    alert("Failed to approve selected jobs. Please try again.");
+                    fetchData()
+                    setSelectAll(false); // Deselect Select All after approval
+                    SetApprovemodalVisible(false); // Close the modal
+                    setSelectedDefect(null);
+                    setSelectedJobStatus(null)
+                    setReportDate('')
+                    setReportNumber('')
+                    setRemarks('')
+                    setIsChecked(false);
+                    setIsCheck(false);
+
+                }
+            } catch (error) {
+                console.error("API Error:", error);
+                alert("An error occurred while approving selected jobs.");
+                SetApprovemodalVisible(false); // Close the modal
+
+            }
+        } else {
+            alert("No jobs selected for approval.");
+        }
+    };
+
+
+
+
+
+
+    useEffect(() => {
+        // Fetch defect types and job statuses when the modal is mounted
+        GetDefectStatus();
+    }, []);
+
+    const GetDefectStatus = async () => {
+        try {
+            const url = `${BAS_URL}welding/api/v1/defecttype-list/`;
+            const result = await GETNETWORK(url, true);
+
+            if (result.status === "success" && result.data && result.data.length > 0) {
+                const { defect_type, status } = result.data[0];
+
+                setDefectItems(defect_type.map((item) => ({ label: item, value: item })));
+                setJobStatusItems(status.map((item) => ({ label: item, value: item })));
+            } else {
+                console.error('Failed to fetch data:', result.errors || result.message);
+            }
+        } catch (error) {
+            console.error('Error fetching defect and status data:', error);
+        }
+    };
+
+
+
+    const handleCancelAll = async () => {
+        if (selectedJobs.length > 0) {
+            // Extract jobsl from selectedJobs
+            const jobslArray = selectedJobs.map((jobId) => {
+                const job = JobList.find((job) => job.jobsl === jobId);
+                return job ? job.jobsl : null; // Ensure no null values are included
+            }).filter(Boolean); // Remove nulls
+
+            console.log("Jobs to Cancel:", jobslArray); // Logs the selected job IDs
+
+            // Prepare payload
+            const payload = {
+                jobsl: jobslArray,
+                approved_status: "Cancelled"
+            };
+
+            try {
+                // Call API using POSTNETWORK
+                const response = await POSTNETWORK(
+                    `${BAS_URL}/welding/job/update-job/`,
+                    payload,
+                    true // Token is required
+                );
+
+                if (response.status === 'success') {
+                    console.log("API Response:", response);
+                    setSelectAll(false)
+                    alert('Job successfully Cancel');
+                    alert("All selected jobs Cancelled successfully.");
+                } else {
+                    setSelectAll(false)
+                    alert("Failed to Cancel selected jobs. Please try again.");
+                }
+            } catch (error) {
+                console.error("API Error:", error);
+                alert("An error occurred while Cancelling selected jobs.");
+            }
+        } else {
+            alert("No jobs selected for Cancel.");
+        }
+    };
+    const toggleSelectAll = () => {
+        if (selectAll) {
+            setSelectedJobs([]); // Unselect all
+        } else {
+            setSelectedJobs(data.map((item) => item.sl)); // Select all jobs based on 'sl'
+        }
+        setSelectAll(!selectAll); // Toggle Select All state
+    };
+
+    // Function to toggle individual job selection
+    const toggleJobSelection = (jobSl) => {
+        if (selectedJobs.includes(jobSl)) {
+            setSelectedJobs(selectedJobs.filter((id) => id !== jobSl)); // Deselect the job
+        } else {
+            setSelectedJobs([...selectedJobs, jobSl]); // Select the job
+        }
+    };
+
+
+
     const renderItem = ({ item }) => (
         <View
             style={{
@@ -424,52 +610,26 @@ const RTReport = ({ navigation }) => {
                 borderLeftColor: 'orange'
             }}
         >
-            <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#333' }}>
-                Job Number: {item.job_number}
-            </Text>
-            <Text style={{
-                fontSize: 16,
-                fontWeight: 'bold',
-                color: '#333',
-                marginBottom: 4,
-            }}>
-                Component Name: {item.component_name}
-            </Text>
-            <Text style={{
-                fontSize: 16,
-                fontWeight: 'bold',
-                color: '#333',
-                marginBottom: 4,
-            }}>
-                Unit Number: {item.unit_number}
-            </Text>
-            <Text style={{
-                fontSize: 16,
-                fontWeight: 'bold',
-                color: '#333',
-                marginBottom: 4,
-            }}>
-                Tube Joints : {item.tube_joints}
-            </Text>
-            <Text style={{
-                fontSize: 16,
-                fontWeight: 'bold',
-                color: '#333',
-                marginBottom: 4,
-            }}>
-                Job Description Number: {item.job_desc_number}
-            </Text>
-            <Text style={{
-                fontSize: 16,
-                fontWeight: 'bold',
-                color: '#333',
-                marginBottom: 4,
-            }}>
-                Job Offer Date: {item.job_offer_date}
-            </Text>
+            {/* Checkbox for individual selection */}
+            <CheckBox
+                checked={selectedJobs.includes(item.sl)} // Check if the job is selected
+                onPress={() => toggleJobSelection(item.sl)} // Toggle individual selection
+                style={{ marginRight: 10 }}
+            />
+
+
+
+
+
+            {/* Job Details */}
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#333' }}>Job Number: {item.job_number}</Text>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#333' }}>Component Name: {item.component_name}</Text>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#333' }}>Unit Number: {item.unit_number}</Text>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#333' }}>Tube Joints: {item.tube_joints}</Text>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#333' }}>Job Description Number: {item.job_desc_number}</Text>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#333' }}>Job Offer Date: {item.job_offer_date}</Text>
 
             <TouchableOpacity
-
                 onPress={() => {
                     setSelectedJob(item.sl);
                     setModalVisible(true);
@@ -484,8 +644,9 @@ const RTReport = ({ navigation }) => {
             >
                 <Text style={styles.buttonText}>Submit</Text>
             </TouchableOpacity>
-        </View>
+        </View >
     );
+
 
     return (
         <Fragment>
@@ -568,6 +729,48 @@ const RTReport = ({ navigation }) => {
                                     </View>
                                 </View>
 
+
+                                <View style={{ flexDirection: 'row', alignItems: 'center', padding: 10, justifyContent: 'space-between' }}>
+
+                                    <View
+                                        style={{
+                                            flexDirection: 'row',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                        }}
+                                    >
+
+                                        <CheckBox
+                                            checked={selectAll} // If selectAll is true, check the checkbox
+                                            onPress={toggleSelectAll} // Toggle Select All state
+                                            style={{ marginRight: 10 }}
+                                        />
+                                        <Text style={{ fontSize: 16, color: '#333' }}>Select All</Text>
+                                    </View>
+
+                                    <>
+                                        {selectedJobs.length > 0 &&
+                                            <TouchableOpacity
+                                                style={{
+                                                    backgroundColor: 'blue',
+                                                    paddingVertical: 12,
+                                                    paddingHorizontal: 10,
+                                                    borderRadius: 5,
+                                                    marginBottom: 10,
+                                                    alignItems: 'center',
+                                                }}
+                                                onPress={() => {
+                                                    SetApprovemodalVisible(true)
+                                                }}
+                                            >
+                                                {selectAll == true ? <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>Approve All</Text> : <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>Approve selected</Text>}
+                                            </TouchableOpacity>}
+
+
+
+                                    </>
+                                </View>
+
                                 <View
                                     style={{
                                         height: HEIGHT * 0.8,
@@ -617,6 +820,8 @@ const RTReport = ({ navigation }) => {
                     </ScrollView>
                 </KeyboardAvoidingView>
             </SafeAreaView>
+
+
 
             <Modal
                 visible={modalVisible}
@@ -742,6 +947,153 @@ const RTReport = ({ navigation }) => {
                     </View>
                 </View>
             </Modal>
+
+
+            <Modal
+                visible={ApprovemodalVisible}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => SetApprovemodalVisible(false)}
+            >
+                <View style={styles.modalBackdrop}>
+                    <View style={styles.modalContainer}>
+                        <Text style={styles.modalTitle}>Verify Report</Text>
+
+                        {/* Input for Report Number */}
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.inputLabel}>Report Number:</Text>
+                            <TextInput
+                                style={styles.textInput}
+                                placeholder="Enter Report Number"
+                                value={reportNumber}
+                                onChangeText={(text) => setReportNumber(text)}
+                            />
+                        </View>
+
+                        {/* Input for Report Date */}
+                        <TouchableOpacity
+                            onPress={() => {
+                                setShowModal(true);
+                            }}
+                            style={styles.inputContainer}
+                        >
+                            <Text style={styles.inputLabel}>Report Date:</Text>
+                            <TextInput
+                                style={styles.textInput}
+                                placeholder="Enter Report Date (YYYY-MM-DD)"
+                                value={reportDate}
+                                onChangeText={(text) => setReportDate(text)}
+                                editable={false}
+                            />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={{
+                                backgroundColor: 'gray',
+                                padding: 10,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                            }}
+                            onPress={handleFilePick}
+                        >
+                            <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>Attach File</Text>
+                            <Icon name="attachment" size={25} style={{ marginLeft: 10 }} />
+                        </TouchableOpacity>
+
+                        {selectedFile && (
+                            <View style={styles.previewContainer}>
+                                <Text style={styles.previewText}>Selected File:</Text>
+                                <Text style={styles.previewText}>Name: {selectedFile.name}</Text>
+                            </View>
+                        )}
+
+
+
+                        {/* DropDownPicker for Defect Type */}
+                        <DropDownPicker
+                            searchable={true}
+                            open={DefectOpen}
+                            value={selectedDefect}
+                            items={DefectItems}
+                            setOpen={setDefectOpen}
+                            setValue={setSelectedDefect}
+                            setItems={setDefectItems}
+                            placeholder="Select Defect Type"
+                            style={{ ...styles.dropdown, zIndex: 1000, marginTop: 10 }}
+                            dropDownContainerStyle={styles.dropdownContainer}
+                        />
+
+                        {/* DropDownPicker for Job Status */}
+                        <DropDownPicker
+                            searchable={true}
+                            open={JobStatusOpen}
+                            value={selectedJobStatus}
+                            items={JobStatusItems}
+                            setOpen={setJobStatusOpen}
+                            setValue={setSelectedJobStatus}
+                            setItems={setJobStatusItems}
+                            placeholder="Select Job-Status"
+                            style={{ ...styles.dropdown, zIndex: 900 }}
+                            dropDownContainerStyle={styles.dropdownContainer}
+                        />
+
+                        <View style={{ ...styles.inputContainer, }}>
+                            <Text style={styles.inputLabel}>Remarks:</Text>
+                            <TextInput
+                                style={{ ...styles.textInput, height: HEIGHT * 0.15 }}
+                                placeholder="Enter Remarks"
+                                value={remarks}
+                                onChangeText={(text) => setRemarks(text)}
+                            />
+                        </View>
+
+                        {/* Checkbox */}
+                        <CheckBox
+                            title="Check Shot"
+                            checked={isChecked}
+                            onPress={handleCheckBoxPress}
+                        />
+                        <CheckBox
+                            title="Assigned Welder"
+                            checked={isCheck}
+                            onPress={handleCheckBoxPres}
+                        />
+
+                        {/* File Selection */}
+
+
+                        {/* Buttons */}
+                        <View style={{ flexDirection: 'row', width: '100%', justifyContent: 'space-evenly' }}>
+                            <View style={styles.buttonContainer}>
+                                <TouchableOpacity
+                                    style={[styles.actionButton, styles.cancelButton]}
+                                    onPress={() => {
+                                        setReportNumber('');
+                                        setReportDate('');
+                                        setSelectedFile(null);
+                                        SetApprovemodalVisible(false);
+                                    }}
+                                >
+                                    <Text style={styles.buttonText}>Cancel</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            <View style={styles.buttonContainer}>
+                                <TouchableOpacity
+                                    style={[styles.actionButton, styles.submitButton]}
+                                    onPress={() => { handleApproveAll() }}
+                                >
+                                    <Text style={styles.buttonText}>Submit</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+
+
+
 
             <Modal
                 visible={filtermodalVisible}

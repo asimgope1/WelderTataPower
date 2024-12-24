@@ -143,19 +143,93 @@ const JobApproval = ({ navigation }) => {
 
 
 
-    const handleApproveAll = () => {
+    const handleApproveAll = async () => {
         if (selectedJobs.length > 0) {
-            selectedJobs.forEach((jobId) => {
+            // Extract jobsl from selectedJobs
+            const jobslArray = selectedJobs.map((jobId) => {
                 const job = JobList.find((job) => job.jobsl === jobId);
-                if (job) {
-                    console.log('Approved:', job);
+                return job ? job.jobsl : null; // Ensure no null values are included
+            }).filter(Boolean); // Remove nulls
+
+            console.log("Jobs to approve:", jobslArray); // Logs the selected job IDs
+
+            // Prepare payload
+            const payload = {
+                jobsl: jobslArray,
+                approved_status: "Approved"
+            };
+
+            try {
+                // Call API using POSTNETWORK
+                const response = await POSTNETWORK(
+                    `${BAS_URL}/welding/job/update-job/`,
+                    payload,
+                    true // Token is required
+                );
+
+                if (response.status === 'success') {
+                    console.log("API Response:", response);
+                    GetJobList();
+                    setSelectAll(false)
+                    alert('Job successfully Approved');
+                    alert("All selected jobs approved successfully.");
+                } else {
+                    GetJobList();
+                    setSelectAll(false)
+                    alert("Failed to approve selected jobs. Please try again.");
                 }
-            });
-            alert('All selected jobs approved.');
+            } catch (error) {
+                console.error("API Error:", error);
+                alert("An error occurred while approving selected jobs.");
+            }
         } else {
-            alert('No jobs selected for approval.');
+            alert("No jobs selected for approval.");
         }
     };
+    const handleCancelAll = async () => {
+        if (selectedJobs.length > 0) {
+            // Extract jobsl from selectedJobs
+            const jobslArray = selectedJobs.map((jobId) => {
+                const job = JobList.find((job) => job.jobsl === jobId);
+                return job ? job.jobsl : null; // Ensure no null values are included
+            }).filter(Boolean); // Remove nulls
+
+            console.log("Jobs to Cancel:", jobslArray); // Logs the selected job IDs
+
+            // Prepare payload
+            const payload = {
+                jobsl: jobslArray,
+                approved_status: "Cancelled"
+            };
+
+            try {
+                // Call API using POSTNETWORK
+                const response = await POSTNETWORK(
+                    `${BAS_URL}/welding/job/update-job/`,
+                    payload,
+                    true // Token is required
+                );
+
+                if (response.status === 'success') {
+                    console.log("API Response:", response);
+                    GetJobList();
+                    setSelectAll(false)
+                    alert('Job successfully Cancel');
+                    alert("All selected jobs Cancelled successfully.");
+                } else {
+                    GetJobList();
+                    setSelectAll(false)
+                    alert("Failed to Cancel selected jobs. Please try again.");
+                }
+            } catch (error) {
+                console.error("API Error:", error);
+                alert("An error occurred while Cancelling selected jobs.");
+            }
+        } else {
+            alert("No jobs selected for Cancel.");
+        }
+    };
+
 
     const handleFilter = (type) => {
         if (type === 'select') {
@@ -276,7 +350,7 @@ const JobApproval = ({ navigation }) => {
 
     useEffect(() => {
         GetJobList();
-    }, []);
+    }, [navigation]);
 
 
 
@@ -381,7 +455,9 @@ const JobApproval = ({ navigation }) => {
             setSelectedJobs([]);
         } else {
             // Select all
-            setSelectedJobs(JobList.map((job) => job.jobsl));
+            const allJobs = JobList.map((job) => job.jobsl);
+            setSelectedJobs(allJobs);
+            console.log("All jobs selected:", allJobs);
         }
         setSelectAll(!selectAll);
     };
@@ -389,10 +465,14 @@ const JobApproval = ({ navigation }) => {
     const toggleJobSelection = (jobId) => {
         if (selectedJobs.includes(jobId)) {
             // Remove the job from selectedJobs
-            setSelectedJobs(selectedJobs.filter((id) => id !== jobId));
+            const updatedJobs = selectedJobs.filter((id) => id !== jobId);
+            setSelectedJobs(updatedJobs);
+            console.log("Job deselected:", jobId);
         } else {
             // Add the job to selectedJobs
-            setSelectedJobs([...selectedJobs, jobId]);
+            const updatedJobs = [...selectedJobs, jobId];
+            setSelectedJobs(updatedJobs);
+            console.log("Job selected:", jobId);
         }
     };
 
@@ -578,19 +658,40 @@ const JobApproval = ({ navigation }) => {
                                                 <Text style={{ fontSize: 16 }}>Select All</Text>
                                             </View>
 
-                                            <TouchableOpacity
-                                                style={{
-                                                    backgroundColor: 'blue',
-                                                    paddingVertical: 12,
-                                                    paddingHorizontal: 20,
-                                                    borderRadius: 5,
-                                                    marginBottom: 10,
-                                                    alignItems: 'center',
-                                                }}
-                                                onPress={handleApproveAll}
-                                            >
-                                                <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>Approve All</Text>
-                                            </TouchableOpacity>
+                                            {/* {selectAll == true && */}
+                                            <>
+
+                                                <TouchableOpacity
+                                                    style={{
+                                                        backgroundColor: 'blue',
+                                                        paddingVertical: 12,
+                                                        paddingHorizontal: 10,
+                                                        borderRadius: 5,
+                                                        marginBottom: 10,
+                                                        alignItems: 'center',
+                                                    }}
+                                                    onPress={handleApproveAll}
+                                                >
+                                                    {selectAll == true ? <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>Approve All</Text> : <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>Approve selected</Text>}
+                                                </TouchableOpacity>
+
+                                                <TouchableOpacity
+                                                    style={{
+                                                        backgroundColor: 'red',
+                                                        paddingVertical: 12,
+                                                        paddingHorizontal: 10,
+                                                        borderRadius: 5,
+                                                        marginBottom: 10,
+                                                        alignItems: 'center',
+                                                    }}
+                                                    onPress={handleCancelAll}
+                                                >
+                                                    {selectAll == true ? <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>Cancel All</Text> :
+                                                        <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>Cancel selected</Text>}
+                                                </TouchableOpacity>
+                                            </>
+
+                                            {/* } */}
                                         </View>
 
                                         <FlatList
