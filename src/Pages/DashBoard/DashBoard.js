@@ -12,17 +12,17 @@ import {
   FlatList,
   Modal,
 } from 'react-native';
-import React, {Fragment, useEffect, useState} from 'react';
-import {HEIGHT, MyStatusBar, WIDTH} from '../../constants/config';
-import {BLACK, BLUE, BRAND, GRAY, WHITE} from '../../constants/color';
-import {appStyles} from '../../styles/AppStyles';
+import React, { Fragment, useEffect, useState } from 'react';
+import { HEIGHT, MyStatusBar, WIDTH } from '../../constants/config';
+import { BLACK, BLUE, BRAND, GRAY, WHITE } from '../../constants/color';
+import { appStyles } from '../../styles/AppStyles';
 import LinearGradient from 'react-native-linear-gradient';
-import {RFValue} from 'react-native-responsive-fontsize';
+import { RFValue } from 'react-native-responsive-fontsize';
 import Header from '../../components/Header';
-import {Icon} from 'react-native-elements';
-import {BAS_URL} from '../../constants/url';
-import {GETNETWORK} from '../../utils/Network';
-import {useFocusEffect} from '@react-navigation/native';
+import { Icon } from 'react-native-elements';
+import { BAS_URL } from '../../constants/url';
+import { GETNETWORK } from '../../utils/Network';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   BOLD,
   EXTRABOLD,
@@ -30,12 +30,12 @@ import {
   REGULAR,
   SEMIBOLD,
 } from '../../constants/fontfamily';
-import {Loader} from '../../components/Loader';
-import {storeObjByKey} from '../../utils/Storage';
-import {PieChart} from 'react-native-chart-kit';
-import {white} from 'react-native-paper/lib/typescript/styles/themes/v2/colors';
+import { Loader } from '../../components/Loader';
+import { getObjByKey, storeObjByKey } from '../../utils/Storage';
+import { PieChart } from 'react-native-chart-kit';
+import { white } from 'react-native-paper/lib/typescript/styles/themes/v2/colors';
 
-const DashBoard = ({navigation}) => {
+const DashBoard = ({ navigation }) => {
   const [JobList, SetJobList] = useState([]);
   const [dashboardData, setDashboardData] = useState(null);
   const [isLoading, setIsLoading] = useState(true); // Loading state
@@ -98,24 +98,38 @@ const DashBoard = ({navigation}) => {
     return `#${randomColor}`;
   };
 
+
+
+  const [Token, SetToken] = useState('');
+
+  useEffect(() => {
+    GetToken()
+  }, [])
+
+
+  const GetToken = async () => {
+    const Token = await getObjByKey('loginResponse');
+    console.log('token: ' + Token.token);
+    SetToken(Token?.token);
+  }
   // Fetch job status details
   const fetchJobStatusDetails = async (name) => {
-    console.log('name is here',name)
+    console.log('name is here', name)
     const myHeaders = new Headers();
-    myHeaders.append("Authorization", "Token 6b8bd2c3cebe773515a90e08bd3d66faae2b4cd1");
-    myHeaders.append("Cookie", "csrftoken=iy6mltwYzrH4z0cRcStuBwXvffD1tqyU");
-    
+    myHeaders.append("Authorization", `Token ${Token}`);
+
     const requestOptions = {
       method: "GET",
       headers: myHeaders,
       redirect: "follow"
     };
-    
+
     fetch(`${BAS_URL}welding/api/v1/job-status-details/?job_status=${name}`, requestOptions)
       .then((response) => response.json())
       .then((result) => {
         setModalData(result.data)
-        console.log(result)})
+        console.log(result)
+      })
       .catch((error) => console.error(error));
   };
 
@@ -129,7 +143,7 @@ const DashBoard = ({navigation}) => {
           data={dashboardData.status_count} // Use status_count here
           numColumns={4} // Set to 4 columns for grid layout
           keyExtractor={(item, index) => index.toString()}
-          renderItem={({item}) => (
+          renderItem={({ item }) => (
             <TouchableOpacity
               onPress={() => {
                 setSelectedItem(item);
@@ -143,7 +157,7 @@ const DashBoard = ({navigation}) => {
                   borderTopWidth: 8, // Add width to the border
                 }}>
                 <Text
-                  style={{...styles.statsName}}
+                  style={{ ...styles.statsName }}
                   numberOfLines={2} // Limit to 1 line
                   ellipsizeMode="tail" // Add ellipsis at the tail if text overflows
                 >
@@ -154,7 +168,7 @@ const DashBoard = ({navigation}) => {
               </View>
             </TouchableOpacity>
           )}
-          contentContainerStyle={{paddingHorizontal: 10}}
+          contentContainerStyle={{ paddingHorizontal: 10 }}
         />
       </View>
     );
@@ -230,7 +244,7 @@ const DashBoard = ({navigation}) => {
       <SafeAreaView style={appStyles.safeareacontainer}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{flex: 1}}>
+          style={{ flex: 1 }}>
           <ScrollView
             keyboardShouldPersistTaps={'handled'}
             showsVerticalScrollIndicator={false}
@@ -242,11 +256,11 @@ const DashBoard = ({navigation}) => {
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={refresh} />
             }>
-            <View style={{flex: 1, width: WIDTH, backgroundColor: WHITE}}>
+            <View style={{ flex: 1, width: WIDTH, backgroundColor: WHITE }}>
               <LinearGradient
                 colors={[BRAND, WHITE]}
-                start={{x: 0.7, y: 0}}
-                end={{x: 0.3, y: 1.8}}
+                start={{ x: 0.7, y: 0 }}
+                end={{ x: 0.3, y: 1.8 }}
                 style={{
                   width: '100%',
                   height: HEIGHT * 0.3,
@@ -376,60 +390,60 @@ const DashBoard = ({navigation}) => {
         {/* Modal */}
 
         <Modal
-  visible={isModalVisible}
-  transparent={true}
-  animationType="slide"
-  onRequestClose={() => setIsModalVisible(false)}
->
-  <View style={styles.modalContainer}>
-    <View style={styles.modalContent}>
-      <TouchableOpacity
-        style={styles.closeButton}
-        onPress={() => setIsModalVisible(false)}
-      >
-        <Icon name="close" type="material" color="white" size={24} />
-      </TouchableOpacity>
-      
-      {/* Show the selected job status in the modal title */}
-      <Text style={styles.modalTitle}  numberOfLines={1} ellipsizeMode='tail'>
-        Job  {selectedItem ? selectedItem.name : 'Loading...'}
-      </Text>
+          visible={isModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setIsModalVisible(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setIsModalVisible(false)}
+              >
+                <Icon name="close" type="material" color="white" size={24} />
+              </TouchableOpacity>
 
-      {/* Check if modalData exists and display FlatList */}
-      {modalData ? (
-        <FlatList
-          data={modalData} // Render the data from API
-          keyExtractor={(item, index) => index.toString()} // Unique key for each item
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>
-                Job Status: {item.component_name}
+              {/* Show the selected job status in the modal title */}
+              <Text style={styles.modalTitle} numberOfLines={1} ellipsizeMode='tail'>
+                Job  {selectedItem ? selectedItem.name : 'Loading...'}
               </Text>
-              <Text style={styles.cardText}>
-                Job Desc Number: {item.job_desc_number}
-              </Text>
-              <Text style={styles.cardText}>
-                Job Number: {item.job_number}
-              </Text>
-              <Text style={styles.cardText}>
-                Job Offer Date: {item.job_offer_date}
-              </Text>
-              <Text style={styles.cardText}>
-                Tube Joints: {item.tube_joints}
-              </Text>
-              <Text style={styles.cardText}>
-                Unit Numbers: {item.unit_number}
-              </Text>
+
+              {/* Check if modalData exists and display FlatList */}
+              {modalData ? (
+                <FlatList
+                  data={modalData} // Render the data from API
+                  keyExtractor={(item, index) => index.toString()} // Unique key for each item
+                  renderItem={({ item }) => (
+                    <View style={styles.card}>
+                      <Text style={styles.cardTitle}>
+                        Job Status: {item.component_name}
+                      </Text>
+                      <Text style={styles.cardText}>
+                        Job Desc Number: {item.job_desc_number}
+                      </Text>
+                      <Text style={styles.cardText}>
+                        Job Number: {item.job_number}
+                      </Text>
+                      <Text style={styles.cardText}>
+                        Job Offer Date: {item.job_offer_date}
+                      </Text>
+                      <Text style={styles.cardText}>
+                        Tube Joints: {item.tube_joints}
+                      </Text>
+                      <Text style={styles.cardText}>
+                        Unit Numbers: {item.unit_number}
+                      </Text>
+                    </View>
+                  )}
+                  contentContainerStyle={{ padding: 10 }}
+                />
+              ) : (
+                <Text style={styles.modalText}>Loading data...</Text>
+              )}
             </View>
-          )}
-          contentContainerStyle={{ padding: 10 }}
-        />
-      ) : (
-        <Text style={styles.modalText}>Loading data...</Text>
-      )}
-    </View>
-  </View>
-</Modal>
+          </View>
+        </Modal>
 
 
       </SafeAreaView>
@@ -482,7 +496,7 @@ const styles = StyleSheet.create({
     margin: 8,
     marginTop: 15,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 5},
+    shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.2,
     shadowRadius: 10,
     elevation: 5,
@@ -528,7 +542,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     borderRadius: 10,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 5},
+    shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.2,
     shadowRadius: 10,
     elevation: 5,
@@ -589,8 +603,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: BOLD,
     marginBottom: 15,
-    justifyContent:'center',
-    textAlign:'center',
+    justifyContent: 'center',
+    textAlign: 'center',
   },
   modalText: {
     fontSize: 14,
@@ -614,7 +628,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 5},
+    shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.2,
     shadowRadius: 10,
     elevation: 5,
@@ -635,15 +649,15 @@ const styles = StyleSheet.create({
     color: BLACK,
     marginBottom: 5,
   },
- closeButton: {
-  position: 'absolute',
-  top: -10, 
-  right: -10, 
-  backgroundColor: 'red',
-  borderRadius: 50,
-  padding: 10, 
-  zIndex: 10, 
-},
+  closeButton: {
+    position: 'absolute',
+    top: -10,
+    right: -10,
+    backgroundColor: 'red',
+    borderRadius: 50,
+    padding: 10,
+    zIndex: 10,
+  },
 });
 
 export default DashBoard;
