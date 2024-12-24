@@ -1,0 +1,53 @@
+ {/* <View
+                            style={{
+                                position: 'absolute',
+                                top: HEIGHT * 0.3, // Adjust to overlap slightly above the gradient bottom
+                                width: '100%',
+                                height: HEIGHT * 0.72,
+                                zIndex: 1000,
+                            }}>
+                            {isLoading ? (
+                                <View style={styless.loadingContainer}>
+                                    <ActivityIndicator size="large" color="blue" />
+                                    <Text>Loading...</Text>
+                                </View>
+                            ) : (
+                                // FlatList with data
+                                <FlatList
+                                    refreshControl={
+                                        <RefreshControl refreshing={refreshing} onRefresh={refresh} />
+                                    }
+                                    data={JobList}
+                                    renderItem={renderItem}
+                                    keyExtractor={(item, index) => index.toString()}
+                                    contentContainerStyle={{
+                                        // paddingTop: HEIGHT * 0.08, // Ensure the first item overlaps properly
+                                    }}
+                                    ListFooterComponent={
+                                        <View style={{ height: HEIGHT * 0.08, marginBottom: 20 }} />
+                                    }
+                                    ListEmptyComponent={
+                                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                                            <Text style={{ fontSize: 18, color: 'gray' }}>No Jobs Available</Text>
+                                        </View>
+                                    }
+                                />
+                            )}
+                        </View> */}
+
+
+
+
+
+
+
+                        
+
+
+
+
+
+
+
+
+                        

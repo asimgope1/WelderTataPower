@@ -1,0 +1,132 @@
+    {/* Dropdown for Unit Number */}
+                        {/* <DropDownPicker
+                            open={dropdownStates.unitOpen}
+                            value={formData.unit_number}
+                            items={unitItems}
+                            setOpen={(open) => setDropdownStates(prev => ({ ...prev, unitOpen: open }))}
+                            setValue={(value) => handleInputChange('unit_number', value)}
+                            placeholder="Select Unit"
+                            style={{ marginBottom: 15, width: '100%' }}
+                        /> */}
+
+                        {/* Dropdown for Component Name */}
+                        {/* <DropDownPicker
+                            open={dropdownStates.componentOpen}
+                            value={formData.component_name}
+                            items={componentItems}
+                            setOpen={(open) => setDropdownStates(prev => ({ ...prev, componentOpen: open }))}
+                            setValue={(value) => handleInputChange('component_name', value)}
+                            placeholder="Select Component"
+                            style={{ marginBottom: 15, width: '100%' }}
+                        /> */}
+
+                        {/* Other dropdown fields for Area, Hanger, Coil, Panel, etc. */}
+                        {/* Example for Area */}
+                        {/* <DropDownPicker
+                            open={dropdownStates.areaOpen}
+                            value={formData.area}
+                            items={areaItems}
+                            setOpen={(open) => setDropdownStates(prev => ({ ...prev, areaOpen: open }))}
+                            setValue={(value) => handleInputChange('area', value)}
+                            placeholder="Select Area"
+                            style={{ marginBottom: 15, width: '100%' }}
+                        /> */}
+
+                        {/* Repeat for the other dropdown fields like Hanger, Coil, Panel, etc. */}
+                        {/* Example for Hanger */}
+                        {/* <DropDownPicker
+                            open={dropdownStates.hangerOpen}
+                            value={formData.hanger_number}
+                            items={hangerItems}
+                            setOpen={(open) => setDropdownStates(prev => ({ ...prev, hangerOpen: open }))}
+                            setValue={(value) => handleInputChange('hanger_number', value)}
+                            placeholder="Select Hanger"
+                            style={{ marginBottom: 15, width: '100%' }}
+                        /> */}
+                        {/* Repeat for the other dropdown fields like Coil, Panel, etc. */}
+                        {/* Example for Coil */}
+                        {/* <DropDownPicker
+                            open={dropdownStates.coilOpen}
+                            value={formData.coil_number}
+                            items={coilItems}
+                            setOpen={(open) => setDropdownStates(prev => ({ ...prev, coilOpen: open }))}
+                            setValue={(value) => handleInputChange('coil_number', value)}
+                            placeholder="Select Coil"
+                            style={{ marginBottom: 15, width: '100%' }}
+                        /> */}
+                        {/* Repeat for the other dropdown fields like Panel, etc. */}
+                        {/* Example for Panel */}
+                        {/* <DropDownPicker
+                            open={dropdownStates.panelOpen}
+                            value={formData.panel_number}
+                            items={panelItems}
+                            setOpen={(open) => setDropdownStates(prev => ({ ...prev, panelOpen: open }))}
+                            setValue={(value) => handleInputChange('panel_number', value)}
+                            placeholder="Select Panel"
+                            style={{ marginBottom: 15, width: '100%' }}
+                        /> */}
+                        {/* Repeat for the other dropdown fields like Row, Tube, etc. */}
+                        {/* Example for Row */}
+                        {/* <DropDownPicker
+                            open={dropdownStates.rowOpen}
+                            value={formData.row_number}
+                            items={rowItems}
+                            setOpen={(open) => setDropdownStates(prev => ({ ...prev, rowOpen: open }))}
+                            setValue={(value) => handleInputChange('row_number', value)}
+                            placeholder="Select Row"
+                            style={{ marginBottom: 15, width: '100%' }}
+                        /> */}
+                        {/* Repeat for the other dropdown fields like Tube, etc. */}
+                        {/* Example for Tube */}
+                        {/* <DropDownPicker
+                            open={dropdownStates.tubeOpen}
+                            value={formData.tube_number}
+                            items={tubeItems}
+                            setOpen={(open) => setDropdownStates(prev => ({ ...prev, tubeOpen: open }))}
+                            setValue={(value) => handleInputChange('tube_number', value)}
+                            placeholder="Select Tube"
+                            style={{ marginBottom: 15, width: '100%' }}
+                        /> */}
+                        {/* Repeat for the other dropdown fields like Joint, etc. */}
+                        {/* Example for Joint */}
+                        {/* <DropDownPicker
+                            open={dropdownStates.jointOpen}
+                            value={formData.joint_number}
+                            items={jointItems}
+                            setOpen={(open) => setDropdownStates(prev => ({ ...prev, jointOpen: open }))}
+                            setValue={(value) => handleInputChange('joint_number', value)}
+                            placeholder="Select Joint"
+                            style={{ marginBottom: 15, width: '100%' }}
+                        /> */}
+
+                        {/* Checkboxes for RT and PAUT */}
+                        {/* <View style={{ marginBottom: 15 }}>
+                            <Text style={{ fontSize: 16, fontWeight: 'bold' }}>Inspection Type:</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <CheckBox
+                                    value={formData.rt}
+                                    onValueChange={(value) => handleInputChange('rt', value)}
+                                />
+                                <Text>RT</Text>
+                                <CheckBox
+                                    value={formData.paut}
+                                    onValueChange={(value) => handleInputChange('paut', value)}
+                                />
+                                <Text>PAUT</Text>
+
+                            </View>
+                        </View> */}
+
+
+                        {/* Submit Button */}
+                        {/* <TouchableOpacity
+                            style={{
+                                backgroundColor: BRAND,
+                                padding: 15,
+                                borderRadius: 5,
+                                alignItems: 'center',
+                            }}
+                            onPress={handleSubmit}
+                        >
+                            <Text style={{ color: WHITE, fontSize: 16 }}>Create Job</Text>
+                        </TouchableOpacity> */}
