@@ -525,7 +525,7 @@ const TPI = ({ navigation }) => {
                                             />
                                             <Text style={{
                                                 color: '#fff',
-                                                fontSize: 12,
+                                                fontSize: 10,
                                                 fontWeight: 'bold',
                                             }}>Filter</Text>
                                         </TouchableOpacity>
@@ -543,7 +543,7 @@ const TPI = ({ navigation }) => {
                                             />
                                             <Text style={{
                                                 color: '#fff',
-                                                fontSize: 12,
+                                                fontSize: 10,
                                                 fontWeight: 'bold',
                                             }}>Clear </Text>
                                         </TouchableOpacity>

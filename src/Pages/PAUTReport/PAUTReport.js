@@ -713,7 +713,7 @@ const PAUTReport = ({ navigation }) => {
                                             />
                                             <Text style={{
                                                 color: '#fff',
-                                                fontSize: 12,
+                                                fontSize: 10,
                                                 fontWeight: 'bold',
                                             }}>Filter</Text>
                                         </TouchableOpacity>
@@ -731,7 +731,7 @@ const PAUTReport = ({ navigation }) => {
                                             />
                                             <Text style={{
                                                 color: '#fff',
-                                                fontSize: 12,
+                                                fontSize: 10,
                                                 fontWeight: 'bold',
                                             }}>Clear </Text>
                                         </TouchableOpacity>
@@ -762,7 +762,7 @@ const PAUTReport = ({ navigation }) => {
                                             style={{
                                                 backgroundColor: 'blue',
                                                 paddingVertical: 12,
-                                                paddingHorizontal: 10,
+                                                paddingHorizontal: 15,
                                                 borderRadius: 5,
                                                 marginBottom: 10,
                                                 alignItems: 'center',
@@ -771,7 +771,7 @@ const PAUTReport = ({ navigation }) => {
                                                 SetApprovemodalVisible(true);
                                             }}
                                         >
-                                            {selectAll == true ? <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>Approve All</Text> : <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>Approve selected</Text>}
+                                            {selectAll == true ? <Text style={{ color: 'white', fontSize: 13, fontWeight: 'bold' }}>Approve All</Text> : <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>Approve selected</Text>}
                                         </TouchableOpacity>}
 
 
