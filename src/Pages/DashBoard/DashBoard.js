@@ -416,24 +416,29 @@ const DashBoard = ({ navigation }) => {
                   keyExtractor={(item, index) => index.toString()} // Unique key for each item
                   renderItem={({ item }) => (
                     <View style={styles.card}>
+                      
                       <Text style={styles.cardTitle}>
-                        Job Status: {item.component_name}
-                      </Text>
-                      <Text style={styles.cardText}>
-                        Job Desc Number: {item.job_desc_number}
-                      </Text>
-                      <Text style={styles.cardText}>
                         Job Number: {item.job_number}
+                      </Text>
+                      <Text style={styles.cardText}>
+                        Component Name: {item.component_name}
+                      </Text>
+                      <Text style={styles.cardText}>
+                        Unit Number: {item.unit_number}
                       </Text>
                       <Text style={styles.cardText}>
                         Job Offer Date: {item.job_offer_date}
                       </Text>
+                      
+                      <Text style={styles.cardText}>
+                        Job Desc Number: {item.job_desc_number}
+                      </Text>
+                      
                       <Text style={styles.cardText}>
                         Tube Joints: {item.tube_joints}
                       </Text>
-                      <Text style={styles.cardText}>
-                        Unit Numbers: {item.unit_number}
-                      </Text>
+                      
+                      
                     </View>
                   )}
                   contentContainerStyle={{ padding: 10 }}
@@ -637,14 +642,21 @@ const styles = StyleSheet.create({
   },
 
   cardTitle: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: BOLD,
     color: BLACK,
     marginBottom: 8,
   },
 
-  cardText: {
+  cardText1: {
     fontSize: 14,
+    fontFamily: REGULAR,
+    color: BLACK,
+    marginBottom: 5,
+    fontWeight:'bold'
+  },
+  cardText: {
+    fontSize: 13,
     fontFamily: REGULAR,
     color: BLACK,
     marginBottom: 5,

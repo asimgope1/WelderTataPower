@@ -1066,7 +1066,7 @@ export const styles = StyleSheet.create({
     },
     filterContainer: {
         width: '100%',
-        height: HEIGHT * 0.07,
+        height: HEIGHT * 0.08,
         flexDirection: 'row',
         alignItems: 'center',
         padding: 10,

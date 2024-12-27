@@ -586,6 +586,7 @@ const JobApproval = ({ navigation }) => {
                                             <TextInput
                                                 style={styles.filterTextInput}
                                                 placeholder="Enter Filter Criteria"
+
                                                 placeholderTextColor="#888"
                                                 value={filterCriteria}
                                                 editable={false}
@@ -607,7 +608,7 @@ const JobApproval = ({ navigation }) => {
                                                 />
                                                 <Text style={{
                                                     color: '#fff',
-                                                    fontSize: 12,
+                                                    fontSize: 10,
                                                     fontWeight: 'bold',
                                                 }}>Filter</Text>
                                             </TouchableOpacity>
@@ -625,7 +626,7 @@ const JobApproval = ({ navigation }) => {
                                                 />
                                                 <Text style={{
                                                     color: '#fff',
-                                                    fontSize: 12,
+                                                    fontSize: 10,
                                                     fontWeight: 'bold',
                                                 }}>Clear </Text>
                                             </TouchableOpacity>
@@ -645,7 +646,7 @@ const JobApproval = ({ navigation }) => {
                                             <View
                                                 style={{
                                                     flexDirection: 'row',
-                                                    justifyContent: 'space-between',
+                                                    // justifyContent: 'space-evenly',
                                                     alignItems: 'center',
                                                 }}
                                             >
@@ -663,22 +664,35 @@ const JobApproval = ({ navigation }) => {
 
                                                 <TouchableOpacity
                                                     style={{
-                                                        backgroundColor: 'blue',
-                                                        paddingVertical: 12,
+                                                        backgroundColor: 'green',
+                                                        paddingVertical: 10,
                                                         paddingHorizontal: 15,
                                                         borderRadius: 5,
                                                         marginBottom: 10,
                                                         alignItems: 'center',
+                                                        marginLeft:'30%'
                                                     }}
                                                     onPress={handleApproveAll}
                                                 >
-                                                    {selectAll == true ? <Text style={{ color: 'white', fontSize: 13, fontWeight: 'bold' }}>Approve All</Text> : <Text style={{ color: 'white', fontSize: 13, fontWeight: 'bold' }}>Approve selected</Text>}
+                                                    {selectAll == true ? <Icon
+                                                    name={'done'}
+                                                    type='material'
+                                                    color={WHITE}
+                                                    size={24}
+                                                    containerStyle={{ marginBottom: 5, }}
+                                                /> : <Icon
+                                                name={'done'}
+                                                type='material'
+                                                color={WHITE}
+                                                size={24}
+                                                containerStyle={{ marginBottom: 5 }}
+                                            /> }
                                                 </TouchableOpacity>
 
                                                 <TouchableOpacity
                                                     style={{
                                                         backgroundColor: 'red',
-                                                        paddingVertical: 12,
+                                                        paddingVertical: 10,
                                                         paddingHorizontal: 15,
                                                         borderRadius: 5,
                                                         marginBottom: 10,
@@ -686,8 +700,20 @@ const JobApproval = ({ navigation }) => {
                                                     }}
                                                     onPress={handleCancelAll}
                                                 >
-                                                    {selectAll == true ? <Text style={{ color: 'white', fontSize: 13, fontWeight: 'bold' }}>Cancel All</Text> :
-                                                        <Text style={{ color: 'white', fontSize: 13, fontWeight: 'bold' }}>Cancel selected</Text>}
+                                                    {selectAll == true ? <Icon
+                                                    name={'close'}
+                                                    type='material'
+                                                    color={WHITE}
+                                                    size={24}
+                                                    containerStyle={{ marginBottom: 5 }}
+                                                /> :
+                                                <Icon
+                                                name={'close'}
+                                                type='material'
+                                                color={WHITE}
+                                                size={24}
+                                                containerStyle={{ marginBottom: 5 }}
+                                            /> }
                                                 </TouchableOpacity>
                                             </>
 
@@ -1049,7 +1075,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.25,
         shadowRadius: 4,
         elevation: 5,
-        alignSelf: 'center'
+        alignSelf: 'center',
     },
     modalTitle: {
         fontSize: 20,
@@ -1101,7 +1127,7 @@ const styles = StyleSheet.create({
     },
     filterContainer: {
         width: '100%',
-        height: HEIGHT * 0.07,
+        height: HEIGHT * 0.08,
         flexDirection: 'row',
         alignItems: 'center',
         padding: 10,
@@ -1120,13 +1146,14 @@ const styles = StyleSheet.create({
     },
     filterTextInput: {
         width: '95%', // Full width inside the TouchableOpacity
-        padding: 10,
+        padding: 5,
         fontSize: 16,
         color: '#333', // Text color
         backgroundColor: '#F0F0F0', // Light background color for input
         borderRadius: 5,
         borderColor: '#ccc',
         borderWidth: 1,
+        height:'100%'
     },
     filterText: {
         fontSize: 14,
