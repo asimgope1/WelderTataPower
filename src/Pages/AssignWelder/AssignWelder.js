@@ -85,14 +85,14 @@ const AssignWelder = ({navigation}) => {
   const [selectedJoint, setSelectedJoint] = useState(null);
   const [jointOpen, setJointOpen] = useState(false);
   const [selectAll, setSelectAll] = useState(false);
-    const [selectedJobs, setSelectedJobs] = useState([]); // To hold selected job sl ids
-    
-    const handleCheckBoxPress = () => {
-        setIsChecked(!isChecked);
-      };
-      const handleCheckBoxPres = () => {
-        setIsCheck(!isCheck);
-      };
+  const [selectedJobs, setSelectedJobs] = useState([]); // To hold selected job sl ids
+
+  const handleCheckBoxPress = () => {
+    setIsChecked(!isChecked);
+  };
+  const handleCheckBoxPres = () => {
+    setIsCheck(!isCheck);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -252,11 +252,10 @@ const AssignWelder = ({navigation}) => {
   // Function to fetch welder list using GETNETWORK
   const fetchWelderList = async () => {
     setLoading(true); // Show loading while fetching
-    
+
     try {
       const url = `${BAS_URL}welding/welderassign/list/`;
       const response = await GETNETWORK(url, true);
-      
 
       if (response.status === 'success') {
         console.log('Welder List:', response.data);
@@ -302,7 +301,7 @@ const AssignWelder = ({navigation}) => {
         backgroundColor: '#f9f9f9',
         borderRadius: 8,
         padding: 10,
-        alignSelf:'center',
+        alignSelf: 'center',
         marginVertical: 8,
         marginHorizontal: 10,
         borderLeftWidth: 4,
@@ -319,82 +318,82 @@ const AssignWelder = ({navigation}) => {
       // }} // Show modal on tap
     >
       {/* Checkbox */}
-      
-<View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10}}>
-                    {/* Checkbox */}
-                    <CheckBox
-                        style={{padding:5}}
-                        checked={selectedJobs.includes(item.sl)} // Check if the job is selected
-        onPress={() => toggleJobSelection(item.sl)} // Toggle individual selection
-                    />
-      <View>
-        
-        <Text style={{fontSize: 16, fontWeight: 'bold', color: '#333'}}>
-          Job Number: {item.job_number}
-        </Text>
-        <Text
-          style={{
-            fontSize: 16,
-            fontWeight: 'bold',
-            color: '#333',
-            marginBottom: 4,
-          }}>
-          Component Name: {item.component_name}
-        </Text>
-        <Text
-          style={{
-            fontSize: 16,
-            fontWeight: 'bold',
-            color: '#333',
-            marginBottom: 4,
-          }}>
-          Unit Number: {item.unit_number}
-        </Text>
-        <Text
-          style={{
-            fontSize: 16,
-            fontWeight: 'bold',
-            color: '#333',
-            marginBottom: 4,
-          }}>
-          Joint Number: {item.joint_number}
-        </Text>
-        <Text
-          style={{
-            fontSize: 16,
-            fontWeight: 'bold',
-            color: '#333',
-            marginBottom: 4,
-          }}>
-          Job Description Number: {item.job_desc_number}
-        </Text>
-        <Text
-          style={{
-            fontSize: 16,
-            fontWeight: 'bold',
-            color: '#333',
-            marginBottom: 4,
-          }}>
-          Job Offer Date: {item.job_offer_date}
-        </Text>
 
-        <TouchableOpacity
-          onPress={() => {
-            setSelectedJob(item.sl);
-            fetchWelderList();
-            setModalVisible(true);
-          }}
-          style={{
-            backgroundColor: 'green',
-            paddingVertical: 10,
-            paddingHorizontal: 25,
-            borderRadius: 5,
-            marginTop: 10,
-          }}>
-          <Text style={styless.buttonText}>Assign Welder</Text>
-        </TouchableOpacity>
+      <View
+        style={{flexDirection: 'row', alignItems: 'center', marginBottom: 10}}>
+        {/* Checkbox */}
+        <CheckBox
+          style={{padding: 5}}
+          checked={selectedJobs.includes(item.sl)} // Check if the job is selected
+          onPress={() => toggleJobSelection(item.sl)} // Toggle individual selection
+        />
+        <View>
+          <Text style={{fontSize: 16, fontWeight: 'bold', color: '#333'}}>
+            Job Number: {item.job_number}
+          </Text>
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: 'bold',
+              color: '#333',
+              marginBottom: 4,
+            }}>
+            Component Name: {item.component_name}
+          </Text>
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: 'bold',
+              color: '#333',
+              marginBottom: 4,
+            }}>
+            Unit Number: {item.unit_number}
+          </Text>
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: 'bold',
+              color: '#333',
+              marginBottom: 4,
+            }}>
+            Joint Number: {item.joint_number}
+          </Text>
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: 'bold',
+              color: '#333',
+              marginBottom: 4,
+            }}>
+            Job Description Number: {item.job_desc_number}
+          </Text>
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: 'bold',
+              color: '#333',
+              marginBottom: 4,
+            }}>
+            Job Offer Date: {item.job_offer_date}
+          </Text>
+
+          <TouchableOpacity
+            onPress={() => {
+              setSelectedJob(item.sl);
+              fetchWelderList();
+              setModalVisible(true);
+            }}
+            style={{
+              backgroundColor: 'green',
+              paddingVertical: 10,
+              paddingHorizontal: 25,
+              borderRadius: 5,
+              marginTop: 10,
+            }}>
+            <Text style={styless.buttonText}>Assign Welder</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
     </View>
   );
 
@@ -543,33 +542,33 @@ const AssignWelder = ({navigation}) => {
       console.log('No welder selected.');
     }
   };
-//   const toggleSelectAll = () => {
-//     if (selectAll) {
-//       // Unselect all
-//       setSelectedJobs([]);
-//     } else {
-//       // Select all
-//       const allJobs = JobList.map(job => job.jobsl);
-//       setSelectedJobs(allJobs);
-//       console.log('All jobs selected:', allJobs);
-//     }
-//     setSelectAll(!selectAll);
-//   };
+  //   const toggleSelectAll = () => {
+  //     if (selectAll) {
+  //       // Unselect all
+  //       setSelectedJobs([]);
+  //     } else {
+  //       // Select all
+  //       const allJobs = JobList.map(job => job.jobsl);
+  //       setSelectedJobs(allJobs);
+  //       console.log('All jobs selected:', allJobs);
+  //     }
+  //     setSelectAll(!selectAll);
+  //   };
 
-//   const toggleJobSelection = jobId => {
-//     if (selectedJobs.includes(jobId)) {
-//       // Remove the job from selectedJobs
-//       const updatedJobs = selectedJobs.filter(id => id !== jobId);
-//       setSelectedJobs(updatedJobs);
-//       console.log('Job deselected:', jobId);
-//     } else {
-//       // Add the job to selectedJobs
-//       const updatedJobs = [...selectedJobs, jobId];
-//       setSelectedJobs(updatedJobs);
-//       console.log('Job selected:', jobId);
-//     }
-//   };
-const toggleSelectAll = () => {
+  //   const toggleJobSelection = jobId => {
+  //     if (selectedJobs.includes(jobId)) {
+  //       // Remove the job from selectedJobs
+  //       const updatedJobs = selectedJobs.filter(id => id !== jobId);
+  //       setSelectedJobs(updatedJobs);
+  //       console.log('Job deselected:', jobId);
+  //     } else {
+  //       // Add the job to selectedJobs
+  //       const updatedJobs = [...selectedJobs, jobId];
+  //       setSelectedJobs(updatedJobs);
+  //       console.log('Job selected:', jobId);
+  //     }
+  //   };
+  const toggleSelectAll = () => {
     if (selectAll) {
       setSelectedJobs([]); // Unselect all
     } else {
@@ -678,9 +677,7 @@ const toggleSelectAll = () => {
                       height: HEIGHT * 0.8,
                       width: WIDTH,
                       alignSelf: 'center',
-                      
                     }}>
-                    
                     <View
                       style={{
                         flexDirection: 'row',
@@ -694,50 +691,49 @@ const toggleSelectAll = () => {
                           // justifyContent: 'space-evenly',
                           alignItems: 'center',
                         }}>
-                        <CheckBox style={{marginRight: 10}} 
-                        checked={selectAll}
-                        onPress={toggleSelectAll}
+                        <CheckBox
+                          style={{marginRight: 10}}
+                          checked={selectAll}
+                          onPress={toggleSelectAll}
                         />
                         <Text style={{fontSize: 13}}>Select All</Text>
                         {/* {selectAll == true && */}
-                   
                       </View>
                       <>
-                                          {selectedJobs.length > 0 && (
-                                            <TouchableOpacity
-                                              style={{
-                                                backgroundColor: 'green',
-                                                paddingVertical: 10,
-                                                paddingHorizontal: 15,
-                                                borderRadius: 5,
-                                                marginBottom: 10,
-                                                alignItems: 'center',
-                                              }}
-                                              onPress={() => {
-                                                setModalVisible(true);
-                                              }}>
-                                              {selectAll == true ? (
-                                                <Icon
-                                                  name={'done'}
-                                                  type="material"
-                                                  color={WHITE}
-                                                  size={24}
-                                                  containerStyle={{marginBottom: 5}}
-                                                />
-                                              ) : (
-                                                <Icon
-                                                  name={'done'}
-                                                  type="material"
-                                                  color={WHITE}
-                                                  size={24}
-                                                  containerStyle={{marginBottom: 5}}
-                                                />
-                                              )}
-                                            </TouchableOpacity>
-                                          )}
-                                        </>
+                        {selectedJobs.length > 0 && (
+                          <TouchableOpacity
+                            style={{
+                              backgroundColor: 'green',
+                              paddingVertical: 10,
+                              paddingHorizontal: 15,
+                              borderRadius: 5,
+                              marginBottom: 10,
+                              alignItems: 'center',
+                            }}
+                            onPress={() => {
+                              setModalVisible(true);
+                            }}>
+                            {selectAll == true ? (
+                              <Icon
+                                name={'done'}
+                                type="material"
+                                color={WHITE}
+                                size={24}
+                                containerStyle={{marginBottom: 5}}
+                              />
+                            ) : (
+                              <Icon
+                                name={'done'}
+                                type="material"
+                                color={WHITE}
+                                size={24}
+                                containerStyle={{marginBottom: 5}}
+                              />
+                            )}
+                          </TouchableOpacity>
+                        )}
+                      </>
                     </View>
-                    
 
                     <FlatList
                       refreshControl={

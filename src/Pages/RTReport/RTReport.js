@@ -1393,7 +1393,7 @@ const RTReport = ({navigation}) => {
                 flexDirection: 'row',
                 width: '100%',
                 justifyContent: 'space-evenly',
-                height:HEIGHT*0.7
+                height: HEIGHT * 0.7,
               }}>
               <View style={styles.buttonContainer}>
                 <TouchableOpacity
@@ -1522,7 +1522,6 @@ const styles = StyleSheet.create({
     marginTop: 20,
     flexDirection: 'row',
     justifyContent: 'center',
-   
   },
   actionButton: {
     paddingVertical: 12,
