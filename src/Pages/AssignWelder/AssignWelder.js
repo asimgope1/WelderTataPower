@@ -87,13 +87,7 @@ const AssignWelder = ({navigation}) => {
   const [selectAll, setSelectAll] = useState(false);
   const [selectedJobs, setSelectedJobs] = useState([]); // To hold selected job sl ids
 
-  const handleCheckBoxPress = () => {
-    setIsChecked(!isChecked);
-  };
-  const handleCheckBoxPres = () => {
-    setIsCheck(!isCheck);
-  };
-
+ 
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -159,7 +153,7 @@ const AssignWelder = ({navigation}) => {
     const url = `${BAS_URL}welding/jobmaster/joblist/`;
 
     // Check if there are any query params in the `params` object
-    const queryString = Object.keys(params).length
+    const queryString = Object.keys(params)?.length
       ? `?${new URLSearchParams(params).toString()}`
       : ''; // Construct query string
 
@@ -324,7 +318,7 @@ const AssignWelder = ({navigation}) => {
         {/* Checkbox */}
         <CheckBox
           style={{padding: 5}}
-          checked={selectedJobs.includes(item.sl)} // Check if the job is selected
+          checked={selectedJobs?.includes(item.sl)} // Check if the job is selected
           onPress={() => toggleJobSelection(item.sl)} // Toggle individual selection
         />
         <View>
@@ -406,52 +400,95 @@ const AssignWelder = ({navigation}) => {
     </View>
   );
   const handleApproveAll = async () => {
-    if (selectedJobs.length > 0) {
-      // Extract jobsl from selectedJobs
-      const jobslArray = selectedJobs
-        .map(jobId => {
-          const job = JobList.find(job => job.jobsl === jobId);
-          return job ? job.jobsl : null; // Ensure no null values are included
-        })
-        .filter(Boolean); // Remove nulls
+    console.log('hii', selectedJobs, selectedWelder);
+    // if (selectedJobs.length > 0) {
+    //     // Extract jobsl from selectedJobs
+    //     const jobslArray = selectedJobs
+    //         .map(jobId => {
+    //             const job = JobList.find(job => job.jobsl === jobId);
+    //             return job ? job.jobsl : null; // Ensure no null values are included
+    //         })
+    //         .filter(Boolean); // Remove nulls
 
-      console.log('Jobs to approve:', jobslArray); // Logs the selected job IDs
+    //     console.log('Jobs to approve:', jobslArray); // Logs the selected job IDs
 
-      // Prepare payload
-      const payload = {
-        jobsl: jobslArray,
-        approved_status: 'Approved',
-      };
+    //     // Prepare payload
+    //     const payload = {
+    //         jobsl: jobslArray,
+    //         approved_status: 'Approved',
+    //     };
 
+    //     try {
+    //         // Call API using POSTNETWORK
+    //         const response = await POSTNETWORK(
+    //             `${BAS_URL}/welding/job/update-job/`,
+    //             payload,
+    //             true, // Token is required
+    //         );
+
+    //         if (response.status === 'success') {
+    //             console.log('API Response:', response);
+    //             GetJobList();
+    //             setSelectAll(false);
+    //             alert('Job successfully Approved');
+    //             alert('All selected jobs approved successfully.');
+    //         } else {
+    //             GetJobList();
+    //             setSelectAll(false);
+    //             alert('Failed to approve selected jobs. Please try again.');
+    //         }
+    //     } catch (error) {
+    //         console.error('API Error:', error);
+    //         alert('An error occurred while approving selected jobs.');
+    //     }
+    // } else {
+    //     alert('No jobs selected for approval.');
+    // }
+
+    if (selectedWelder) {
       try {
-        // Call API using POSTNETWORK
+        // Create the payload object
+        const payload = {
+          sl: selectedJobs, // Converts selectedJob to an integer
+          weldersl: selectedWelder,
+        };
+
+        // Use POSTNETWORK to send the POST request
         const response = await POSTNETWORK(
-          `${BAS_URL}/welding/job/update-job/`,
+          `${BAS_URL}welding/api/v1/bulk-welder-assignment/`,
           payload,
-          true, // Token is required
+          true, // Pass true if you need the token for authorization
         );
 
+        // Log the response
+        console.log('Assignment Response:', response);
         if (response.status === 'success') {
-          console.log('API Response:', response);
-          GetJobList();
-          setSelectAll(false);
-          alert('Job successfully Approved');
-          alert('All selected jobs approved successfully.');
+          alert('Welder assigned successfully!', response.message);
+
+          // reset all states
+          setSelectedJobs(null);
+          setSelectedWelder(null);
+          // setItems([])
+          fetchWelderList();
         } else {
-          GetJobList();
-          setSelectAll(false);
-          alert('Failed to approve selected jobs. Please try again.');
+          alert('Error assigning welder:', response.message);
+          setSelectedJob(null);
+          setSelectedWelder(null);
+          // setItems([])
+          fetchWelderList();
         }
+
+        // Close the modal after successful assignment
+        setModalVisible(false);
       } catch (error) {
-        console.error('API Error:', error);
-        alert('An error occurred while approving selected jobs.');
+        console.error('Error assigning welder:', error);
       }
     } else {
-      alert('No jobs selected for approval.');
+      console.log('No welder selected.');
     }
   };
   const handleCancelAll = async () => {
-    if (selectedJobs.length > 0) {
+    if (selectedJobs?.length > 0) {
       // Extract jobsl from selectedJobs
       const jobslArray = selectedJobs
         .map(jobId => {
@@ -579,7 +616,9 @@ const AssignWelder = ({navigation}) => {
 
   // Function to toggle individual job selection
   const toggleJobSelection = jobSl => {
-    if (selectedJobs.includes(jobSl)) {
+    console.log('jobsl', jobSl);
+    console.log('selectedJobs', selectedJobs);
+    if (selectedJobs?.includes(jobSl)) {
       setSelectedJobs(selectedJobs.filter(id => id !== jobSl)); // Deselect the job
     } else {
       setSelectedJobs([...selectedJobs, jobSl]); // Select the job
@@ -700,7 +739,7 @@ const AssignWelder = ({navigation}) => {
                         {/* {selectAll == true && */}
                       </View>
                       <>
-                        {selectedJobs.length > 0 && (
+                        {selectedJobs?.length > 0 && (
                           <TouchableOpacity
                             style={{
                               backgroundColor: 'green',
@@ -783,7 +822,13 @@ const AssignWelder = ({navigation}) => {
               <View style={styless.buttonContainer}>
                 <TouchableOpacity
                   style={styless.assignButton}
-                  onPress={handleAssignWelder}>
+                  onPress={() => {
+                    if (selectedJobs?.length > 0) {
+                      handleApproveAll();
+                    } else {
+                      handleAssignWelder();
+                    }
+                  }}>
                   <Text style={styless.buttonText}>Assign Welder</Text>
                 </TouchableOpacity>
 
