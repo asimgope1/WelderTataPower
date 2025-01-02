@@ -1682,6 +1682,7 @@ const NewJob = ({ navigation }) => {
                                     >
                                         <FlatList
                                             data={formData.rows}
+                                            nestedScrollEnabled={true}
                                             renderItem={
                                                 ({ item }) => (
                                                     <View style={{
