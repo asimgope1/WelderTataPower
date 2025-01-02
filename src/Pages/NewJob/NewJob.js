@@ -13,6 +13,7 @@ import {
     TextInput,
     Modal,
     RefreshControl,
+    FlatList,
 } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { BRAND, WHITE, GRAY } from '../../constants/color';
@@ -39,16 +40,15 @@ const NewJob = ({ navigation }) => {
             joint_number: '',
             rt_required: false,
             paut_required: false,
-            job_details: "",
+            job_details: '',
             tube_joints: '',
-            job_desc_number: "",
-            fresh_old: "",
+            job_desc_number: '',
+            fresh_old: '',
             offer_date: new Date().toISOString().slice(0, 10), // Reset to current date,
-            elevation: "",
-            wall_blower: "",
-            panel: "",
-            neck: "",
-
+            elevation: '',
+            wall_blower: '',
+            panel: '',
+            neck: '',
         });
         setUnitItems([]);
         setcomponentItems([]);
@@ -72,7 +72,6 @@ const NewJob = ({ navigation }) => {
         setRowStates({ rowOpen: false });
         setTubeStates({ tubeOpen: false });
         setJointStates({ jointOpen: false });
-
     };
     const [formData, setFormData] = useState({
         unit_number: '',
@@ -86,23 +85,23 @@ const NewJob = ({ navigation }) => {
         joint_number: '',
         rt_required: false,
         paut_required: false,
-        job_details: "",
-        tube_joints: "",
-        job_desc_number: "",
+        job_details: '',
+        tube_joints: '',
+        job_desc_number: '',
         offer_date: startDate,
-        fresh_old: "",
+        fresh_old: '',
         elevation: '',
         wall_blower: '',
         panel: '',
         neck: '',
-
+        rows: [],
     });
     const [startDate, setStartDate] = useState(
-        new Date().toISOString().slice(0, 10)
+        new Date().toISOString().slice(0, 10),
     );
 
     useEffect(() => {
-        setFormData((prevData) => ({
+        setFormData(prevData => ({
             ...prevData,
             tube_joints: `${prevData.tube_number} ${prevData.joint_number}`,
         }));
@@ -110,7 +109,7 @@ const NewJob = ({ navigation }) => {
 
     // Update `job_desc_number` whenever relevant fields change
     useEffect(() => {
-        setFormData((prevData) => ({
+        setFormData(prevData => ({
             ...prevData,
             job_desc_number: [
                 prevData?.area,
@@ -123,7 +122,7 @@ const NewJob = ({ navigation }) => {
                 prevData?.panel,
                 prevData?.neck,
             ]
-                .filter((value) => value) // Filter out empty or undefined values
+                .filter(value => value) // Filter out empty or undefined values
                 .join(' '), // Join remaining values with a space
         }));
     }, [
@@ -138,9 +137,7 @@ const NewJob = ({ navigation }) => {
         formData.neck,
     ]);
 
-
     const [showModal, setShowModal] = useState(false);
-
 
     const handleDateSelect = day => {
         setStartDate(day.dateString);
@@ -192,47 +189,36 @@ const NewJob = ({ navigation }) => {
     const [jointStates, setJointStates] = useState({
         jointOpen: false,
     });
-    const [fresholdItems, setfresholdItems] = useState([
-
-    ]);
+    const [fresholdItems, setfresholdItems] = useState([]);
     const [fresholdStates, setfresholdStates] = useState({
         fresholdOpen: false,
     });
-    const [elevationItems, setelevationItems] = useState([
-
-    ]);
+    const [elevationItems, setelevationItems] = useState([]);
     const [elevationStates, setelevationStates] = useState({
         elevationOpen: false,
     });
-    const [wallBlowerItems, setwallBlowerItems] = useState([
-
-    ]);
+    const [wallBlowerItems, setwallBlowerItems] = useState([]);
     const [wallBlowerStates, setwallBlowerStates] = useState({
         wallBlowerOpen: false,
     });
-    const [PanellItems, setPanellItems] = useState([
-
-    ]);
+    const [PanellItems, setPanellItems] = useState([]);
     const [PanellStates, setPanellStates] = useState({
         PanellOpen: false,
     });
-    const [neckItems, setneckItems] = useState([
-
-    ]);
+    const [neckItems, setneckItems] = useState([]);
     const [neckStates, setneckStates] = useState({
         neckOpen: false,
     });
 
-
-
-
+    const [selectedWelder, setSelectedWelder] = useState(null); // State for selected welder
+    const [availableWelders, setAvailableWelders] = useState([]); // State for available welders from API
+    const [open, setOpen] = useState(false); // State for dropdown open status
+    const [items, setItems] = useState([]); // State for dropdown items
 
     const [refreshing, setRefreshing] = useState(false); // Refresh state to manage data refreshing
     const refresh = async () => {
         setRefreshing(true);
         fetchDropdownData();
-
-
 
         setRefreshing(false);
     };
@@ -245,6 +231,7 @@ const NewJob = ({ navigation }) => {
             );
 
             if (response.status === 'success') {
+                fetchAvailableWelders();
                 setUnitItems(
                     response.data.unit_number.map(item => ({ label: item, value: item })),
                 );
@@ -256,8 +243,6 @@ const NewJob = ({ navigation }) => {
                 setRowItems([]);
                 setTubeItems([]);
                 setJointItems([]);
-
-
             }
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -266,7 +251,6 @@ const NewJob = ({ navigation }) => {
         }
     };
     useEffect(() => {
-
         fetchDropdownData();
     }, [navigation]);
 
@@ -276,8 +260,8 @@ const NewJob = ({ navigation }) => {
     };
 
     const handleSubmit = async () => {
+        console.log('Form Data:', formData);
 
-        console.log('formdata', formData);
         // Validate the required fields before form submission
         if (
             !formData.area &&
@@ -285,30 +269,40 @@ const NewJob = ({ navigation }) => {
             !formData.coil_number &&
             !formData.panel_number
         ) {
-            Alert.alert('Validation Error', 'Please fill at least one of the following: Area, Hanger Number, Coil Number, or Panel Number.');
-            return;
-        }
-        if (!formData.tube_number && !formData.joint_number) {
-            Alert.alert('Validation Error', 'Please fill at least one of the following: Tube Number or Joint Number.');
+            Alert.alert(
+                'Validation Error',
+                'Please fill at least one of the following: Area, Hanger Number, Coil Number, or Panel Number.',
+            );
             return;
         }
 
+        if (!formData.tube_number && !formData.joint_number) {
+            Alert.alert(
+                'Validation Error',
+                'Please fill at least one of the following: Tube Number or Joint Number.',
+            );
+            return;
+        }
 
         try {
-            console.log('Form submit', formData);
+            console.log('Submitting Form:', formData);
 
-            const url = `${BAS_URL}welding/jobmaster/create-job/`;
+            let url = `${BAS_URL}welding/jobmaster/create-job/`;
+            if (formData?.rows?.length > 0) {
+                url = `${BAS_URL}welding/jobmaster/bulk-create-job/`;
+            }
+
             const response = await POSTNETWORK(url, formData, true, false);
 
             console.log('Response:', response);
 
             if (response && response.status === 'success') {
-                resetForm(); // Reset all states if the submission is successful
+                resetForm(); // Reset form on success
                 Alert.alert('Success', 'Job created successfully');
                 navigation.navigate('DashBoard');
             } else {
                 Alert.alert('Error', response?.errors?.error || 'Failed to create job');
-                resetForm()
+                resetForm();
             }
         } catch (error) {
             console.error('Error during form submission:', error);
@@ -317,9 +311,55 @@ const NewJob = ({ navigation }) => {
     };
 
 
+    const handleAdd = async () => {
+        const { tube_number, joint_number, rows } = formData || {}; // Safeguard against undefined formData
+        const welder_name = selectedWelder || '';
+
+        // Validate inputs
+        if (!tube_number || !joint_number) {
+            Alert.alert(
+                'Missing Fields',
+                'Please provide both Tube Number and Joint Number.',
+                [{ text: 'OK' }],
+            );
+            return;
+        }
+
+        // Construct a new row
+        const newRow = { tube_number, joint_number, welder_name };
+
+        // Check if the row already exists
+        const isDuplicate = (rows || []).some(
+            row =>
+                row.tube_number === newRow.tube_number &&
+                row.joint_number === newRow.joint_number &&
+                row.welder_name === newRow.welder_name,
+        );
+
+        if (isDuplicate) {
+            Alert.alert(
+                'Duplicate Entry',
+                'This combination of Tube Number, Joint Number, and Welder Name already exists.',
+                [{ text: 'OK' }],
+            );
+            return;
+        }
+
+        // Dynamically update the rows array
+        setFormData(prevState => ({
+            ...prevState,
+            rows: [...(prevState.rows || []), newRow],
+        }));
+
+        Alert.alert('Success', 'Row added successfully!', [{ text: 'OK' }]);
+
+        // Log the updated rows
+        console.log('Updated rows:', [...(rows || []), newRow]);
+    };
+
     useFocusEffect(
         React.useCallback(() => {
-            resetForm()
+            resetForm();
 
             const fetchDropdownData = async () => {
                 try {
@@ -330,7 +370,10 @@ const NewJob = ({ navigation }) => {
 
                     if (response.status === 'success') {
                         setUnitItems(
-                            response.data.unit_number.map(item => ({ label: item, value: item })),
+                            response.data.unit_number.map(item => ({
+                                label: item,
+                                value: item,
+                            })),
                         );
                         setcomponentItems([]);
                         setAreaItems([]);
@@ -342,10 +385,7 @@ const NewJob = ({ navigation }) => {
                         setJointItems([]);
                         setfresholdItems(
                             response.data.fresh_old.map(item => ({ label: item, value: item })),
-
-                        )
-
-
+                        );
                     }
                 } catch (error) {
                     console.error('Error fetching data:', error);
@@ -354,8 +394,8 @@ const NewJob = ({ navigation }) => {
                 }
             };
             fetchDropdownData();
-        }, [navigation]
-        ))
+        }, [navigation]),
+    );
 
     if (loading) {
         return (
@@ -371,16 +411,18 @@ const NewJob = ({ navigation }) => {
         );
     }
 
-
-
     // Helper function to validate and set items
     const setValidItems = (data, setterFunction) => {
-        if (Array.isArray(data) && data.length > 0 && data.some(item => item.trim() !== "")) {
+        if (
+            Array.isArray(data) &&
+            data.length > 0 &&
+            data.some(item => item.trim() !== '')
+        ) {
             setterFunction(data.map(item => ({ label: item, value: item })));
         }
     };
 
-    const areaSelect = async (value) => {
+    const areaSelect = async value => {
         console.log('value-areaSelect', value);
 
         try {
@@ -398,7 +440,14 @@ const NewJob = ({ navigation }) => {
                 setTubeItems([]);
                 setJointItems([]);
 
-                const { hanger_number, coil_number, panel_number, row_number, tube_number, joint_number } = response.data;
+                const {
+                    hanger_number,
+                    coil_number,
+                    panel_number,
+                    row_number,
+                    tube_number,
+                    joint_number,
+                } = response.data;
 
                 // Set hanger items only if there's valid data
                 setValidItems(hanger_number, setHangerItems);
@@ -425,11 +474,7 @@ const NewJob = ({ navigation }) => {
         }
     };
 
-
-
-
     // Helper function to validate and set items
-
 
     // Clear all dropdown items
     const clearDropdownItems = () => {
@@ -441,10 +486,10 @@ const NewJob = ({ navigation }) => {
         setPanellItems([]);
         setelevationItems([]);
         setwallBlowerItems([]);
-        setneckItems([])
+        setneckItems([]);
     };
 
-    const hangerSelect = async (value) => {
+    const hangerSelect = async value => {
         try {
             const response = await GETNETWORK(
                 `${BAS_URL}welding/jobmaster/create-job/?component_name=${formData.component_name}&area=${formData.area}&hanger_number=${value}`,
@@ -452,7 +497,6 @@ const NewJob = ({ navigation }) => {
             );
 
             if (response.status === 'success') {
-
                 // Set hanger items only if there's valid data
                 setValidItems(response.data?.hanger_number, setHangerItems);
 
@@ -470,7 +514,6 @@ const NewJob = ({ navigation }) => {
 
                 // Set joint items only if there's valid data
                 setValidItems(response.data?.joint_number, setJointItems);
-
             } else {
                 // Clear dropdown items if the response status isn't successful
                 clearDropdownItems();
@@ -484,8 +527,28 @@ const NewJob = ({ navigation }) => {
         }
     };
 
+    const fetchAvailableWelders = async () => {
+        try {
+            const url = `${BAS_URL}welding/api/v1/welder-list/`;
+            const response = await GETNETWORK(url, true);
 
-    const coilSelect = async (value) => {
+            if (response.status === 'success') {
+                console.log('Available Welders:', response.data);
+                // Format welders data for dropdown
+                const formattedWelders = response?.data.map(welder => ({
+                    label: welder.welder_name,
+                    value: welder.weldersl,
+                }));
+                setItems(formattedWelders); // Update dropdown items
+            } else {
+                console.log('Error:', response.message);
+            }
+        } catch (error) {
+            console.error('Error fetching available welders:', error);
+        }
+    };
+
+    const coilSelect = async value => {
         try {
             const response = await GETNETWORK(
                 `${BAS_URL}welding/jobmaster/create-job/?component_name=${formData.component_name}&area=${formData.area}&coil_number=${value}`,
@@ -493,7 +556,6 @@ const NewJob = ({ navigation }) => {
             );
 
             if (response.status === 'success') {
-
                 // Set hanger items only if there's valid data
                 setValidItems(response.data?.hanger_number, setHangerItems);
 
@@ -520,7 +582,6 @@ const NewJob = ({ navigation }) => {
 
                 // Set neck items only if there's valid data
                 setValidItems(response.data?.neck, setneckItems);
-
             } else {
                 // Clear dropdown items if the response status isn't successful
                 clearDropdownItems();
@@ -534,8 +595,7 @@ const NewJob = ({ navigation }) => {
         }
     };
 
-
-    const panelSelect = async (value) => {
+    const panelSelect = async value => {
         try {
             const response = await GETNETWORK(
                 `${BAS_URL}welding/jobmaster/create-job/?component_name=${formData.component_name}&area=${formData.area}&coil_number=${formData.coil_number}&panel_number=${value}`,
@@ -543,7 +603,6 @@ const NewJob = ({ navigation }) => {
             );
 
             if (response.status === 'success') {
-
                 // Set hanger items only if there's valid data
                 setValidItems(response.data?.hanger_number, setHangerItems);
 
@@ -570,7 +629,6 @@ const NewJob = ({ navigation }) => {
 
                 // Set neck items only if there's valid data
                 setValidItems(response.data?.neck, setneckItems);
-
             } else {
                 // Clear dropdown items if the response status isn't successful
                 clearDropdownItems();
@@ -584,8 +642,7 @@ const NewJob = ({ navigation }) => {
         }
     };
 
-
-    const rowSelect = async (value) => {
+    const rowSelect = async value => {
         try {
             const response = await GETNETWORK(
                 `${BAS_URL}welding/jobmaster/create-job/?component_name=${formData.component_name}&area=${formData.area}&coil_number=${formData.coil_number}&panel_number=${formData.panel_number}&ow_number=${value}`,
@@ -594,7 +651,6 @@ const NewJob = ({ navigation }) => {
             console.log('rowSelect', response);
 
             if (response.status === 'success') {
-
                 // Set hanger items only if there's valid data
                 setValidItems(response.data?.hanger_number, setHangerItems);
 
@@ -621,7 +677,6 @@ const NewJob = ({ navigation }) => {
 
                 // Set neck items only if there's valid data
                 setValidItems(response.data?.neck, setneckItems);
-
             } else {
                 // Clear dropdown items if the response status isn't successful
                 clearDropdownItems();
@@ -635,16 +690,14 @@ const NewJob = ({ navigation }) => {
         }
     };
 
-
     const elevationSelect = async value => {
         try {
             const response = await GETNETWORK(
                 `${BAS_URL}welding/jobmaster/create-job/?component_name=${formData.component_name}&area=${formData.area}&coil_number=${formData.coil_number}&panel_number=${formData.panel_number}&ow_number=${formData.row_number}&elevation=${value}`,
                 true,
             );
-            console.log('elevationSelect', response)
+            console.log('elevationSelect', response);
             if (response.status === 'success') {
-
                 setHangerItems(
                     response.data.hanger_number.map(item => ({ label: item, value: item })),
                 );
@@ -661,19 +714,17 @@ const NewJob = ({ navigation }) => {
                     response.data.joint_number.map(item => ({ label: item, value: item })),
                 );
                 setPanellItems(
-                    response.data.panel.map(item => ({ label: item, value: item }))
-                )
+                    response.data.panel.map(item => ({ label: item, value: item })),
+                );
                 setelevationItems(
-                    response.data.elevation.map(item => ({ label: item, value: item }))
-                )
+                    response.data.elevation.map(item => ({ label: item, value: item })),
+                );
                 setwallBlowerItems(
-                    response.data.wall_blower.map(item => ({ label: item, value: item }))
-                )
+                    response.data.wall_blower.map(item => ({ label: item, value: item })),
+                );
                 setneckItems(
-                    response.data.neck.map(item => ({ label: item, value: item }))
-                )
-
-
+                    response.data.neck.map(item => ({ label: item, value: item })),
+                );
             } else {
                 // Clear dropdown items if the response status isn't successful
                 clearDropdownItems();
@@ -693,9 +744,8 @@ const NewJob = ({ navigation }) => {
                 `${BAS_URL}welding/jobmaster/create-job/?component_name=${formData.component_name}&area=${formData.area}&coil_number=${formData.coil_number}&panel_number=${formData.panel_number}&ow_number=${formData.row_number}&elevation=${formData.elevation}&wall_blower=${value}`,
                 true,
             );
-            console.log('wallblowerSelect', response)
+            console.log('wallblowerSelect', response);
             if (response.status === 'success') {
-
                 setHangerItems(
                     response.data.hanger_number.map(item => ({ label: item, value: item })),
                 );
@@ -712,19 +762,17 @@ const NewJob = ({ navigation }) => {
                     response.data.joint_number.map(item => ({ label: item, value: item })),
                 );
                 setPanellItems(
-                    response.data.panel.map(item => ({ label: item, value: item }))
-                )
+                    response.data.panel.map(item => ({ label: item, value: item })),
+                );
                 setelevationItems(
-                    response.data.elevation.map(item => ({ label: item, value: item }))
-                )
+                    response.data.elevation.map(item => ({ label: item, value: item })),
+                );
                 setwallBlowerItems(
-                    response.data.wall_blower.map(item => ({ label: item, value: item }))
-                )
+                    response.data.wall_blower.map(item => ({ label: item, value: item })),
+                );
                 setneckItems(
-                    response.data.neck.map(item => ({ label: item, value: item }))
-                )
-
-
+                    response.data.neck.map(item => ({ label: item, value: item })),
+                );
             } else {
                 // Clear dropdown items if the response status isn't successful
                 clearDropdownItems();
@@ -744,9 +792,8 @@ const NewJob = ({ navigation }) => {
                 `${BAS_URL}welding/jobmaster/create-job/?component_name=${formData.component_name}&area=${formData.area}&coil_number=${formData.coil_number}&panel_number=${formData.panel_number}&ow_number=${formData.row_number}&elevation=${formData.elevation}&wall_blower=${formData.wall_blower}&panel=${value}`,
                 true,
             );
-            console.log('PanellSelect', response)
+            console.log('PanellSelect', response);
             if (response.status === 'success') {
-
                 setHangerItems(
                     response.data.hanger_number.map(item => ({ label: item, value: item })),
                 );
@@ -763,19 +810,17 @@ const NewJob = ({ navigation }) => {
                     response.data.joint_number.map(item => ({ label: item, value: item })),
                 );
                 setPanellItems(
-                    response.data.panel.map(item => ({ label: item, value: item }))
-                )
+                    response.data.panel.map(item => ({ label: item, value: item })),
+                );
                 setelevationItems(
-                    response.data.elevation.map(item => ({ label: item, value: item }))
-                )
+                    response.data.elevation.map(item => ({ label: item, value: item })),
+                );
                 setwallBlowerItems(
-                    response.data.wall_blower.map(item => ({ label: item, value: item }))
-                )
+                    response.data.wall_blower.map(item => ({ label: item, value: item })),
+                );
                 setneckItems(
-                    response.data.neck.map(item => ({ label: item, value: item }))
-                )
-
-
+                    response.data.neck.map(item => ({ label: item, value: item })),
+                );
             } else {
                 // Clear dropdown items if the response status isn't successful
                 clearDropdownItems();
@@ -794,9 +839,8 @@ const NewJob = ({ navigation }) => {
                 `${BAS_URL}welding/jobmaster/create-job/?component_name=${formData.component_name}&area=${formData.area}&coil_number=${formData.coil_number}&panel_number=${formData.panel_number}&ow_number=${formData.row_number}&elevation=${formData.elevation}&wall_blower=${formData.wall_blower}&panel=${formData.panel}&neck=${value}`,
                 true,
             );
-            console.log('NeckSelect', response)
+            console.log('NeckSelect', response);
             if (response.status === 'success') {
-
                 setHangerItems(
                     response.data.hanger_number.map(item => ({ label: item, value: item })),
                 );
@@ -813,19 +857,17 @@ const NewJob = ({ navigation }) => {
                     response.data.joint_number.map(item => ({ label: item, value: item })),
                 );
                 setPanellItems(
-                    response.data.panel.map(item => ({ label: item, value: item }))
-                )
+                    response.data.panel.map(item => ({ label: item, value: item })),
+                );
                 setelevationItems(
-                    response.data.elevation.map(item => ({ label: item, value: item }))
-                )
+                    response.data.elevation.map(item => ({ label: item, value: item })),
+                );
                 setwallBlowerItems(
-                    response.data.wall_blower.map(item => ({ label: item, value: item }))
-                )
+                    response.data.wall_blower.map(item => ({ label: item, value: item })),
+                );
                 setneckItems(
-                    response.data.neck.map(item => ({ label: item, value: item }))
-                )
-
-
+                    response.data.neck.map(item => ({ label: item, value: item })),
+                );
             } else {
                 // Clear dropdown items if the response status isn't successful
                 clearDropdownItems();
@@ -839,8 +881,7 @@ const NewJob = ({ navigation }) => {
         }
     };
 
-
-    const UnitSelect = async (value) => {
+    const UnitSelect = async value => {
         console.log('here');
 
         try {
@@ -859,45 +900,90 @@ const NewJob = ({ navigation }) => {
                 setTubeItems([]);
                 setJointItems([]);
 
-                const { component_name, area, hanger_number, coil_number, panel_number, row_number, tube_number, joint_number } = response.data;
+                const {
+                    component_name,
+                    area,
+                    hanger_number,
+                    coil_number,
+                    panel_number,
+                    row_number,
+                    tube_number,
+                    joint_number,
+                } = response.data;
 
                 // Set component items only if there's valid data
-                if (Array.isArray(component_name) && component_name.length > 0 && component_name.some(item => item.trim() !== "")) {
-                    setcomponentItems(component_name.map(item => ({ label: item, value: item })));
+                if (
+                    Array.isArray(component_name) &&
+                    component_name.length > 0 &&
+                    component_name.some(item => item.trim() !== '')
+                ) {
+                    setcomponentItems(
+                        component_name.map(item => ({ label: item, value: item })),
+                    );
                 }
 
                 // Set area items only if there's valid data
-                if (Array.isArray(area) && area.length > 0 && area.some(item => item.trim() !== "")) {
+                if (
+                    Array.isArray(area) &&
+                    area.length > 0 &&
+                    area.some(item => item.trim() !== '')
+                ) {
                     setAreaItems(area.map(item => ({ label: item, value: item })));
                 }
 
                 // Set hanger items only if there's valid data
-                if (Array.isArray(hanger_number) && hanger_number.length > 0 && hanger_number.some(item => item.trim() !== "")) {
-                    setHangerItems(hanger_number.map(item => ({ label: item, value: item })));
+                if (
+                    Array.isArray(hanger_number) &&
+                    hanger_number.length > 0 &&
+                    hanger_number.some(item => item.trim() !== '')
+                ) {
+                    setHangerItems(
+                        hanger_number.map(item => ({ label: item, value: item })),
+                    );
                 }
 
                 // Set coil items only if there's valid data
-                if (Array.isArray(coil_number) && coil_number.length > 0 && coil_number.some(item => item.trim() !== "")) {
+                if (
+                    Array.isArray(coil_number) &&
+                    coil_number.length > 0 &&
+                    coil_number.some(item => item.trim() !== '')
+                ) {
                     setCoilItems(coil_number.map(item => ({ label: item, value: item })));
                 }
 
                 // Set panel items only if there's valid data
-                if (Array.isArray(panel_number) && panel_number.length > 0 && panel_number.some(item => item.trim() !== "")) {
+                if (
+                    Array.isArray(panel_number) &&
+                    panel_number.length > 0 &&
+                    panel_number.some(item => item.trim() !== '')
+                ) {
                     setPanelItems(panel_number.map(item => ({ label: item, value: item })));
                 }
 
                 // Set row items only if there's valid data
-                if (Array.isArray(row_number) && row_number.length > 0 && row_number.some(item => item.trim() !== "")) {
+                if (
+                    Array.isArray(row_number) &&
+                    row_number.length > 0 &&
+                    row_number.some(item => item.trim() !== '')
+                ) {
                     setRowItems(row_number.map(item => ({ label: item, value: item })));
                 }
 
                 // Set tube items only if there's valid data
-                if (Array.isArray(tube_number) && tube_number.length > 0 && tube_number.some(item => item.trim() !== "")) {
+                if (
+                    Array.isArray(tube_number) &&
+                    tube_number.length > 0 &&
+                    tube_number.some(item => item.trim() !== '')
+                ) {
                     setTubeItems(tube_number.map(item => ({ label: item, value: item })));
                 }
 
                 // Set joint items only if there's valid data
-                if (Array.isArray(joint_number) && joint_number.length > 0 && joint_number.some(item => item.trim() !== "")) {
+                if (
+                    Array.isArray(joint_number) &&
+                    joint_number.length > 0 &&
+                    joint_number.some(item => item.trim() !== '')
+                ) {
                     setJointItems(joint_number.map(item => ({ label: item, value: item })));
                 }
             }
@@ -908,9 +994,7 @@ const NewJob = ({ navigation }) => {
         }
     };
 
-
-
-    const componentSelect = async (value) => {
+    const componentSelect = async value => {
         console.log('value-componentSelect', formData.unit_number);
 
         try {
@@ -923,53 +1007,114 @@ const NewJob = ({ navigation }) => {
             if (response.status === 'success') {
                 console.log('componentSelect', response);
 
-                const { area, hanger_number, coil_number, panel_number, row_number, tube_number, joint_number, panel, elevation, wall_blower, neck } = response.data;
+                const {
+                    area,
+                    hanger_number,
+                    coil_number,
+                    panel_number,
+                    row_number,
+                    tube_number,
+                    joint_number,
+                    panel,
+                    elevation,
+                    wall_blower,
+                    neck,
+                } = response.data;
 
                 // Set state only if data is valid and not just empty strings
-                if (Array.isArray(area) && area.length > 0 && area.some(item => item.trim() !== "")) {
+                if (
+                    Array.isArray(area) &&
+                    area.length > 0 &&
+                    area.some(item => item.trim() !== '')
+                ) {
                     setAreaItems(area.map(item => ({ label: item, value: item })));
                 }
 
-                if (Array.isArray(hanger_number) && hanger_number.length > 0 && hanger_number.some(item => item.trim() !== "")) {
-                    setHangerItems(hanger_number.map(item => ({ label: item, value: item })));
+                if (
+                    Array.isArray(hanger_number) &&
+                    hanger_number.length > 0 &&
+                    hanger_number.some(item => item.trim() !== '')
+                ) {
+                    setHangerItems(
+                        hanger_number.map(item => ({ label: item, value: item })),
+                    );
                 }
 
-                if (Array.isArray(coil_number) && coil_number.length > 0 && coil_number.some(item => item.trim() !== "")) {
+                if (
+                    Array.isArray(coil_number) &&
+                    coil_number.length > 0 &&
+                    coil_number.some(item => item.trim() !== '')
+                ) {
                     setCoilItems(coil_number.map(item => ({ label: item, value: item })));
                 }
 
-                if (Array.isArray(panel_number) && panel_number.length > 0 && panel_number.some(item => item.trim() !== "")) {
+                if (
+                    Array.isArray(panel_number) &&
+                    panel_number.length > 0 &&
+                    panel_number.some(item => item.trim() !== '')
+                ) {
                     setPanelItems(panel_number.map(item => ({ label: item, value: item })));
                 }
 
-                if (Array.isArray(row_number) && row_number.length > 0 && row_number.some(item => item.trim() !== "")) {
+                if (
+                    Array.isArray(row_number) &&
+                    row_number.length > 0 &&
+                    row_number.some(item => item.trim() !== '')
+                ) {
                     setRowItems(row_number.map(item => ({ label: item, value: item })));
                 }
 
-                if (Array.isArray(tube_number) && tube_number.length > 0 && tube_number.some(item => item.trim() !== "")) {
+                if (
+                    Array.isArray(tube_number) &&
+                    tube_number.length > 0 &&
+                    tube_number.some(item => item.trim() !== '')
+                ) {
                     setTubeItems(tube_number.map(item => ({ label: item, value: item })));
                 }
 
-                if (Array.isArray(joint_number) && joint_number.length > 0 && joint_number.some(item => item.trim() !== "")) {
+                if (
+                    Array.isArray(joint_number) &&
+                    joint_number.length > 0 &&
+                    joint_number.some(item => item.trim() !== '')
+                ) {
                     setJointItems(joint_number.map(item => ({ label: item, value: item })));
                 }
 
-                if (Array.isArray(panel) && panel.length > 0 && panel.some(item => item.trim() !== "")) {
+                if (
+                    Array.isArray(panel) &&
+                    panel.length > 0 &&
+                    panel.some(item => item.trim() !== '')
+                ) {
                     setPanellItems(panel.map(item => ({ label: item, value: item })));
                 }
 
-                if (Array.isArray(elevation) && elevation.length > 0 && elevation.some(item => item.trim() !== "")) {
-                    setelevationItems(elevation.map(item => ({ label: item, value: item })));
+                if (
+                    Array.isArray(elevation) &&
+                    elevation.length > 0 &&
+                    elevation.some(item => item.trim() !== '')
+                ) {
+                    setelevationItems(
+                        elevation.map(item => ({ label: item, value: item })),
+                    );
                 }
 
-                if (Array.isArray(wall_blower) && wall_blower.length > 0 && wall_blower.some(item => item.trim() !== "")) {
-                    setwallBlowerItems(wall_blower.map(item => ({ label: item, value: item })));
+                if (
+                    Array.isArray(wall_blower) &&
+                    wall_blower.length > 0 &&
+                    wall_blower.some(item => item.trim() !== '')
+                ) {
+                    setwallBlowerItems(
+                        wall_blower.map(item => ({ label: item, value: item })),
+                    );
                 }
 
-                if (Array.isArray(neck) && neck.length > 0 && neck.some(item => item.trim() !== "")) {
+                if (
+                    Array.isArray(neck) &&
+                    neck.length > 0 &&
+                    neck.some(item => item.trim() !== '')
+                ) {
                     setneckItems(neck.map(item => ({ label: item, value: item })));
                 }
-
             } else {
                 console.error('Failed to fetch data:', response.message);
             }
@@ -980,15 +1125,12 @@ const NewJob = ({ navigation }) => {
         }
     };
 
-
-
-
-    // console.log('form', formData)
-
-
+    console.log('form', formData);
 
     return (
-        <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}> {/* Light gray background */}
+        <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
+            {' '}
+            {/* Light gray background */}
             <MyStatusBar backgroundColor={BRAND} barStyle={'light-content'} />
             <SafeAreaView style={appStyles.safeareacontainer}>
                 <Header onMenuPress={() => navigation.toggleDrawer()} title="New Job" />
@@ -997,11 +1139,7 @@ const NewJob = ({ navigation }) => {
                     style={{ flex: 1 }}>
                     <ScrollView
                         refreshControl={
-                            <RefreshControl
-                                refreshing={refreshing}
-                                onRefresh={refresh}
-                            />
-
+                            <RefreshControl refreshing={refreshing} onRefresh={refresh} />
                         }
                         keyboardShouldPersistTaps={'handled'}
                         showsVerticalScrollIndicator={false}
@@ -1010,8 +1148,16 @@ const NewJob = ({ navigation }) => {
                             paddingBottom: 25,
                             paddingHorizontal: 20,
                         }}>
-                        <View style={{ flex: 1, width: WIDTH, alignItems: 'center', alignSelf: 'center', paddingHorizontal: 10, elevation: 10, backgroundColor: WHITE }}>
-
+                        <View
+                            style={{
+                                flex: 1,
+                                width: WIDTH,
+                                alignItems: 'center',
+                                alignSelf: 'center',
+                                paddingHorizontal: 10,
+                                elevation: 10,
+                                backgroundColor: WHITE,
+                            }}>
                             <View
                                 style={{
                                     flex: 1,
@@ -1026,51 +1172,45 @@ const NewJob = ({ navigation }) => {
                                     shadowOffset: { width: 0, height: 5 }, // Shadow offset
                                     shadowOpacity: 0.2, // Shadow opacity
                                     shadowRadius: 10, // Shadow spread radius
-                                    marginTop: 5
-
-                                }}
-                            >
-
-
+                                    marginTop: 5,
+                                }}>
                                 {/* Card Section for Date and Unit */}
                                 <View style={{ ...styles.cardContainer, zIndex: 1100 }}>
-
                                     <View
                                         style={{
                                             width: '100%',
                                             flexDirection: 'row',
                                             justifyContent: 'space-between',
-                                        }}
-                                    >
+                                        }}>
                                         <View
                                             style={{
                                                 width: '30%',
                                                 flexDirection: 'row',
                                                 justifyContent: 'space-around',
-                                            }}
-                                        >
-
+                                            }}>
                                             <Text style={styles.sectionTitle}>Job Details</Text>
                                         </View>
 
-
                                         {/* refresh clear state button */}
-                                        <TouchableOpacity style={{
-                                            backgroundColor: BRAND,
-                                            padding: 5,
-                                            borderRadius: 10,
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                        }} onPress={() => {
-                                            resetForm();
-                                            fetchDropdownData()
-                                        }}>
-                                            <Text style={{
-                                                color: WHITE,
-                                            }}>Refresh</Text>
-
+                                        <TouchableOpacity
+                                            style={{
+                                                backgroundColor: BRAND,
+                                                padding: 5,
+                                                borderRadius: 10,
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                            }}
+                                            onPress={() => {
+                                                resetForm();
+                                                fetchDropdownData();
+                                            }}>
+                                            <Text
+                                                style={{
+                                                    color: WHITE,
+                                                }}>
+                                                Refresh
+                                            </Text>
                                         </TouchableOpacity>
-
                                     </View>
                                     <View style={styles.row}>
                                         <TouchableOpacity
@@ -1078,13 +1218,15 @@ const NewJob = ({ navigation }) => {
                                                 setShowModal(true);
                                             }}
                                             style={styles.inputContainer}>
-                                            <Text style={{ ...styles.dropdownHeader, marginTop: 5 }}>Date</Text>
+                                            <Text style={{ ...styles.dropdownHeader, marginTop: 5 }}>
+                                                Date
+                                            </Text>
                                             <View style={styles.dateContainer}>
-                                                <Text style={appStyles.dateText}>Date: {startDate}</Text>
+                                                <Text style={appStyles.dateText}>
+                                                    Date: {startDate}
+                                                </Text>
                                             </View>
                                         </TouchableOpacity>
-
-
 
                                         <View style={styles.inputContainer}>
                                             <Text style={styles.dropdownHeader}>Type</Text>
@@ -1096,7 +1238,7 @@ const NewJob = ({ navigation }) => {
                                                 setOpen={open =>
                                                     setfresholdStates(prevState => ({
                                                         ...prevState,
-                                                        fresholdOpen: open
+                                                        fresholdOpen: open,
                                                     }))
                                                 }
                                                 setValue={callback => {
@@ -1107,7 +1249,6 @@ const NewJob = ({ navigation }) => {
                                                 style={styles.dropdownStyle}
                                                 textStyle={styles.dropdownTextStyle}
                                             />
-
                                         </View>
                                     </View>
                                 </View>
@@ -1115,7 +1256,6 @@ const NewJob = ({ navigation }) => {
                                 {/* Card Section for Component and Area */}
                                 <View style={{ ...styles.cardContainer, zIndex: 1000 }}>
                                     <View style={styles.row}>
-
                                         <View style={styles.inputContainer}>
                                             <Text style={styles.dropdownHeader}>Unit</Text>
                                             <DropDownPicker
@@ -1145,15 +1285,13 @@ const NewJob = ({ navigation }) => {
                                         <View style={styles.inputContainer}>
                                             <Text style={styles.dropdownHeader}>Component</Text>
                                             <DropDownPicker
-                                                scrollViewProps={
-                                                    {
-                                                        contentContainerStyle: {
-                                                            maxHeight: '300px',
-                                                            overflow: 'auto',
-                                                        },
-                                                        //    ...scrollViewProps,
-                                                    }
-                                                }
+                                                scrollViewProps={{
+                                                    contentContainerStyle: {
+                                                        maxHeight: '300px',
+                                                        overflow: 'auto',
+                                                    },
+                                                    //    ...scrollViewProps,
+                                                }}
                                                 searchable={true}
                                                 autoScroll={true}
                                                 open={componentStates.componentOpen}
@@ -1177,20 +1315,15 @@ const NewJob = ({ navigation }) => {
                                                 textStyle={styles.dropdownTextStyle}
                                             />
                                         </View>
-
-
                                     </View>
                                 </View>
 
                                 {/* Additional Card Sections for Other Fields */}
                                 <View style={{ ...styles.cardContainer, zIndex: 900 }}>
                                     <View style={styles.row}>
-
-
                                         <View style={styles.inputContainer}>
                                             <Text style={styles.dropdownHeader}>Area</Text>
                                             <DropDownPicker
-
                                                 searchable={true}
                                                 open={areaStates.areaOpen}
                                                 value={formData.area}
@@ -1230,24 +1363,17 @@ const NewJob = ({ navigation }) => {
                                                     const value = callback();
                                                     handleInputChange('hanger_number', value);
                                                 }}
-                                                onSelectItem={
-                                                    item => hangerSelect(item?.value)
-                                                }
+                                                onSelectItem={item => hangerSelect(item?.value)}
                                                 placeholder="Hanger Number"
                                                 style={styles.dropdownStyle}
                                                 textStyle={styles.dropdownTextStyle}
                                             />
                                         </View>
-
-
                                     </View>
                                 </View>
 
-
                                 <View style={{ ...styles.cardContainer, zIndex: 800 }}>
                                     <View style={styles.row}>
-
-
                                         <View style={styles.inputContainer}>
                                             <Text style={styles.dropdownHeader}>Coil Number</Text>
                                             <DropDownPicker
@@ -1256,7 +1382,10 @@ const NewJob = ({ navigation }) => {
                                                 value={formData.coil_number} // Ensure formData.coil_number is a valid value
                                                 items={coilItems} // Ensure coilItems has a structure like [{ label: 'Item 1', value: 'item1' }]
                                                 setOpen={open =>
-                                                    setCoilStates(prevState => ({ ...prevState, coilOpen: open }))
+                                                    setCoilStates(prevState => ({
+                                                        ...prevState,
+                                                        coilOpen: open,
+                                                    }))
                                                 }
                                                 setValue={callback => {
                                                     const value = callback();
@@ -1285,28 +1414,21 @@ const NewJob = ({ navigation }) => {
                                                 //     const value = callback();
                                                 //     handleInputChange('panel_number', value);
                                                 // }}
-                                                onSelectItem={(item) => {
+                                                onSelectItem={item => {
                                                     handleInputChange('panel_number', item.value);
 
-                                                    panelSelect(item?.value)
-
+                                                    panelSelect(item?.value);
                                                 }}
                                                 placeholder="Panel Number"
                                                 style={styles.dropdownStyle}
                                                 textStyle={styles.dropdownTextStyle}
                                             />
                                         </View>
-
-
-
                                     </View>
                                 </View>
 
-
                                 <View style={{ ...styles.cardContainer, zIndex: 700 }}>
                                     <View style={styles.row}>
-
-
                                         <View style={styles.inputContainer}>
                                             <Text style={styles.dropdownHeader}>Row Number</Text>
                                             <DropDownPicker
@@ -1315,24 +1437,24 @@ const NewJob = ({ navigation }) => {
                                                 value={formData.row_number}
                                                 items={rowItems}
                                                 setOpen={open =>
-                                                    setRowStates(prevState => ({ ...prevState, rowOpen: open }))
+                                                    setRowStates(prevState => ({
+                                                        ...prevState,
+                                                        rowOpen: open,
+                                                    }))
                                                 }
                                                 // setValue={callback => {
                                                 //     const value = callback();
                                                 //     handleInputChange('row_number', value);
                                                 // }}
-                                                onSelectItem={(item) => {
+                                                onSelectItem={item => {
                                                     handleInputChange('row_number', item.value);
-                                                    rowSelect(item?.value)
-
+                                                    rowSelect(item?.value);
                                                 }}
                                                 placeholder="Row Number"
                                                 style={styles.dropdownStyle}
                                                 textStyle={styles.dropdownTextStyle}
                                             />
                                         </View>
-
-
 
                                         <View style={styles.inputContainer}>
                                             <Text style={styles.dropdownHeader}>Elevation</Text>
@@ -1347,31 +1469,20 @@ const NewJob = ({ navigation }) => {
                                                         elevationOpen: open,
                                                     }))
                                                 }
-
-
-                                                onSelectItem={(item) => {
+                                                onSelectItem={item => {
                                                     handleInputChange('elevation', item.value);
-                                                    elevationSelect(item?.value)
-
+                                                    elevationSelect(item?.value);
                                                 }}
-
-
                                                 placeholder="Elevation" // Placeholder corrected
                                                 style={styles.dropdownStyle}
                                                 textStyle={styles.dropdownTextStyle}
                                             />
-
                                         </View>
-
-
-
                                     </View>
                                 </View>
 
                                 <View style={{ ...styles.cardContainer, zIndex: 650 }}>
                                     <View style={styles.row}>
-
-
                                         <View style={styles.inputContainer}>
                                             <Text style={styles.dropdownHeader}>Wall Blower</Text>
                                             <DropDownPicker
@@ -1382,7 +1493,7 @@ const NewJob = ({ navigation }) => {
                                                 setOpen={open =>
                                                     setwallBlowerStates(prevState => ({
                                                         ...prevState,
-                                                        wallBlowerOpen: open
+                                                        wallBlowerOpen: open,
                                                     }))
                                                 }
                                                 // setValue={callback => {
@@ -1390,17 +1501,15 @@ const NewJob = ({ navigation }) => {
                                                 //     handleInputChange('joint_number', value); // Correct field updated
                                                 // }}
 
-                                                onSelectItem={(item) => {
+                                                onSelectItem={item => {
                                                     handleInputChange('wall_blower', item.value);
-                                                    wallblowerSelect(item.value)
+                                                    wallblowerSelect(item.value);
                                                 }}
                                                 placeholder="Wall blower"
                                                 style={styles.dropdownStyle}
                                                 textStyle={styles.dropdownTextStyle}
                                             />
-
                                         </View>
-
 
                                         <View style={styles.inputContainer}>
                                             <Text style={styles.dropdownHeader}>Panel</Text>
@@ -1420,29 +1529,20 @@ const NewJob = ({ navigation }) => {
                                                 //     handleInputChange('tube_number', value); // Correct field updated
                                                 // }}
 
-                                                onSelectItem={(item) => {
+                                                onSelectItem={item => {
                                                     handleInputChange('panel', item.value);
                                                     PanellSelect(item.value);
-
                                                 }}
-
-
                                                 placeholder="Panel" // Placeholder corrected
                                                 style={styles.dropdownStyle}
                                                 textStyle={styles.dropdownTextStyle}
                                             />
-
                                         </View>
-
-
-
-
                                     </View>
                                 </View>
 
                                 <View style={{ ...styles.cardContainer, zIndex: 600 }}>
                                     <View style={styles.row}>
-
                                         <View style={styles.inputContainer}>
                                             <Text style={styles.dropdownHeader}>Neck</Text>
                                             <DropDownPicker
@@ -1453,7 +1553,7 @@ const NewJob = ({ navigation }) => {
                                                 setOpen={open =>
                                                     setneckStates(prevState => ({
                                                         ...prevState,
-                                                        neckOpen: open
+                                                        neckOpen: open,
                                                     }))
                                                 }
                                                 // setValue={callback => {
@@ -1461,7 +1561,7 @@ const NewJob = ({ navigation }) => {
                                                 //     handleInputChange('joint_number', value); // Correct field updated
                                                 // }}
 
-                                                onSelectItem={(item) => {
+                                                onSelectItem={item => {
                                                     handleInputChange('neck', item.value);
                                                     NeckSelect(item.value);
                                                 }}
@@ -1469,21 +1569,12 @@ const NewJob = ({ navigation }) => {
                                                 style={styles.dropdownStyle}
                                                 textStyle={styles.dropdownTextStyle}
                                             />
-
                                         </View>
-
-
-
-
-
-
                                     </View>
                                 </View>
 
-
                                 <View style={{ ...styles.cardContainer, zIndex: 550 }}>
                                     <View style={styles.row}>
-
                                         <View style={styles.inputContainer}>
                                             <Text style={styles.dropdownHeader}>Tube Number</Text>
                                             <DropDownPicker
@@ -1502,19 +1593,14 @@ const NewJob = ({ navigation }) => {
                                                 //     handleInputChange('tube_number', value); // Correct field updated
                                                 // }}
 
-                                                onSelectItem={(item) => {
+                                                onSelectItem={item => {
                                                     handleInputChange('tube_number', item.value);
-
                                                 }}
-
-
                                                 placeholder="Tube Number" // Placeholder corrected
                                                 style={styles.dropdownStyle}
                                                 textStyle={styles.dropdownTextStyle}
                                             />
-
                                         </View>
-
 
                                         <View style={styles.inputContainer}>
                                             <Text style={styles.dropdownHeader}>Joint Number</Text>
@@ -1526,7 +1612,7 @@ const NewJob = ({ navigation }) => {
                                                 setOpen={open =>
                                                     setJointStates(prevState => ({
                                                         ...prevState,
-                                                        jointOpen: open
+                                                        jointOpen: open,
                                                     }))
                                                 }
                                                 // setValue={callback => {
@@ -1534,32 +1620,129 @@ const NewJob = ({ navigation }) => {
                                                 //     handleInputChange('joint_number', value); // Correct field updated
                                                 // }}
 
-                                                onSelectItem={(item) => {
+                                                onSelectItem={item => {
                                                     handleInputChange('joint_number', item.value);
                                                 }}
                                                 placeholder="Joint Number"
                                                 style={styles.dropdownStyle}
                                                 textStyle={styles.dropdownTextStyle}
                                             />
-
                                         </View>
                                     </View>
-
                                 </View>
+                                <View style={{ ...styles.cardContainer, zIndex: 525 }}>
+                                    <View style={styles.row}>
+                                        <View style={styles.inputContainer}>
+                                            <Text style={styles.dropdownHeader}>Assign Welder</Text>
+
+                                            {/* DropDownPicker for welder selection */}
+                                            <DropDownPicker
+                                                searchable={true}
+                                                open={open}
+                                                value={selectedWelder}
+                                                items={items}
+                                                setOpen={setOpen}
+                                                setValue={setSelectedWelder}
+                                                setItems={setItems}
+                                                placeholder="Select Welder"
+                                                style={styles.dropdownStyle}
+                                                textStyle={styles.dropdownTextStyle}
+                                            />
+                                        </View>
+
+                                        <TouchableOpacity
+                                            style={{
+                                                backgroundColor: BRAND,
+                                                height: HEIGHT * 0.05,
+                                                width: '40%',
+                                                paddingVertical: 15,
+                                                borderRadius: 8,
+                                                alignItems: 'center',
+                                                marginTop: 30,
+                                            }}
+                                            onPress={() => handleAdd()}>
+                                            <Text style={appStyles.submitButtonText}>Add</Text>
+                                        </TouchableOpacity>
 
 
+                                    </View>
+                                    <View
+                                        style={{
+                                            backgroundColor: 'white',
+                                            height: HEIGHT * 0.25,
+                                            width: '100%',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            borderWidth: 1,
+                                            borderColor: 'lightgray',
+                                            borderRadius: 5,
+                                            marginBottom: 10,
+                                            marginTop: 10
+                                        }}
+                                    >
+                                        <FlatList
+                                            data={formData.rows}
+                                            renderItem={
+                                                ({ item }) => (
+                                                    <View style={{
+                                                        width: '100%',
+                                                        alignSelf: 'center',
+                                                        backgroundColor: '#fff',
+                                                        marginVertical: 8,
+                                                        marginHorizontal: 16,
+                                                        borderRadius: 8,
+                                                        padding: 16,
+                                                        elevation: 3, // Adds shadow on Android
+                                                        shadowColor: '#000', // iOS shadow settings
+                                                        shadowOffset: { width: 0, height: 2 },
+                                                        shadowOpacity: 0.2,
+                                                        shadowRadius: 4,
+                                                    }}>
+                                                        <Text style={{
+                                                            fontSize: 14,
+                                                            marginBottom: 5,
+                                                            fontWeight: 'bold',
+                                                            color: '#333',
+                                                        }}>
+                                                            Welder Name: {item.welder_name}
+                                                        </Text>
+                                                        <Text style={{
+                                                            fontSize: 14,
+                                                            marginBottom: 5,
+                                                            fontWeight: 'bold',
+                                                            color: '#333',
+                                                        }}>
+                                                            Joint Number: {item.joint_number}
+                                                        </Text>
+                                                        <Text style={{
+                                                            fontSize: 14,
+                                                            marginBottom: 5,
+                                                            fontWeight: 'bold',
+                                                            color: '#333',
+                                                        }}>
+                                                            Tube Number: {item.tube_number}
+                                                        </Text>
+                                                    </View>
+                                                )
+                                            }
+                                        />
+
+                                    </View>
+                                </View>
 
                                 <View style={{ ...styles.cardContainer, zIndex: 500 }}>
                                     <View style={styles.row}>
-
-
-
                                         <View style={styles.inputContainer}>
                                             <Text style={styles.label}>Tube Joints</Text>
                                             <TextInput
                                                 style={styles.textInput}
                                                 value={`${formData.tube_number} ${formData.joint_number}`}
-                                                onChangeText={text => handleInputChange('tube_joints', `${formData.tube_number} ${formData.joint_number}`)}
+                                                onChangeText={text =>
+                                                    handleInputChange(
+                                                        'tube_joints',
+                                                        `${formData.tube_number} ${formData.joint_number}`,
+                                                    )
+                                                }
                                                 placeholder="Enter Tube Joints"
                                                 keyboardType="numeric"
                                                 editable={false}
@@ -1571,28 +1754,30 @@ const NewJob = ({ navigation }) => {
                                             <TextInput
                                                 style={[styles.textInput, styles.disabledInput]}
                                                 value={`${formData.area} ${formData.hanger_number} ${formData.panel_number} ${formData.row_number} ${formData.coil_number} ${formData.wall_blower} ${formData.elevation} ${formData.panel} ${formData.neck}`}
-                                                onChangeText={text => handleInputChange('job_desc_number', `${formData.area} ${formData.hanger_number} ${formData.panel_number} ${formData.row_number} ${formData.coil_number} ${formData.wall_blower} ${formData.elevation} ${formData.panel} ${formData.neck}`)}
+                                                onChangeText={text =>
+                                                    handleInputChange(
+                                                        'job_desc_number',
+                                                        `${formData.area} ${formData.hanger_number} ${formData.panel_number} ${formData.row_number} ${formData.coil_number} ${formData.wall_blower} ${formData.elevation} ${formData.panel} ${formData.neck}`,
+                                                    )
+                                                }
                                                 editable={false} // Disabled field
                                             />
                                         </View>
-
                                     </View>
-
                                 </View>
 
-                                <View style={{ ...styles.inputContainer, width: '95%', }}>
+                                <View style={{ ...styles.inputContainer, width: '95%' }}>
                                     <Text style={styles.label}>Job Details</Text>
                                     <TextInput
                                         style={styles.textInput}
                                         value={formData.job_details}
-                                        onChangeText={text => handleInputChange('job_details', text)}
+                                        onChangeText={text =>
+                                            handleInputChange('job_details', text)
+                                        }
                                         placeholder="Enter Job Details"
                                         multiline
                                     />
                                 </View>
-
-
-
 
                                 {/* Checkbox Section */}
                                 <View style={styles.cardContainer}>
@@ -1609,7 +1794,10 @@ const NewJob = ({ navigation }) => {
                                             title="PAUT Required"
                                             checked={formData.paut_required}
                                             onPress={() =>
-                                                handleInputChange('paut_required', !formData.paut_required)
+                                                handleInputChange(
+                                                    'paut_required',
+                                                    !formData.paut_required,
+                                                )
                                             }
                                         />
                                     </View>
@@ -1618,12 +1806,7 @@ const NewJob = ({ navigation }) => {
                                 {/* Submit Button */}
                                 <TouchableOpacity
                                     style={appStyles.submitButton}
-                                    onPress={() =>
-                                        handleSubmit()
-
-
-
-                                    }>
+                                    onPress={() => handleSubmit()}>
                                     <Text style={appStyles.submitButtonText}>Submit</Text>
                                 </TouchableOpacity>
                             </View>
@@ -1643,8 +1826,7 @@ const NewJob = ({ navigation }) => {
                     </View>
                 </Modal>
             </SafeAreaView>
-        </View >
-
+        </View>
     );
 };
 
@@ -1730,6 +1912,5 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
     },
 });
-
 
 export default NewJob;
