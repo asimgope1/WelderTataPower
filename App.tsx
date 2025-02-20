@@ -1,10 +1,10 @@
 import React from 'react';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import Navigation from './src/navigation/Navigation';
 
 const App = () => {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{flex: 1}}>
       <Navigation />
     </GestureHandlerRootView>
   );
