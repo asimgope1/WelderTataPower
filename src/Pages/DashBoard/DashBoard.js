@@ -159,11 +159,8 @@ const DashBoard = ({navigation}) => {
     }
   }, [isModalVisible, selectedItem]);
 
-  // Render Stats Cards
   const renderStatsCards = () => {
     if (!dashboardData) return null;
-
-    // console.log('dashboardData', dashboardData);
 
     return (
       <View style={styles.statsContainer}>
@@ -192,8 +189,7 @@ const DashBoard = ({navigation}) => {
                 >
                   {item.name}
                 </Text>
-                <Text style={styles.statsFigure}>{item.count}</Text>{' '}
-                {/* Displaying count instead of figure */}
+                <Text style={styles.statsFigure}>{item.count}</Text>
               </View>
             </TouchableOpacity>
           )}
@@ -586,12 +582,8 @@ const DashBoard = ({navigation}) => {
                 </View>
               </LinearGradient>
 
-              {/* Stats Cards Section */}
               {renderStatsCards()}
 
-              {/* table to be build */}
-
-              {/* Units Pie Chart */}
               <View style={styles.chartContainer}>
                 <View
                   style={{
@@ -611,7 +603,6 @@ const DashBoard = ({navigation}) => {
                     Job Status Overview
                   </Text>
                 </View>
-                {/* {renderStatusPieChart()} */}
                 {renderwelderCountTable()}
 
                 {rendercomponentCount()}

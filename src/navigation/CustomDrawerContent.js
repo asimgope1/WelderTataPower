@@ -155,7 +155,7 @@ const CustomDrawerContent = props => {
   const handleLogout = async () => {
     await AsyncStorage.clear();
     navigation.navigate('LoginStack');
-    // dispatch(checkuserToken())
+    // dispatch(checkuserToken());
     alert('Logout Successfully. Please reload the app to log in again.');
   };
 

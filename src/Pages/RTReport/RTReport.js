@@ -1033,119 +1033,124 @@ const RTReport = ({navigation}) => {
         transparent={true}
         onRequestClose={() => SetApprovemodalVisible(false)}>
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Verify Report</Text>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.modalContainer}>
+            <ScrollView
+              contentContainerStyle={{flexGrow: 1}}
+              keyboardShouldPersistTaps="handled">
+              <Text style={styles.modalTitle}>Verify Report</Text>
 
-            {/* Input for Report Number */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Report Number:</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="Enter Report Number"
-                value={reportNumber}
-                onChangeText={text => setReportNumber(text)}
-              />
-            </View>
-
-            {/* Input for Report Date */}
-            <TouchableOpacity
-              onPress={() => {
-                setShowModal(true);
-              }}
-              style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Report Date:</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="Enter Report Date (YYYY-MM-DD)"
-                value={reportDate}
-                onChangeText={text => setReportDate(text)}
-                editable={false}
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={{
-                backgroundColor: 'gray',
-                padding: 10,
-                flexDirection: 'row',
-                alignItems: 'center',
-              }}
-              onPress={handleFilePick}>
-              <Text style={{color: 'white', fontSize: 16, fontWeight: 'bold'}}>
-                Attach File
-              </Text>
-              <Icon name="attachment" size={25} style={{marginLeft: 10}} />
-            </TouchableOpacity>
-
-            {selectedFile && (
-              <View style={styles.previewContainer}>
-                <Text style={styles.previewText}>Selected File:</Text>
-                <Text style={styles.previewText}>
-                  Name: {selectedFile.name}
-                </Text>
+              {/* Input for Report Number */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Report Number:</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Enter Report Number"
+                  value={reportNumber}
+                  onChangeText={text => setReportNumber(text)}
+                />
               </View>
-            )}
 
-            {/* DropDownPicker for Defect Type */}
-            <DropDownPicker
-              searchable={true}
-              open={DefectOpen}
-              value={selectedDefect}
-              items={DefectItems}
-              setOpen={setDefectOpen}
-              setValue={setSelectedDefect}
-              setItems={setDefectItems}
-              placeholder="Select Defect Type"
-              style={{...styles.dropdown, zIndex: 1000, marginTop: 10}}
-              dropDownContainerStyle={styles.dropdownContainer}
-            />
+              {/* Input for Report Date */}
+              <TouchableOpacity
+                onPress={() => setShowModal(true)}
+                style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Report Date:</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Enter Report Date (YYYY-MM-DD)"
+                  value={reportDate}
+                  onChangeText={text => setReportDate(text)}
+                  editable={false}
+                />
+              </TouchableOpacity>
 
-            {/* DropDownPicker for Job Status */}
-            <DropDownPicker
-              searchable={true}
-              open={JobStatusOpen}
-              value={selectedJobStatus}
-              items={JobStatusItems}
-              setOpen={setJobStatusOpen}
-              setValue={setSelectedJobStatus}
-              setItems={setJobStatusItems}
-              placeholder="Select Job-Status"
-              style={{...styles.dropdown, zIndex: 900}}
-              dropDownContainerStyle={styles.dropdownContainer}
-            />
+              {/* Attach File Button */}
+              <TouchableOpacity
+                style={{
+                  backgroundColor: 'gray',
+                  padding: 10,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}
+                onPress={handleFilePick}>
+                <Text
+                  style={{color: 'white', fontSize: 16, fontWeight: 'bold'}}>
+                  Attach File
+                </Text>
+                <Icon name="attachment" size={25} style={{marginLeft: 10}} />
+              </TouchableOpacity>
 
-            <View style={{...styles.inputContainer}}>
-              <Text style={styles.inputLabel}>Remarks:</Text>
-              <TextInput
-                style={{...styles.textInput, height: HEIGHT * 0.15}}
-                placeholder="Enter Remarks"
-                value={remarks}
-                onChangeText={text => setRemarks(text)}
+              {selectedFile && (
+                <View style={styles.previewContainer}>
+                  <Text style={styles.previewText}>Selected File:</Text>
+                  <Text style={styles.previewText}>
+                    Name: {selectedFile.name}
+                  </Text>
+                </View>
+              )}
+
+              {/* DropDownPicker for Defect Type */}
+              <DropDownPicker
+                searchable={true}
+                open={DefectOpen}
+                value={selectedDefect}
+                items={DefectItems}
+                setOpen={setDefectOpen}
+                setValue={setSelectedDefect}
+                setItems={setDefectItems}
+                placeholder="Select Defect Type"
+                style={{...styles.dropdown, zIndex: 1000, marginTop: 10}}
+                dropDownContainerStyle={styles.dropdownContainer}
               />
-            </View>
 
-            {/* Checkbox */}
-            <CheckBox
-              title="Check Shot"
-              checked={isChecked}
-              onPress={handleCheckBoxPress}
-            />
-            <CheckBox
-              title="Assigned Welder"
-              checked={isCheck}
-              onPress={handleCheckBoxPres}
-            />
+              {/* DropDownPicker for Job Status */}
+              <DropDownPicker
+                searchable={true}
+                open={JobStatusOpen}
+                value={selectedJobStatus}
+                items={JobStatusItems}
+                setOpen={setJobStatusOpen}
+                setValue={setSelectedJobStatus}
+                setItems={setJobStatusItems}
+                placeholder="Select Job-Status"
+                style={{...styles.dropdown, zIndex: 900}}
+                dropDownContainerStyle={styles.dropdownContainer}
+              />
 
-            {/* File Selection */}
+              {/* Remarks Input */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Remarks:</Text>
+                <TextInput
+                  style={{...styles.textInput, height: HEIGHT * 0.15}}
+                  placeholder="Enter Remarks"
+                  value={remarks}
+                  onChangeText={text => setRemarks(text)}
+                  multiline
+                />
+              </View>
 
-            {/* Buttons */}
-            <View
-              style={{
-                flexDirection: 'row',
-                width: '100%',
-                justifyContent: 'space-evenly',
-              }}>
-              <View style={styles.buttonContainer}>
+              {/* Checkboxes */}
+              <CheckBox
+                title="Check Shot"
+                checked={isChecked}
+                onPress={handleCheckBoxPress}
+              />
+              <CheckBox
+                title="Assigned Welder"
+                checked={isCheck}
+                onPress={handleCheckBoxPres}
+              />
+
+              {/* Buttons */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  width: '100%',
+                  justifyContent: 'space-evenly',
+                  marginTop: 20,
+                }}>
                 <TouchableOpacity
                   style={[styles.actionButton, styles.cancelButton]}
                   onPress={() => {
@@ -1156,19 +1161,15 @@ const RTReport = ({navigation}) => {
                   }}>
                   <Text style={styles.buttonText}>Cancel</Text>
                 </TouchableOpacity>
-              </View>
 
-              <View style={styles.buttonContainer}>
                 <TouchableOpacity
                   style={[styles.actionButton, styles.submitButton]}
-                  onPress={() => {
-                    handleApproveAll();
-                  }}>
+                  onPress={handleApproveAll}>
                   <Text style={styles.buttonText}>Submit</Text>
                 </TouchableOpacity>
               </View>
-            </View>
-          </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
 
@@ -1393,7 +1394,7 @@ const RTReport = ({navigation}) => {
                 flexDirection: 'row',
                 width: '100%',
                 justifyContent: 'space-evenly',
-                height:HEIGHT*0.7
+                height: HEIGHT * 0.7,
               }}>
               <View style={styles.buttonContainer}>
                 <TouchableOpacity
@@ -1519,10 +1520,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9',
   },
   buttonContainer: {
+    height: 80,
+    padding: 15,
+    marginBottom: 50,
     marginTop: 20,
     flexDirection: 'row',
     justifyContent: 'center',
-   
   },
   actionButton: {
     paddingVertical: 12,
