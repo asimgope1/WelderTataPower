@@ -402,7 +402,7 @@ const RTReport = ({navigation}) => {
         // Create a FormData object and append necessary fields
         const formData = new FormData();
         formData.append('sl', SelectedJob);
-        formData.append('report_number', reportNumber);
+        formData.append('report_number', selectedReport);
         formData.append('report_date', startDate);
         // Append the selected file to the form data
         formData.append('file', {
@@ -430,6 +430,7 @@ const RTReport = ({navigation}) => {
         if (result.status === 'error') {
           setReportDate('');
           setReportNumber('');
+          setSelectedReport(null);
           setSelectedFile(null);
           fetchData();
           alert(`Error: ${result.errors.error || result.message}`);
@@ -438,6 +439,7 @@ const RTReport = ({navigation}) => {
           fetchData();
           setReportDate('');
           setReportNumber('');
+          setSelectedReport(null);
           setSelectedFile(null);
         }
       } catch (error) {
@@ -522,15 +524,15 @@ const RTReport = ({navigation}) => {
 
   const handleApproveAll = async () => {
     if (selectedJobs.length > 0) {
-      console.log('selectedJobs', selectedJobs);
+      console.log('selectedJobs', selectedReport);
 
       // Prepare the form data for the API
       const formData = new FormData();
       formData.append('sl', JSON.stringify(selectedJobs)); // Send jobslArray as a stringified array
 
-      formData.append('report_number', reportNumber);
-      formData.append('report_date', reportDate);
-      formData.append('file', selectedFile); // Assuming selectedFile is a File object
+      formData.append('report_number', selectedReport);
+      // formData.append('report_date', reportDate);
+      // formData.append('file', selectedFile); // Assuming selectedFile is a File object
       formData.append('defect_type', selectedDefect);
       formData.append('job_status', selectedJobStatus); // Example value
       formData.append('remarks', remarks); // Example value
@@ -563,6 +565,7 @@ const RTReport = ({navigation}) => {
           setSelectedJobStatus(null);
           setReportDate('');
           setReportNumber('');
+          setSelectedReport(null);
           setRemarks('');
           setIsChecked(false);
           setIsCheck(false);
@@ -578,6 +581,7 @@ const RTReport = ({navigation}) => {
           setSelectedJobStatus(null);
           setReportDate('');
           setReportNumber('');
+          setSelectedReport(null);
           setRemarks('');
           setIsChecked(false);
           setIsCheck(false);
@@ -701,63 +705,100 @@ const RTReport = ({navigation}) => {
     }
   };
 
-  const renderItem = ({item}) => (
-    <View
-      style={{
-        padding: 15,
-        marginVertical: 8,
-        marginHorizontal: 10,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: '#ddd',
-        elevation: 5,
-        backgroundColor: 'white',
-        borderLeftWidth: 4,
-        borderLeftColor: 'orange',
-      }}>
-      {/* Checkbox for individual selection */}
-      <CheckBox
-        checked={selectedJobs.includes(item.sl)} // Check if the job is selected
-        onPress={() => toggleJobSelection(item.sl)} // Toggle individual selection
-        style={{marginRight: 10}}
-      />
+  const renderItem = ({item}) => {
+    let status = item.status;
+    // console.log('item status: ', item);
 
-      {/* Job Details */}
-      <Text style={{fontSize: 16, fontWeight: 'bold', color: '#333'}}>
-        Job Number: {item.job_number}
-      </Text>
-      <Text style={{fontSize: 16, fontWeight: 'bold', color: '#333'}}>
-        Component Name: {item.component_name}
-      </Text>
-      <Text style={{fontSize: 16, fontWeight: 'bold', color: '#333'}}>
-        Unit Number: {item.unit_number}
-      </Text>
-      <Text style={{fontSize: 16, fontWeight: 'bold', color: '#333'}}>
-        Tube Joints: {item.tube_joints}
-      </Text>
-      <Text style={{fontSize: 16, fontWeight: 'bold', color: '#333'}}>
-        Job Description Number: {item.job_desc_number}
-      </Text>
-      <Text style={{fontSize: 16, fontWeight: 'bold', color: '#333'}}>
-        Job Offer Date: {item.job_offer_date}
-      </Text>
-
-      <TouchableOpacity
-        onPress={() => {
-          setSelectedJob(item.sl);
-          setModalVisible(true);
-        }}
+    return (
+      <View
         style={{
-          backgroundColor: 'green',
-          paddingVertical: 10,
-          paddingHorizontal: 25,
-          borderRadius: 5,
-          marginTop: 10,
+          padding: 15,
+          marginVertical: 8,
+          marginHorizontal: 10,
+          borderRadius: 8,
+          borderWidth: 1,
+          borderColor: '#ddd',
+          elevation: 5,
+          backgroundColor: 'white',
+          borderLeftWidth: 4,
+          borderLeftColor: 'orange',
+          marginBottom: 10,
         }}>
-        <Text style={styles.buttonText}>Submit</Text>
-      </TouchableOpacity>
-    </View>
-  );
+        {/* Checkbox for individual selection */}
+        <CheckBox
+          checked={selectedJobs.includes(item.sl)} // Check if the job is selected
+          onPress={() => toggleJobSelection(item.sl)} // Toggle individual selection
+          style={{marginRight: 10}}
+        />
+
+        {/* Job Details */}
+        <Text
+          style={{fontSize: 16, color: '#333'}}
+          numberOfLines={1}
+          ellipsizeMode="tail">
+          <Text style={{fontWeight: 'bold'}}>Job Number:</Text>{' '}
+          {item.job_number}
+        </Text>
+        <Text
+          style={{fontSize: 16, color: '#333'}}
+          numberOfLines={1}
+          ellipsizeMode="tail">
+          <Text style={{fontWeight: 'bold'}}>Component Name:</Text>{' '}
+          {item.component_name}
+        </Text>
+        <Text
+          style={{fontSize: 16, color: '#333'}}
+          numberOfLines={1}
+          ellipsizeMode="tail">
+          <Text style={{fontWeight: 'bold'}}>Unit Number:</Text>{' '}
+          {item.unit_number}
+        </Text>
+        <Text
+          style={{fontSize: 16, color: '#333'}}
+          numberOfLines={1}
+          ellipsizeMode="tail">
+          <Text style={{fontWeight: 'bold'}}>Tube Joints:</Text>{' '}
+          {item.tube_joints}
+        </Text>
+        <Text
+          style={{fontSize: 16, color: '#333'}}
+          numberOfLines={1}
+          ellipsizeMode="tail">
+          <Text style={{fontWeight: 'bold'}}>Job Description Number:</Text>{' '}
+          {item.job_desc_number}
+        </Text>
+        <Text
+          style={{fontSize: 16, color: '#333'}}
+          numberOfLines={1}
+          ellipsizeMode="tail">
+          <Text style={{fontWeight: 'bold'}}>Job Offer Date:</Text>{' '}
+          {item.job_offer_date}
+        </Text>
+        <Text
+          style={{fontSize: 16, color: '#333'}}
+          numberOfLines={1}
+          ellipsizeMode="tail">
+          <Text style={{fontWeight: 'bold'}}>RT-Number & Date :</Text>{' '}
+          {item.report_no} : {item.report_date}
+        </Text>
+
+        <TouchableOpacity
+          onPress={() => {
+            setSelectedJob(item.sl);
+            setModalVisible(true);
+          }}
+          style={{
+            backgroundColor: status === 'Old' ? 'red' : 'green',
+            paddingVertical: 10,
+            paddingHorizontal: 25,
+            borderRadius: 5,
+            marginTop: 10,
+          }}>
+          <Text style={styles.buttonText}>Submit</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   return (
     <Fragment>
@@ -924,7 +965,7 @@ const RTReport = ({navigation}) => {
                     data={data}
                     keyExtractor={(item, index) => index.toString()}
                     renderItem={renderItem}
-                    ListFooterComponent={<View style={{height: 100}} />}
+                    ListFooterComponent={<View style={{height: 150}} />}
                     ListEmptyComponent={
                       <View
                         style={{
@@ -1037,6 +1078,7 @@ const RTReport = ({navigation}) => {
                   onPress={() => {
                     setReportDate('');
                     setReportNumber('');
+                    setSelectedReport(null);
                     setSelectedFile(null);
                     setFilterCriteria('');
                     setSelectedUnit(null);
@@ -1200,6 +1242,7 @@ const RTReport = ({navigation}) => {
                   style={[styles.actionButton, styles.cancelButton]}
                   onPress={() => {
                     setReportNumber('');
+                    setSelectedReport(null);
                     setReportDate('');
                     setSelectedFile(null);
                     SetApprovemodalVisible(false);
