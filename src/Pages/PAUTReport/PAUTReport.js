@@ -42,6 +42,11 @@ const PAUTReport = ({navigation}) => {
   const [DefectOpen, setDefectOpen] = useState(false);
   const [selectedDefect, setSelectedDefect] = useState(null);
   const [DefectItems, setDefectItems] = useState([]);
+
+  const [ReportOpen, setReportOpen] = useState(false);
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [ReportItems, setReportItems] = useState([]);
+
   const [JobStatusOpen, setJobStatusOpen] = useState(false);
   const [selectedJobStatus, setSelectedJobStatus] = useState(null);
   const [JobStatusItems, setJobStatusItems] = useState([]);
@@ -433,6 +438,7 @@ const PAUTReport = ({navigation}) => {
   useEffect(() => {
     // Fetch defect types and job statuses when the modal is mounted
     GetDefectStatus();
+    GetReportNumber();
   }, []);
 
   const GetDefectStatus = async () => {
@@ -449,6 +455,26 @@ const PAUTReport = ({navigation}) => {
 
         setDefectItems(defect_type.map(item => ({label: item, value: item})));
         setJobStatusItems(status.map(item => ({label: item, value: item})));
+      } else {
+        console.error('Failed to fetch data:', result.errors || result.message);
+      }
+    } catch (error) {
+      console.error('Error fetching defect and status data:', error);
+    }
+  };
+
+  const GetReportNumber = async () => {
+    try {
+      const url = `${BAS_URL}welding/api/v1/get-report-numbers/`;
+      const result = await GETNETWORK(url, true);
+
+      if (result.status === 'success' && result.data?.length > 0) {
+        // Convert the data array into the format DropDownPicker requires
+        const formattedData = result.data.map(item => ({
+          label: item, // Display text
+          value: item, // Internal value
+        }));
+        setReportItems(formattedData);
       } else {
         console.error('Failed to fetch data:', result.errors || result.message);
       }
@@ -1282,16 +1308,22 @@ const PAUTReport = ({navigation}) => {
               {/* Input for Report Number */}
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Report Number:</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Enter Report Number"
-                  value={reportNumber}
-                  onChangeText={text => setReportNumber(text)}
+                <DropDownPicker
+                  searchable={true}
+                  open={ReportOpen}
+                  value={selectedReport}
+                  items={ReportItems}
+                  setOpen={setReportOpen}
+                  setValue={setSelectedReport}
+                  setItems={setReportItems}
+                  placeholder="Select Report Number"
+                  style={{...styles.dropdown, zIndex: 1000, marginTop: 10}}
+                  dropDownContainerStyle={styles.dropdownContainer}
                 />
               </View>
 
               {/* Input for Report Date */}
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 onPress={() => {
                   setShowModal(true);
                 }}
@@ -1304,9 +1336,9 @@ const PAUTReport = ({navigation}) => {
                   onChangeText={text => setReportDate(text)}
                   editable={false}
                 />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
 
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={{
                   backgroundColor: 'gray',
                   padding: 10,
@@ -1319,8 +1351,8 @@ const PAUTReport = ({navigation}) => {
                   Attach File
                 </Text>
                 <Icon name="attachment" size={25} style={{marginLeft: 10}} />
-              </TouchableOpacity>
-
+              </TouchableOpacity> */}
+              {/* 
               {selectedFile && (
                 <View style={styles.previewContainer}>
                   <Text style={styles.previewText}>Selected File:</Text>
@@ -1328,7 +1360,7 @@ const PAUTReport = ({navigation}) => {
                     Name: {selectedFile.name}
                   </Text>
                 </View>
-              )}
+              )} */}
 
               {/* DropDownPicker for Defect Type */}
               <DropDownPicker

@@ -31,6 +31,7 @@ import {
 import {Calendar} from 'react-native-calendars';
 import {getObjByKey} from '../../utils/Storage';
 import {useFocusEffect} from '@react-navigation/native';
+import {Loader} from '../../components/Loader';
 
 const RTReport = ({navigation}) => {
   const [data, setData] = useState([]);
@@ -51,6 +52,11 @@ const RTReport = ({navigation}) => {
   const [DefectOpen, setDefectOpen] = useState(false);
   const [selectedDefect, setSelectedDefect] = useState(null);
   const [DefectItems, setDefectItems] = useState([]);
+
+  const [ReportOpen, setReportOpen] = useState(false);
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [ReportItems, setReportItems] = useState([]);
+
   const [JobStatusOpen, setJobStatusOpen] = useState(false);
   const [selectedJobStatus, setSelectedJobStatus] = useState(null);
   const [JobStatusItems, setJobStatusItems] = useState([]);
@@ -189,10 +195,12 @@ const RTReport = ({navigation}) => {
     setSelectedWelder(null);
     const fetchData = async () => {
       try {
+        setLoading(true);
         const url = `${BAS_URL}welding/api/v1/query/filters/`;
         const response = await GETNETWORK(url, true); // Use GETNETWORK instead of fetch
 
         if (response.status === 'success') {
+          setLoading(true);
           // Update state with API data
           setUnitItems(
             response.data.unit.map(([id, label]) => ({label, value: id})),
@@ -259,10 +267,13 @@ const RTReport = ({navigation}) => {
               value: neck,
             })),
           );
+          setLoading(false);
         } else {
+          setLoading(false);
           console.log('Error fetching data:', response.message);
         }
       } catch (error) {
+        setLoading(false);
         console.error('Error fetching data:', error);
       }
     };
@@ -286,6 +297,7 @@ const RTReport = ({navigation}) => {
       setSelectedWelder(null);
 
       const fetchData = async () => {
+        setLoading(true);
         try {
           await GetToken(); // Assuming GetToken() is an async function
 
@@ -293,6 +305,7 @@ const RTReport = ({navigation}) => {
           const response = await GETNETWORK(url, true); // Use GETNETWORK instead of fetch
 
           if (response.status === 'success') {
+            setLoading(true);
             // Update state with API data
             setUnitItems(
               response.data.unit.map(([id, label]) => ({label, value: id})),
@@ -345,11 +358,14 @@ const RTReport = ({navigation}) => {
                 value: id,
               })),
             );
+            setLoading(false);
           } else {
             console.log('Error fetching data:', response.message);
+            setLoading(false);
           }
         } catch (error) {
           console.error('Error fetching data:', error);
+          setLoading(false);
         }
       };
 
@@ -455,6 +471,7 @@ const RTReport = ({navigation}) => {
     GETNETWORK(finalUrl, true)
       .then(response => {
         if (response.status === 'success') {
+          setLoading(false);
           setData(response.data);
           console.log('RTReport', response);
 
@@ -578,6 +595,7 @@ const RTReport = ({navigation}) => {
   useEffect(() => {
     // Fetch defect types and job statuses when the modal is mounted
     GetDefectStatus();
+    GetReportNumber();
   }, []);
 
   const GetDefectStatus = async () => {
@@ -594,6 +612,26 @@ const RTReport = ({navigation}) => {
 
         setDefectItems(defect_type.map(item => ({label: item, value: item})));
         setJobStatusItems(status.map(item => ({label: item, value: item})));
+      } else {
+        console.error('Failed to fetch data:', result.errors || result.message);
+      }
+    } catch (error) {
+      console.error('Error fetching defect and status data:', error);
+    }
+  };
+
+  const GetReportNumber = async () => {
+    try {
+      const url = `${BAS_URL}welding/api/v1/get-report-numbers/`;
+      const result = await GETNETWORK(url, true);
+
+      if (result.status === 'success' && result.data?.length > 0) {
+        // Convert the data array into the format DropDownPicker requires
+        const formattedData = result.data.map(item => ({
+          label: item, // Display text
+          value: item, // Internal value
+        }));
+        setReportItems(formattedData);
       } else {
         console.error('Failed to fetch data:', result.errors || result.message);
       }
@@ -744,7 +782,8 @@ const RTReport = ({navigation}) => {
             />
 
             {loading ? (
-              <ActivityIndicator size="large" color={BRAND} />
+              // <ActivityIndicator size="large" color={BRAND} />
+              <></>
             ) : (
               <>
                 {/* filter here for calling the list api  */}
@@ -914,10 +953,10 @@ const RTReport = ({navigation}) => {
         onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalBackdrop}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Verify Report</Text>
+            {/* <Text style={styles.modalTitle}>Verify Report</Text> */}
 
             {/* Input for Report Number */}
-            <View style={styles.inputContainer}>
+            {/* <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Report Number:</Text>
               <TextInput
                 style={styles.textInput}
@@ -925,10 +964,10 @@ const RTReport = ({navigation}) => {
                 value={reportNumber} // State value for report number
                 onChangeText={text => setReportNumber(text)} // Update state
               />
-            </View>
+            </View> */}
 
             {/* Input for Report Date */}
-            <TouchableOpacity
+            {/* <TouchableOpacity
               onPress={() => {
                 setShowModal(true);
               }}
@@ -941,11 +980,11 @@ const RTReport = ({navigation}) => {
                 onChangeText={text => setReportDate(text)} // Update state
                 editable={false}
               />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             {/* Input for Report Time */}
 
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={{
                 backgroundColor: GRAY,
                 padding: 10,
@@ -969,7 +1008,7 @@ const RTReport = ({navigation}) => {
                   marginLeft: 10,
                 }}
               />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             {selectedFile && (
               <View style={styles.previewContainer}>
@@ -1044,16 +1083,22 @@ const RTReport = ({navigation}) => {
               {/* Input for Report Number */}
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Report Number:</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Enter Report Number"
-                  value={reportNumber}
-                  onChangeText={text => setReportNumber(text)}
+                <DropDownPicker
+                  searchable={true}
+                  open={ReportOpen}
+                  value={selectedReport}
+                  items={ReportItems}
+                  setOpen={setReportOpen}
+                  setValue={setSelectedReport}
+                  setItems={setReportItems}
+                  placeholder="Select Report Number"
+                  style={{...styles.dropdown, zIndex: 1000, marginTop: 10}}
+                  dropDownContainerStyle={styles.dropdownContainer}
                 />
               </View>
 
               {/* Input for Report Date */}
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 onPress={() => setShowModal(true)}
                 style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Report Date:</Text>
@@ -1064,10 +1109,10 @@ const RTReport = ({navigation}) => {
                   onChangeText={text => setReportDate(text)}
                   editable={false}
                 />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
 
               {/* Attach File Button */}
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={{
                   backgroundColor: 'gray',
                   padding: 10,
@@ -1080,16 +1125,16 @@ const RTReport = ({navigation}) => {
                   Attach File
                 </Text>
                 <Icon name="attachment" size={25} style={{marginLeft: 10}} />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
 
-              {selectedFile && (
+              {/* {selectedFile && (
                 <View style={styles.previewContainer}>
                   <Text style={styles.previewText}>Selected File:</Text>
                   <Text style={styles.previewText}>
                     Name: {selectedFile.name}
                   </Text>
                 </View>
-              )}
+              )} */}
 
               {/* DropDownPicker for Defect Type */}
               <DropDownPicker
@@ -1468,6 +1513,7 @@ const RTReport = ({navigation}) => {
           <Calendar style={styles.calendar} onDayPress={handleDateSelect} />
         </View>
       </Modal>
+      <Loader visible={loading} />
     </Fragment>
   );
 };

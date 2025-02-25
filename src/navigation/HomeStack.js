@@ -1,7 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {createDrawerNavigator} from '@react-navigation/drawer';
-import {NavigationContainer} from '@react-navigation/native';
 import CustomDrawerContent from './CustomDrawerContent';
 import DashBoard from '../Pages/DashBoard/DashBoard';
 import Registration from '../Pages/Registratration/Registration';
@@ -17,6 +16,8 @@ import {WIDTH} from '../constants/config';
 import {useDispatch} from 'react-redux';
 import {checkuserToken} from '../redux/actions/auth';
 import QualityVerification from "../Pages/QualityVerification'/QualityVerification";
+import {clearAll, getObjByKey} from '../utils/Storage';
+import Login from '../Pages/Login/Login';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -26,7 +27,6 @@ const DrawerNavigator = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    // Fetch user details from storage
     const fetchUserDetails = async () => {
       const response = await getObjByKey('userDetails');
       if (response?.data_value?.length) {
@@ -38,8 +38,8 @@ const DrawerNavigator = () => {
   }, []);
 
   const handleSignOut = async () => {
-    await clearAll(); // Clear all stored data
-    dispatch(checkuserToken(false)); // Update auth state
+    await clearAll(); // Ensure async handling
+    dispatch(checkuserToken()); // Update auth state
   };
 
   return (
@@ -47,15 +47,13 @@ const DrawerNavigator = () => {
       initialRouteName="DashBoard"
       screenOptions={{
         headerShown: false,
-        drawerStyle: {
-          width: WIDTH,
-        },
+        drawerStyle: {width: WIDTH},
       }}
       drawerContent={props => (
         <CustomDrawerContent
           {...props}
           userDetails={userDetails}
-          onSignOut={handleSignOut} // Pass sign-out logic
+          onSignOut={handleSignOut}
         />
       )}>
       <Drawer.Screen name="DashBoard" component={DashBoard} />
@@ -77,20 +75,18 @@ const DrawerNavigator = () => {
 
 const HomeStack = () => {
   return (
-    <NavigationContainer independent={true}>
-      <Stack.Navigator initialRouteName="Drawer">
-        <Stack.Screen
-          name="Drawer"
-          component={DrawerNavigator}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="LoginStack"
-          component={LoginStack}
-          options={{headerShown: false}}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <Stack.Navigator initialRouteName="Drawer">
+      <Stack.Screen
+        name="Drawer"
+        component={DrawerNavigator}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name="LoginStack"
+        component={Login}
+        options={{headerShown: false}}
+      />
+    </Stack.Navigator>
   );
 };
 

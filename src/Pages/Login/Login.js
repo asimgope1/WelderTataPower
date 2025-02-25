@@ -60,8 +60,11 @@ const Login = ({navigation, route}) => {
     const unsubscribe = navigation.addListener('focus', () => {
       setPassword('');
       setEmail('');
+
+      // Reset the entire navigation stack
     });
-    return unsubscribe;
+
+    return unsubscribe; // Cleanup listener on unmount
   }, [navigation]);
 
   const handleLogin = () => {

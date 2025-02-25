@@ -46,6 +46,7 @@ const DashBoard = ({navigation}) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalData, setModalData] = useState(null); // Store API data for the modal
+  const dispatch = useDispatch();
 
   useFocusEffect(
     React.useCallback(() => {
@@ -77,9 +78,8 @@ const DashBoard = ({navigation}) => {
   };
 
   const handleLogout = async () => {
-    console.log('checking', checkuserToken);
-    await AsyncStorage.clear();
-    console.log('checked', checkuserToken);
+    clearAll(); // Clear all stored data
+    dispatch(checkuserToken());
 
     // navigation.navigate('LoginStack');
     alert('Logout Successfully. Please reload the app to log in again.');
@@ -597,7 +597,7 @@ const DashBoard = ({navigation}) => {
                   }}>
                   <Text
                     onPress={() => {
-                      handleLogout();
+                      // handleLogout();
                     }}
                     style={styles.tableTitle}>
                     Job Status Overview

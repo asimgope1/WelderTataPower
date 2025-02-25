@@ -9,7 +9,7 @@ import {BOLD, REGULAR, SEMIBOLD} from '../constants/fontfamily';
 import {RFValue} from 'react-native-responsive-fontsize';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useDispatch} from 'react-redux';
-import {getObjByKey} from '../utils/Storage';
+import {clearAll, getObjByKey} from '../utils/Storage';
 import {BAS_URL} from '../constants/url';
 import {GETNETWORK} from '../utils/Network';
 import {checkuserToken} from '../redux/actions/auth';
@@ -153,10 +153,19 @@ const CustomDrawerContent = props => {
   );
 
   const handleLogout = async () => {
-    await AsyncStorage.clear();
-    navigation.navigate('LoginStack');
-    // dispatch(checkuserToken());
-    alert('Logout Successfully. Please reload the app to log in again.');
+    try {
+      await AsyncStorage.clear(); // Ensure login data is fully removed
+
+      // Reset Redux state before switching stacks
+      // dispatch(checkuserToken());
+
+      // Reset navigation stack to prevent UI conflicts
+      navigation.navigate('LoginStack');
+
+      alert('Logout Successfully.');
+    } catch (error) {
+      console.error('Logout Error:', error);
+    }
   };
 
   return (
@@ -209,7 +218,11 @@ const CustomDrawerContent = props => {
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.navigationButton, styles.logoutButton]}
-          onPress={handleLogout}>
+          onPress={() => {
+            handleLogout();
+            // clearAll();
+            // dispatch(checkuserToken());
+          }}>
           <Text style={styles.navigationButtonText}>Logout</Text>
         </TouchableOpacity>
       </View>
