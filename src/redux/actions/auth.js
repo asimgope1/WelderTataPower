@@ -1,11 +1,15 @@
-import { getObjByKey } from '../../utils/Storage';
-import { AUTH_STATUS } from '../types';
+import {getObjByKey} from '../../utils/Storage';
+import {AUTH_STATUS} from '../types';
 
 export const checkuserToken = () => {
-  return async (dispatch) => {
+  console.log('herechek');
+  return async dispatch => {
     try {
       const res = await getObjByKey('loginResponse');
       if (res) {
+        console.log(dispatch);
+        debugger;
+
         dispatch({
           type: AUTH_STATUS,
           payload: true,

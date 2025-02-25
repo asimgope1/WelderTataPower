@@ -17,7 +17,7 @@ import {HEIGHT, MyStatusBar, WIDTH} from '../../constants/config';
 import {BLACK, BLUE, BRAND, GRAY, WHITE} from '../../constants/color';
 import {appStyles} from '../../styles/AppStyles';
 import LinearGradient from 'react-native-linear-gradient';
-import {RFValue} from 'react-native-responsive-fontsize';
+import {RFPercentage, RFValue} from 'react-native-responsive-fontsize';
 import Header from '../../components/Header';
 import {Icon} from 'react-native-elements';
 import {BAS_URL} from '../../constants/url';
@@ -34,6 +34,9 @@ import {Loader} from '../../components/Loader';
 import {getObjByKey, storeObjByKey} from '../../utils/Storage';
 import {PieChart} from 'react-native-chart-kit';
 import {white} from 'react-native-paper/lib/typescript/styles/themes/v2/colors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useDispatch} from 'react-redux';
+import {checkuserToken} from '../../redux/actions/auth';
 
 const DashBoard = ({navigation}) => {
   const [JobList, SetJobList] = useState([]);
@@ -73,6 +76,14 @@ const DashBoard = ({navigation}) => {
     });
   };
 
+  const handleLogout = async () => {
+    console.log('checking', checkuserToken);
+    await AsyncStorage.clear();
+    console.log('checked', checkuserToken);
+
+    // navigation.navigate('LoginStack');
+    alert('Logout Successfully. Please reload the app to log in again.');
+  };
   // Fetch Dashboard Data
   const GetDashboard = () => {
     const url = `${BAS_URL}welding/api/v1/dashboard/`;
@@ -111,8 +122,8 @@ const DashBoard = ({navigation}) => {
   };
   // Fetch job status details
   const fetchJobStatusDetails = async name => {
-    // setIsLoading(true);
-    console.log('name is here', name);
+    console.log('Fetching details for:', name);
+
     const myHeaders = new Headers();
     myHeaders.append('Authorization', `Token ${Token}`);
 
@@ -122,24 +133,37 @@ const DashBoard = ({navigation}) => {
       redirect: 'follow',
     };
 
-    fetch(
-      `${BAS_URL}welding/api/v1/job-status-details/?job_status=${name}`,
-      requestOptions,
-    )
-      .then(response => response.json())
-      .then(result => {
-        setModalData(result.data);
-        // setIsLoading(false);
-        console.log(result);
-      })
-      .catch(error => console.error(error));
+    try {
+      const response = await fetch(
+        `${BAS_URL}welding/api/v1/job-status-details/?job_status=${name}`,
+        requestOptions,
+      );
+      const result = await response.json();
+
+      if (result.status === 'success' && Array.isArray(result.data)) {
+        setModalData(result.data.length > 0 ? result.data : []); // Ensure empty array is set
+      } else {
+        setModalData([]); // Handle unexpected API response
+      }
+
+      console.log('API Response:', result);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setModalData([]); // Set empty array on error
+    }
   };
+  useEffect(() => {
+    if (isModalVisible && selectedItem?.name) {
+      setModalData(null); // Reset data before fetching
+      fetchJobStatusDetails(selectedItem.name);
+    }
+  }, [isModalVisible, selectedItem]);
 
   // Render Stats Cards
   const renderStatsCards = () => {
     if (!dashboardData) return null;
 
-    console.log('dashboardData', dashboardData);
+    // console.log('dashboardData', dashboardData);
 
     return (
       <View style={styles.statsContainer}>
@@ -252,12 +276,9 @@ const DashBoard = ({navigation}) => {
           style={{
             fontWeight: 'bold',
             fontSize: 18,
-            marginBottom: 10,
+            // marginBottom: 10,
           }}>
-          Welder Count Table:{' '}
-          <Text style={{fontWeight: 'bold'}}>
-            {dashboardData.welder_count.length}
-          </Text>
+          Welder Count Table <Text style={{fontWeight: 'bold'}}></Text>
         </Text>
         <ScrollView horizontal style={styles.tableContainer}>
           <View style={styles.table}>
@@ -319,12 +340,9 @@ const DashBoard = ({navigation}) => {
           style={{
             fontWeight: 'bold',
             fontSize: 18,
-            marginBottom: 10,
           }}>
-          Component Count Table:{' '}
-          <Text style={{fontWeight: 'bold'}}>
-            {dashboardData.component_count.length}
-          </Text>
+          Component Count Table
+          <Text style={{fontWeight: 'bold'}}></Text>
         </Text>
 
         <ScrollView horizontal style={styles.tableContainer}>
@@ -392,10 +410,8 @@ const DashBoard = ({navigation}) => {
             fontSize: 18,
             marginBottom: 10,
           }}>
-          Unit Count Table:{' '}
-          <Text style={{fontWeight: 'bold'}}>
-            {dashboardData.unit_count.length}
-          </Text>
+          Unit Count Table
+          <Text style={{fontWeight: 'bold'}}></Text>
         </Text>
 
         <ScrollView horizontal style={styles.tableContainer}>
@@ -587,7 +603,13 @@ const DashBoard = ({navigation}) => {
                     justifyContent: 'center',
                     marginBottom: 10,
                   }}>
-                  <Text style={styles.tableTitle}>Job Status Overview</Text>
+                  <Text
+                    onPress={() => {
+                      handleLogout();
+                    }}
+                    style={styles.tableTitle}>
+                    Job Status Overview
+                  </Text>
                 </View>
                 {/* {renderStatusPieChart()} */}
                 {renderwelderCountTable()}
@@ -612,7 +634,10 @@ const DashBoard = ({navigation}) => {
             <View style={styles.modalContent}>
               <TouchableOpacity
                 style={styles.closeButton}
-                onPress={() => setIsModalVisible(false)}>
+                onPress={() => {
+                  setIsModalVisible(false);
+                  setModalData([]);
+                }}>
                 <Icon name="close" type="material" color="white" size={24} />
               </TouchableOpacity>
 
@@ -625,10 +650,17 @@ const DashBoard = ({navigation}) => {
               </Text>
 
               {/* Check if modalData exists and display FlatList */}
-              {modalData && modalData.length > 0 ? ( // Check if modalData exists and has data
+              {modalData === null ? (
+                <View style={styles.loaderContainer}>
+                  <ActivityIndicator size="large" color="blue" />
+                  <Text style={styles.loadingText}>Loading data...</Text>
+                </View>
+              ) : modalData.length > 0 ? (
                 <FlatList
                   data={modalData}
-                  keyExtractor={(item, index) => index.toString()}
+                  keyExtractor={(item, index) =>
+                    item.job_number || index.toString()
+                  }
                   renderItem={({item}) => (
                     <View style={styles.card}>
                       <Text style={styles.cardTitle}>
@@ -654,9 +686,8 @@ const DashBoard = ({navigation}) => {
                   contentContainerStyle={{padding: 10}}
                 />
               ) : (
-                <View style={styles.loaderContainer}>
-                  <ActivityIndicator size="large" color="blue" />
-                  <Text style={styles.loadingText}>Loading data...</Text>
+                <View style={styles.noDataContainer}>
+                  <Text style={styles.noDataText}>No Data Found</Text>
                 </View>
               )}
             </View>
@@ -764,7 +795,7 @@ const styles = StyleSheet.create({
   tableContainer: {
     width: WIDTH,
     paddingHorizontal: 10,
-    marginTop: 20,
+    // marginTop: 20,
     backgroundColor: WHITE,
     paddingBottom: 20,
     borderRadius: 10,
@@ -793,7 +824,7 @@ const styles = StyleSheet.create({
     fontSize: RFValue(10),
     color: BLACK,
     fontFamily: BOLD,
-    flex: 1,
+    // flex: 1,
     textAlign: 'center',
   },
   tableRow: {
@@ -807,7 +838,7 @@ const styles = StyleSheet.create({
     fontSize: RFValue(11),
     color: BLACK,
     fontFamily: REGULAR,
-    flex: 1,
+    // flex: 1,
     textAlign: 'center',
   },
   modalContainer: {
@@ -908,7 +939,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ccc', // Outer border for the table
     borderRadius: 8,
-    overflow: 'hidden',
+    // overflow: 'hidden',
   },
   tableRow: {
     flexDirection: 'row',
@@ -921,30 +952,38 @@ const styles = StyleSheet.create({
   tableCell: {
     // flex: 1,
     width: WIDTH * 0.4,
-    paddingVertical: 12,
-    paddingHorizontal: 15,
+    height: HEIGHT * 0.049,
+    // paddingVertical: 12,
+    // paddingHorizontal: 15,
     borderRightWidth: 1, // Vertical line between columns
     borderColor: '#ccc',
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 10,
   },
   headerCell: {
+    padding: 10,
     backgroundColor: '#007BFF', // Blue header cell
   },
   headerText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: RFPercentage(1.5),
+    fontFamily: BOLD,
+    // fontWeight: 'bold',
     textAlign: 'center',
   },
   cellText: {
-    fontSize: 14,
+    // fontSize: RFPercentage(0.7),
     color: '#333',
-    fontWeight: 'bold',
+    fontFamily: REGULAR,
+
     textAlign: 'center',
   },
   cellText: {
     textAlign: 'center',
+    fontSize: RFPercentage(1.5),
+    color: 'black',
+    fontFamily: BOLD,
   },
 });
 

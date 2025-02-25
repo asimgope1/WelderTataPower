@@ -283,12 +283,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-around',
-    paddingVertical: HEIGHT * 0.02,
+    paddingVertical: HEIGHT * 0.01,
   },
   menuItemContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: WIDTH * 0.28,
+    width: WIDTH * 0.25,
     margin: 10,
   },
   menuItem: {
