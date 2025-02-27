@@ -31,7 +31,7 @@ import {
   SEMIBOLD,
 } from '../../constants/fontfamily';
 import {Loader} from '../../components/Loader';
-import {getObjByKey, storeObjByKey} from '../../utils/Storage';
+import {clearAll, getObjByKey, storeObjByKey} from '../../utils/Storage';
 import {PieChart} from 'react-native-chart-kit';
 import {white} from 'react-native-paper/lib/typescript/styles/themes/v2/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -514,6 +514,9 @@ const DashBoard = ({navigation}) => {
                     marginBottom: 15,
                   }}>
                   <Text
+                    onPress={() => {
+                      console.log('item.namee', dashboardData?.stats[0]?.name);
+                    }}
                     style={{
                       fontSize: RFValue(13),
                       color: WHITE,
@@ -562,6 +565,9 @@ const DashBoard = ({navigation}) => {
                         paddingHorizontal: 10,
                       }}>
                       <Text
+                        onPress={() => {
+                          console.log('item.name', item.name);
+                        }}
                         style={{
                           fontSize: RFValue(9.5),
                           color: WHITE,
@@ -598,6 +604,8 @@ const DashBoard = ({navigation}) => {
                   <Text
                     onPress={() => {
                       // handleLogout();
+                      clearAll(); // Clear all stored data
+                      dispatch(checkuserToken());
                     }}
                     style={styles.tableTitle}>
                     Job Status Overview

@@ -26,6 +26,8 @@ import {CheckBox} from 'react-native-elements';
 import {Calendar} from 'react-native-calendars';
 import {useFocusEffect} from '@react-navigation/native';
 import {Loader} from '../../components/Loader';
+import {BOLD, REGULAR} from '../../constants/fontfamily';
+import {RFValue} from 'react-native-responsive-fontsize';
 
 const NewJob = ({navigation}) => {
   const resetForm = () => {
@@ -1719,13 +1721,21 @@ const NewJob = ({navigation}) => {
                         backgroundColor: BRAND,
                         height: HEIGHT * 0.05,
                         width: '40%',
-                        paddingVertical: 15,
+                        justifyContent: 'center',
+                        // paddingVertical: 15,
                         borderRadius: 8,
                         alignItems: 'center',
                         marginTop: 30,
                       }}
                       onPress={() => handleAdd()}>
-                      <Text style={appStyles.submitButtonText}>Add</Text>
+                      <Text
+                        style={{
+                          color: WHITE,
+                          fontSize: RFValue(14),
+                          fontFamily: REGULAR,
+                        }}>
+                        Add
+                      </Text>
                     </TouchableOpacity>
                   </View>
                   <View

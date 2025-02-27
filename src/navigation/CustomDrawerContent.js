@@ -36,6 +36,12 @@ const menuItems = [
     requiredPermission: 'add_tpuser',
   },
   {
+    name: 'RT-Report-Upload',
+    icon: 'receipt',
+    label: 'RT-Report-Upload',
+    requiredPermission: 'add_tpuser',
+  },
+  {
     name: 'New Job',
     icon: 'new-label',
     label: 'New Job',
@@ -157,12 +163,12 @@ const CustomDrawerContent = props => {
       await AsyncStorage.clear(); // Ensure login data is fully removed
 
       // Reset Redux state before switching stacks
-      // dispatch(checkuserToken());
+      dispatch(checkuserToken());
 
       // Reset navigation stack to prevent UI conflicts
-      navigation.navigate('LoginStack');
+      // navigation.navigate('LoginStack');
 
-      alert('Logout Successfully.');
+      alert('Logout Successfully');
     } catch (error) {
       console.error('Logout Error:', error);
     }
@@ -212,7 +218,7 @@ const CustomDrawerContent = props => {
           style={[styles.navigationButton, styles.homeButton]}
           onPress={() => {
             navigation.toggleDrawer();
-            navigation.navigate('DashBoard');
+            navigation.navigate('Home');
           }}>
           <Text style={styles.navigationButtonText}>Home</Text>
         </TouchableOpacity>
