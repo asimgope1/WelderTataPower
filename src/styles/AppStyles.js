@@ -78,5 +78,6 @@ export const appStyles = StyleSheet.create({
   submitButtonText: {
     fontSize: 18,
     color: WHITE,
+    
   },
 });
