@@ -129,6 +129,7 @@ import TPI from '../Pages/TPI/TPI';
 import FinalApproval from '../Pages/FinalApproval/FinalApproval';
 import {WIDTH} from '../constants/config';
 import RTReportUpload from '../Pages/RT-Report-Upload/RTReportUpload';
+import Joints from '../Pages/DashBoard/Joints';
 
 // Define Stack and Drawer Navigators
 const Stack = createNativeStackNavigator();
@@ -194,6 +195,7 @@ const MyDrawer: React.FC = () => {
       <Drawer.Screen name="TPI" component={TPI} />
       <Drawer.Screen name="Final Approval" component={FinalApproval} />
       <Drawer.Screen name="RT-Report-Upload" component={RTReportUpload} />
+      <Drawer.Screen name="Joints" component={Joints} />
     </Drawer.Navigator>
   );
 };

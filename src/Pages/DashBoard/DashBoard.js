@@ -138,6 +138,7 @@ const DashBoard = ({navigation}) => {
         `${BAS_URL}welding/api/v1/job-status-details/?job_status=${name}`,
         requestOptions,
       );
+      console.log('responseedd', JSON.stringify(response));
       const result = await response.json();
 
       if (result.status === 'success' && Array.isArray(result.data)) {
@@ -146,7 +147,7 @@ const DashBoard = ({navigation}) => {
         setModalData([]); // Handle unexpected API response
       }
 
-      console.log('API Response:', result);
+      console.log('API Response:', result.data.length);
     } catch (error) {
       console.error('Error fetching data:', error);
       setModalData([]); // Set empty array on error
@@ -494,7 +495,7 @@ const DashBoard = ({navigation}) => {
                 <View
                   style={{
                     width: '100%',
-                    height: '20%',
+                    height: '25%',
                     alignItems: 'flex-start',
                     padding: 10,
                   }}>
@@ -515,6 +516,9 @@ const DashBoard = ({navigation}) => {
                   }}>
                   <Text
                     onPress={() => {
+                      navigation.navigate('Joints', {
+                        name: dashboardData?.stats[0]?.name,
+                      });
                       console.log('item.namee', dashboardData?.stats[0]?.name);
                     }}
                     style={{
@@ -525,6 +529,12 @@ const DashBoard = ({navigation}) => {
                     {dashboardData?.stats[0]?.name}
                   </Text>
                   <Text
+                    onPress={() => {
+                      navigation.navigate('Joints', {
+                        name: dashboardData?.stats[0]?.name,
+                      });
+                      console.log('item.namee', dashboardData?.stats[0]?.name);
+                    }}
                     style={{
                       fontSize: RFValue(25),
                       color: WHITE,
@@ -566,6 +576,7 @@ const DashBoard = ({navigation}) => {
                       }}>
                       <Text
                         onPress={() => {
+                          navigation.navigate('Joints', {name: item.name});
                           console.log('item.name', item.name);
                         }}
                         style={{
@@ -576,6 +587,10 @@ const DashBoard = ({navigation}) => {
                         {item.name}
                       </Text>
                       <Text
+                        onPress={() => {
+                          navigation.navigate('Joints', {name: item.name});
+                          console.log('item.name', item.name);
+                        }}
                         style={{
                           fontSize: RFValue(10),
                           color: WHITE,
