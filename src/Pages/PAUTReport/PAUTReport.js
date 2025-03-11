@@ -42,6 +42,11 @@ const PAUTReport = ({navigation}) => {
   const [DefectOpen, setDefectOpen] = useState(false);
   const [selectedDefect, setSelectedDefect] = useState(null);
   const [DefectItems, setDefectItems] = useState([]);
+
+  const [ReportOpen, setReportOpen] = useState(false);
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [ReportItems, setReportItems] = useState([]);
+
   const [JobStatusOpen, setJobStatusOpen] = useState(false);
   const [selectedJobStatus, setSelectedJobStatus] = useState(null);
   const [JobStatusItems, setJobStatusItems] = useState([]);
@@ -300,14 +305,14 @@ const PAUTReport = ({navigation}) => {
         // Create a FormData object and append necessary fields
         const formData = new FormData();
         formData.append('sl', SelectedJob);
-        formData.append('report_number', reportNumber);
-        formData.append('report_date', startDate);
+        formData.append('report_number', selectedReport);
+        // formData.append('report_date', startDate);
         // Append the selected file to the form data
-        formData.append('file', {
-          uri: selectedFile.uri,
-          name: selectedFile.name,
-          type: selectedFile.type || 'application/octet-stream', // Default MIME type if not provided
-        });
+        // formData.append('file', {
+        //   uri: selectedFile.uri,
+        //   name: selectedFile.name,
+        //   type: selectedFile.type || 'application/octet-stream', // Default MIME type if not provided
+        // });
         console.log('formData', formData);
         // Construct request options
         const requestOptions = {
@@ -328,6 +333,7 @@ const PAUTReport = ({navigation}) => {
         if (result.status === 'error') {
           setReportDate('');
           setReportNumber('');
+          setSelectedReport(null);
           setSelectedFile(null);
           fetchData();
           alert(`Error: ${result.errors.error || result.message}`);
@@ -433,6 +439,7 @@ const PAUTReport = ({navigation}) => {
   useEffect(() => {
     // Fetch defect types and job statuses when the modal is mounted
     GetDefectStatus();
+    GetReportNumber();
   }, []);
 
   const GetDefectStatus = async () => {
@@ -457,6 +464,26 @@ const PAUTReport = ({navigation}) => {
     }
   };
 
+  const GetReportNumber = async () => {
+    try {
+      const url = `${BAS_URL}welding/api/v1/get-report-numbers/`;
+      const result = await GETNETWORK(url, true);
+
+      if (result.status === 'success' && result.data?.length > 0) {
+        // Convert the data array into the format DropDownPicker requires
+        const formattedData = result.data.map(item => ({
+          label: item, // Display text
+          value: item, // Internal value
+        }));
+        setReportItems(formattedData);
+      } else {
+        console.error('Failed to fetch data:', result.errors || result.message);
+      }
+    } catch (error) {
+      console.error('Error fetching defect and status data:', error);
+    }
+  };
+
   const handleApproveAll = async () => {
     if (selectedJobs.length > 0) {
       console.log('selectedJobs', selectedJobs);
@@ -465,9 +492,9 @@ const PAUTReport = ({navigation}) => {
       const formData = new FormData();
       formData.append('sl', JSON.stringify(selectedJobs)); // Send jobslArray as a stringified array
 
-      formData.append('report_number', reportNumber);
-      formData.append('report_date', reportDate);
-      formData.append('file', selectedFile); // Assuming selectedFile is a File object
+      formData.append('report_number', selectedReport);
+      // formData.append('report_date', reportDate);
+      // formData.append('file', selectedFile); // Assuming selectedFile is a File object
       formData.append('defect_type', selectedDefect);
       formData.append('job_status', selectedJobStatus); // Example value
       formData.append('remarks', remarks); // Example value
@@ -501,6 +528,7 @@ const PAUTReport = ({navigation}) => {
           setSelectedJobStatus(null);
           setReportDate('');
           setReportNumber('');
+          setSelectedReport(null);
           setRemarks('');
           setIsChecked(false);
           setIsCheck(false);
@@ -517,6 +545,7 @@ const PAUTReport = ({navigation}) => {
           setSelectedJobStatus(null);
           setReportDate('');
           setReportNumber('');
+          setSelectedReport(null);
           setRemarks('');
           setIsChecked(false);
           setIsCheck(false);
@@ -593,88 +622,94 @@ const PAUTReport = ({navigation}) => {
     }
   };
 
-  const renderItem = ({item}) => (
-    <View
-      style={{
-        padding: 15,
-        marginVertical: 8,
-        marginHorizontal: 10,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: '#ddd',
-        elevation: 5,
-        backgroundColor: 'white',
-      }}>
-      <CheckBox
-        checked={selectedJobs.includes(item.sl)} // Check if the job is selected
-        onPress={() => toggleJobSelection(item.sl)} // Toggle individual selection
-        style={{marginRight: 10}}
-      />
-      <Text style={{fontSize: 16, fontWeight: 'bold', color: '#333'}}>
-        Job Number: {item.job_number}
-      </Text>
-      <Text
+  const renderItem = ({item}) => {
+    let status = item.status;
+    console.log('item status: ', item);
+    return (
+      <View
         style={{
-          fontSize: 16,
-          fontWeight: 'bold',
-          color: '#333',
-          marginBottom: 4,
+          padding: 15,
+          marginVertical: 8,
+          marginHorizontal: 10,
+          borderRadius: 8,
+          borderWidth: 1,
+          borderColor: '#ddd',
+          elevation: 5,
+          backgroundColor: 'white',
         }}>
-        Component Name: {item.component_name}
-      </Text>
-      <Text
-        style={{
-          fontSize: 16,
-          fontWeight: 'bold',
-          color: '#333',
-          marginBottom: 4,
-        }}>
-        Unit Number: {item.unit_number}
-      </Text>
-      <Text
-        style={{
-          fontSize: 16,
-          fontWeight: 'bold',
-          color: '#333',
-          marginBottom: 4,
-        }}>
-        Tube Joints : {item.tube_joints}
-      </Text>
-      <Text
-        style={{
-          fontSize: 16,
-          fontWeight: 'bold',
-          color: '#333',
-          marginBottom: 4,
-        }}>
-        Job Description Number: {item.job_desc_number}
-      </Text>
-      <Text
-        style={{
-          fontSize: 16,
-          fontWeight: 'bold',
-          color: '#333',
-          marginBottom: 4,
-        }}>
-        Job Offer Date: {item.job_offer_date}
-      </Text>
+        <CheckBox
+          checked={selectedJobs.includes(item.sl)} // Check if the job is selected
+          onPress={() => toggleJobSelection(item.sl)} // Toggle individual selection
+          style={{marginRight: 10}}
+        />
+        <Text
+          style={{fontSize: 16, color: '#333', marginBottom: 4}}
+          numberOfLines={1}
+          ellipsizeMode="tail">
+          <Text style={{fontWeight: 'bold'}}>Job Number:</Text>{' '}
+          {item.job_number}
+        </Text>
+        <Text
+          style={{fontSize: 16, color: '#333', marginBottom: 4}}
+          numberOfLines={1}
+          ellipsizeMode="tail">
+          <Text style={{fontWeight: 'bold'}}>Component Name:</Text>{' '}
+          {item.component_name}
+        </Text>
+        <Text
+          style={{fontSize: 16, color: '#333', marginBottom: 4}}
+          numberOfLines={1}
+          ellipsizeMode="tail">
+          <Text style={{fontWeight: 'bold'}}>Unit Number:</Text>{' '}
+          {item.unit_number}
+        </Text>
+        <Text
+          style={{fontSize: 16, color: '#333', marginBottom: 4}}
+          numberOfLines={1}
+          ellipsizeMode="tail">
+          <Text style={{fontWeight: 'bold'}}>Tube Joints:</Text>{' '}
+          {item.tube_joints}
+        </Text>
+        <Text
+          style={{fontSize: 16, color: '#333', marginBottom: 4}}
+          numberOfLines={1}
+          ellipsizeMode="tail">
+          <Text style={{fontWeight: 'bold'}}>Job Description Number:</Text>{' '}
+          {item.job_desc_number}
+        </Text>
+        <Text
+          style={{fontSize: 16, color: '#333', marginBottom: 4}}
+          numberOfLines={1}
+          ellipsizeMode="tail">
+          <Text style={{fontWeight: 'bold'}}>Job Offer Date:</Text>{' '}
+          {item.job_offer_date}
+        </Text>
 
-      <TouchableOpacity
-        onPress={() => {
-          setSelectedJob(item.sl);
-          setModalVisible(true);
-        }}
-        style={{
-          backgroundColor: 'green',
-          paddingVertical: 10,
-          paddingHorizontal: 25,
-          borderRadius: 5,
-          marginTop: 10,
-        }}>
-        <Text style={styles.buttonText}>Submit</Text>
-      </TouchableOpacity>
-    </View>
-  );
+        <Text
+          style={{fontSize: 16, color: '#333'}}
+          numberOfLines={1}
+          ellipsizeMode="tail">
+          <Text style={{fontWeight: 'bold'}}>RT-Number & Date :</Text>{' '}
+          {item.report_no ?? 'NA'} : {item.report_date ?? 'NA'}
+        </Text>
+
+        <TouchableOpacity
+          onPress={() => {
+            setSelectedJob(item.sl);
+            setModalVisible(true);
+          }}
+          style={{
+            backgroundColor: status === 'Old' ? 'red' : 'green',
+            paddingVertical: 10,
+            paddingHorizontal: 25,
+            borderRadius: 5,
+            marginTop: 10,
+          }}>
+          <Text style={styles.buttonText}>Submit</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   return (
     <Fragment>
@@ -843,7 +878,7 @@ const PAUTReport = ({navigation}) => {
                     keyExtractor={(item, index) => index.toString()}
                     renderItem={renderItem}
                     contentContainerStyle={{paddingBottom: 20}}
-                    ListFooterComponent={<View style={{height: 100}} />}
+                    ListFooterComponent={<View style={{height: 150}} />}
                     ListEmptyComponent={
                       <View
                         style={{
@@ -955,6 +990,7 @@ const PAUTReport = ({navigation}) => {
                   onPress={() => {
                     setReportDate('');
                     setReportNumber('');
+                    setSelectedReport(null);
                     setSelectedFile(null);
                     setModalVisible(false);
                   }}>
@@ -1282,16 +1318,22 @@ const PAUTReport = ({navigation}) => {
               {/* Input for Report Number */}
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Report Number:</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Enter Report Number"
-                  value={reportNumber}
-                  onChangeText={text => setReportNumber(text)}
+                <DropDownPicker
+                  searchable={true}
+                  open={ReportOpen}
+                  value={selectedReport}
+                  items={ReportItems}
+                  setOpen={setReportOpen}
+                  setValue={setSelectedReport}
+                  setItems={setReportItems}
+                  placeholder="Select Report Number"
+                  style={{...styles.dropdown, zIndex: 1000, marginTop: 10}}
+                  dropDownContainerStyle={styles.dropdownContainer}
                 />
               </View>
 
               {/* Input for Report Date */}
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 onPress={() => {
                   setShowModal(true);
                 }}
@@ -1304,9 +1346,9 @@ const PAUTReport = ({navigation}) => {
                   onChangeText={text => setReportDate(text)}
                   editable={false}
                 />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
 
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={{
                   backgroundColor: 'gray',
                   padding: 10,
@@ -1319,8 +1361,8 @@ const PAUTReport = ({navigation}) => {
                   Attach File
                 </Text>
                 <Icon name="attachment" size={25} style={{marginLeft: 10}} />
-              </TouchableOpacity>
-
+              </TouchableOpacity> */}
+              {/* 
               {selectedFile && (
                 <View style={styles.previewContainer}>
                   <Text style={styles.previewText}>Selected File:</Text>
@@ -1328,7 +1370,7 @@ const PAUTReport = ({navigation}) => {
                     Name: {selectedFile.name}
                   </Text>
                 </View>
-              )}
+              )} */}
 
               {/* DropDownPicker for Defect Type */}
               <DropDownPicker
@@ -1399,6 +1441,7 @@ const PAUTReport = ({navigation}) => {
                     style={[styles.actionButton, styles.cancelButton]}
                     onPress={() => {
                       setReportNumber('');
+                      setSelectedReport(null);
                       setReportDate('');
                       setSelectedFile(null);
                       SetApprovemodalVisible(false);
@@ -1514,6 +1557,7 @@ const PAUTReport = ({navigation}) => {
                     onPress={() => {
                       setReportDate('');
                       setReportNumber('');
+                      setSelectedReport(null);
                       setSelectedFile(null);
 
                       setModalVisible(false);

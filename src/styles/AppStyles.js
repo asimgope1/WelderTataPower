@@ -1,6 +1,6 @@
-import { StyleSheet } from "react-native";
-import { BLACK, BRAND, GRAY, WHITE } from "../constants/color";
-import { HEIGHT, WIDTH } from "../constants/config";
+import {StyleSheet} from 'react-native';
+import {BLACK, BRAND, GRAY, WHITE} from '../constants/color';
+import {HEIGHT, WIDTH} from '../constants/config';
 export const appStyles = StyleSheet.create({
   safeareacontainer: {
     flex: 1,
@@ -8,31 +8,31 @@ export const appStyles = StyleSheet.create({
   },
   maincontainer: {
     flex: 1,
-    alignItems: "center",
+    alignItems: 'center',
   },
   customButtonWrapper: {
-    width: "100%",
-    position: "absolute",
+    width: '100%',
+    position: 'absolute',
     bottom: 20,
-    alignSelf: "center",
-    justifyContent: "center",
-    alignItems: "center",
+    alignSelf: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   textcolor: {
     color: BLACK,
   },
   customTextInputWrapper: {
-    width: "90%",
-    alignSelf: "center",
+    width: '90%',
+    alignSelf: 'center',
   },
   termstextWrapper: {
-    width: "100%",
+    width: '100%',
   },
   rowInputsStyleWrapper: {
-    flexDirection: "row",
-    width: "90%",
-    alignSelf: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    width: '90%',
+    alignSelf: 'center',
+    justifyContent: 'space-between',
     // backgroundColor: "red",
   },
   dateSection: {
@@ -76,6 +76,7 @@ export const appStyles = StyleSheet.create({
     marginBottom: 10,
   },
   submitButtonText: {
+    // padding: 10,
     fontSize: 18,
     color: WHITE,
     

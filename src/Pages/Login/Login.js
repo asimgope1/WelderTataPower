@@ -14,44 +14,43 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import React, { Fragment, useEffect, useState } from 'react';
-import { BLACK, BRAND, GRAY, GREEN, ORANGE, WHITE } from '../../constants/color';
+import React, {Fragment, useEffect, useState} from 'react';
+import {BLACK, BRAND, GRAY, GREEN, ORANGE, WHITE} from '../../constants/color';
 import CustomButton from '../../components/CustomButton';
-import { loginStyles } from './LoginStyles';
-import { HEIGHT, MyStatusBar, WIDTH } from '../../constants/config';
-import { CustomTextInput } from '../../components/CustomTextInput';
-import { Loader } from '../../components/Loader';
-import { appStyles } from '../../styles/AppStyles';
-import { EXTRABOLD, MEDIUM, REGULAR, SEMIBOLD } from '../../constants/fontfamily';
-import { RFValue } from 'react-native-responsive-fontsize';
-import { useFocusEffect } from '@react-navigation/native';
-import { BASE_URL } from '../../constants/url';
-import { POSTNETWORK } from '../../utils/Network';
-import { clearAll, storeObjByKey } from '../../utils/Storage';
+import {loginStyles} from './LoginStyles';
+import {HEIGHT, MyStatusBar, WIDTH} from '../../constants/config';
+import {CustomTextInput} from '../../components/CustomTextInput';
+import {Loader} from '../../components/Loader';
+import {appStyles} from '../../styles/AppStyles';
+import {EXTRABOLD, MEDIUM, REGULAR, SEMIBOLD} from '../../constants/fontfamily';
+import {RFValue} from 'react-native-responsive-fontsize';
+import {useFocusEffect} from '@react-navigation/native';
+import {BASE_URL} from '../../constants/url';
+import {POSTNETWORK} from '../../utils/Network';
+import {clearAll, storeObjByKey} from '../../utils/Storage';
 import Alertmodal from '../../components/Alertmodal/Alertmodal';
 import Exitmodal from '../../components/Exitmodal';
-import { BG, LOGO, TATA } from '../../constants/imagepath';
-import { Card, Icon, Input } from 'react-native-elements';
+import {BG, LOGO, TATA} from '../../constants/imagepath';
+import {Card, Icon, Input} from 'react-native-elements';
 import LinearGradient from 'react-native-linear-gradient';
-import { Switch, TextInput } from 'react-native-paper';
-import { checkuserToken } from '../../redux/actions/auth';
-import { useDispatch } from 'react-redux';
+import {Switch, TextInput} from 'react-native-paper';
+import {checkuserToken} from '../../redux/actions/auth';
+import {useDispatch} from 'react-redux';
 
-const Login = ({ navigation, route }) => {
+const Login = ({navigation, route}) => {
   const [loader, setLoader] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [alertMsg, setAlertMsg] = useState('');
   const [alertModal, setAlertModal] = useState(false);
   const [exitModal, setExitModal] = useState(false);
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
 
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const toggleModal = () => {
     setIsModalVisible(!isModalVisible);
   };
-
 
   const [isSwitchOn, setIsSwitchOn] = React.useState(false);
 
@@ -61,30 +60,32 @@ const Login = ({ navigation, route }) => {
     const unsubscribe = navigation.addListener('focus', () => {
       setPassword('');
       setEmail('');
-    });
-    return unsubscribe;
-  }, [navigation]);
 
+      // Reset the entire navigation stack
+    });
+
+    return unsubscribe; // Cleanup listener on unmount
+  }, [navigation]);
 
   const handleLogin = () => {
     const url = `${BASE_URL}auth/`;
     const obj = {
-      "username": email,
-      "password": password
+      username: email,
+      password: password,
     };
 
     setLoader(true);
 
     // Prepare the headers
     const myHeaders = new Headers();
-    myHeaders.append("Content-Type", "application/json");
+    myHeaders.append('Content-Type', 'application/json');
 
     // Prepare the request options
     const requestOptions = {
-      method: "POST",
+      method: 'POST',
       headers: myHeaders,
       body: JSON.stringify(obj),
-      redirect: "follow"
+      redirect: 'follow',
     };
 
     // Use fetch instead of POSTNETWORK
@@ -93,7 +94,7 @@ const Login = ({ navigation, route }) => {
       .then(res => {
         console.log('response', res);
         if (res?.token) {
-          storeObjByKey('loginResponse', res)
+          storeObjByKey('loginResponse', res);
 
           dispatch(checkuserToken());
 
@@ -111,13 +112,12 @@ const Login = ({ navigation, route }) => {
       });
   };
 
-
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       if (route?.params?.registered) {
         setAlertMsg('Registered successfully, Please login!');
         setAlertModal(true);
-        navigation.setParams({ registered: false });
+        navigation.setParams({registered: false});
       }
     });
     return unsubscribe;
@@ -138,16 +138,16 @@ const Login = ({ navigation, route }) => {
 
   const login = () => {
     navigation.navigate('DashBoard');
-  }
+  };
 
   return (
     <Fragment>
       <MyStatusBar backgroundColor={'black'} barStyle={'light-content'} />
       <SafeAreaView
-        style={[appStyles.safeareacontainer, { backgroundColor: WHITE }]}>
+        style={[appStyles.safeareacontainer, {backgroundColor: WHITE}]}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}>
+          style={{flex: 1}}>
           <ImageBackground
             style={{
               flex: 1,
@@ -177,7 +177,7 @@ const Login = ({ navigation, route }) => {
                   alignItems: 'center',
                   borderRadius: 10,
                   shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
+                  shadowOffset: {width: 0, height: 2},
                   shadowOpacity: 0.2,
                   shadowRadius: 5,
                   elevation: 10,
@@ -186,8 +186,8 @@ const Login = ({ navigation, route }) => {
                 }}>
                 <LinearGradient
                   colors={['white', BRAND]}
-                  start={{ x: 3.5, y: 0 }}
-                  end={{ x: 0, y: 0.5 }}
+                  start={{x: 3.5, y: 0}}
+                  end={{x: 0, y: 0.5}}
                   style={{
                     width: WIDTH * 0.86,
                     height: HEIGHT * 0.16,
@@ -196,7 +196,7 @@ const Login = ({ navigation, route }) => {
                     top: -HEIGHT * 0.05,
                     borderRadius: 10,
                     shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 4 },
+                    shadowOffset: {width: 0, height: 4},
                     shadowOpacity: 0.3,
                     shadowRadius: 8,
                     elevation: 12,
@@ -349,7 +349,7 @@ const Login = ({ navigation, route }) => {
                     fontSize: RFValue(12),
                     fontFamily: MEDIUM,
                   }}>
-                  © 2024,made by{' '}
+                  © 2025,made by{' '}
                   <Text
                     style={{
                       color: WHITE,
@@ -363,9 +363,7 @@ const Login = ({ navigation, route }) => {
             </ScrollView>
           </ImageBackground>
 
-          {loader && <Loader
-            visible={loader}
-          />}
+          {loader && <Loader visible={loader} />}
         </KeyboardAvoidingView>
       </SafeAreaView>
 
@@ -386,22 +384,15 @@ const Login = ({ navigation, route }) => {
         />
       )}
 
-
       <Modal
         visible={isModalVisible}
         transparent={true}
         animationType="slide"
-        onRequestClose={toggleModal}
-      >
+        onRequestClose={toggleModal}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalText}>
-              Please contact your admin.
-            </Text>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={toggleModal}
-            >
+            <Text style={styles.modalText}>Please contact your admin.</Text>
+            <TouchableOpacity style={styles.closeButton} onPress={toggleModal}>
               <Text style={styles.closeButtonText}>Close</Text>
             </TouchableOpacity>
           </View>
@@ -412,8 +403,6 @@ const Login = ({ navigation, route }) => {
 };
 
 export default Login;
-
-
 
 const styles = StyleSheet.create({
   container: {
@@ -432,7 +421,6 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-
 
     justifyContent: 'center',
     alignItems: 'center',

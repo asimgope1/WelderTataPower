@@ -12,17 +12,17 @@ import {
   FlatList,
   Modal,
 } from 'react-native';
-import React, { Fragment, useEffect, useState } from 'react';
-import { HEIGHT, MyStatusBar, WIDTH } from '../../constants/config';
-import { BLACK, BLUE, BRAND, GRAY, WHITE } from '../../constants/color';
-import { appStyles } from '../../styles/AppStyles';
+import React, {Fragment, useEffect, useState} from 'react';
+import {HEIGHT, MyStatusBar, WIDTH} from '../../constants/config';
+import {BLACK, BLUE, BRAND, GRAY, WHITE} from '../../constants/color';
+import {appStyles} from '../../styles/AppStyles';
 import LinearGradient from 'react-native-linear-gradient';
-import { RFValue } from 'react-native-responsive-fontsize';
+import {RFPercentage, RFValue} from 'react-native-responsive-fontsize';
 import Header from '../../components/Header';
-import { Icon } from 'react-native-elements';
-import { BAS_URL } from '../../constants/url';
-import { GETNETWORK } from '../../utils/Network';
-import { useFocusEffect } from '@react-navigation/native';
+import {Icon} from 'react-native-elements';
+import {BAS_URL} from '../../constants/url';
+import {GETNETWORK} from '../../utils/Network';
+import {useFocusEffect} from '@react-navigation/native';
 import {
   BOLD,
   EXTRABOLD,
@@ -30,12 +30,15 @@ import {
   REGULAR,
   SEMIBOLD,
 } from '../../constants/fontfamily';
-import { Loader } from '../../components/Loader';
-import { getObjByKey, storeObjByKey } from '../../utils/Storage';
-import { PieChart } from 'react-native-chart-kit';
-import { white } from 'react-native-paper/lib/typescript/styles/themes/v2/colors';
+import {Loader} from '../../components/Loader';
+import {clearAll, getObjByKey, storeObjByKey} from '../../utils/Storage';
+import {PieChart} from 'react-native-chart-kit';
+import {white} from 'react-native-paper/lib/typescript/styles/themes/v2/colors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useDispatch} from 'react-redux';
+import {checkuserToken} from '../../redux/actions/auth';
 
-const DashBoard = ({ navigation }) => {
+const DashBoard = ({navigation}) => {
   const [JobList, SetJobList] = useState([]);
   const [dashboardData, setDashboardData] = useState(null);
   const [isLoading, setIsLoading] = useState(true); // Loading state
@@ -43,6 +46,7 @@ const DashBoard = ({ navigation }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalData, setModalData] = useState(null); // Store API data for the modal
+  const dispatch = useDispatch();
 
   useFocusEffect(
     React.useCallback(() => {
@@ -73,6 +77,13 @@ const DashBoard = ({ navigation }) => {
     });
   };
 
+  const handleLogout = async () => {
+    clearAll(); // Clear all stored data
+    dispatch(checkuserToken());
+
+    // navigation.navigate('LoginStack');
+    alert('Logout Successfully. Please reload the app to log in again.');
+  };
   // Fetch Dashboard Data
   const GetDashboard = () => {
     const url = `${BAS_URL}welding/api/v1/dashboard/`;
@@ -98,42 +109,57 @@ const DashBoard = ({ navigation }) => {
     return `#${randomColor}`;
   };
 
-
-
   const [Token, SetToken] = useState('');
 
   useEffect(() => {
-    GetToken()
-  }, [])
-
+    GetToken();
+  }, []);
 
   const GetToken = async () => {
     const Token = await getObjByKey('loginResponse');
     console.log('token: ' + Token.token);
     SetToken(Token?.token);
-  }
+  };
   // Fetch job status details
-  const fetchJobStatusDetails = async (name) => {
-    console.log('name is here', name)
+  const fetchJobStatusDetails = async name => {
+    console.log('Fetching details for:', name);
+
     const myHeaders = new Headers();
-    myHeaders.append("Authorization", `Token ${Token}`);
+    myHeaders.append('Authorization', `Token ${Token}`);
 
     const requestOptions = {
-      method: "GET",
+      method: 'GET',
       headers: myHeaders,
-      redirect: "follow"
+      redirect: 'follow',
     };
 
-    fetch(`${BAS_URL}welding/api/v1/job-status-details/?job_status=${name}`, requestOptions)
-      .then((response) => response.json())
-      .then((result) => {
-        setModalData(result.data)
-        console.log(result)
-      })
-      .catch((error) => console.error(error));
-  };
+    try {
+      const response = await fetch(
+        `${BAS_URL}welding/api/v1/job-status-details/?job_status=${name}`,
+        requestOptions,
+      );
+      console.log('responseedd', JSON.stringify(response));
+      const result = await response.json();
 
-  // Render Stats Cards
+      if (result.status === 'success' && Array.isArray(result.data)) {
+        setModalData(result.data.length > 0 ? result.data : []); // Ensure empty array is set
+      } else {
+        setModalData([]); // Handle unexpected API response
+      }
+
+      console.log('API Response:', result.data.length);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setModalData([]); // Set empty array on error
+    }
+  };
+  useEffect(() => {
+    if (isModalVisible && selectedItem?.name) {
+      setModalData(null); // Reset data before fetching
+      fetchJobStatusDetails(selectedItem.name);
+    }
+  }, [isModalVisible, selectedItem]);
+
   const renderStatsCards = () => {
     if (!dashboardData) return null;
 
@@ -143,12 +169,13 @@ const DashBoard = ({ navigation }) => {
           data={dashboardData.status_count} // Use status_count here
           numColumns={4} // Set to 4 columns for grid layout
           keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item }) => (
+          renderItem={({item}) => (
             <TouchableOpacity
               onPress={() => {
                 setSelectedItem(item);
                 setIsModalVisible(true);
                 fetchJobStatusDetails(item.name);
+                console.log('itemname updated', item.name);
               }}>
               <View
                 style={{
@@ -157,18 +184,17 @@ const DashBoard = ({ navigation }) => {
                   borderTopWidth: 8, // Add width to the border
                 }}>
                 <Text
-                  style={{ ...styles.statsName }}
+                  style={{...styles.statsName}}
                   numberOfLines={2} // Limit to 1 line
                   ellipsizeMode="tail" // Add ellipsis at the tail if text overflows
                 >
                   {item.name}
                 </Text>
-                <Text style={styles.statsFigure}>{item.count}</Text>{' '}
-                {/* Displaying count instead of figure */}
+                <Text style={styles.statsFigure}>{item.count}</Text>
               </View>
             </TouchableOpacity>
           )}
-          contentContainerStyle={{ paddingHorizontal: 10 }}
+          contentContainerStyle={{paddingHorizontal: 10}}
         />
       </View>
     );
@@ -238,13 +264,209 @@ const DashBoard = ({ navigation }) => {
     );
   };
 
+  const renderwelderCountTable = () => {
+    if (!dashboardData || !dashboardData.welder_count) return null;
+
+    return (
+      <>
+        <Text
+          style={{
+            fontWeight: 'bold',
+            fontSize: 18,
+            // marginBottom: 10,
+          }}>
+          Welder Count Table <Text style={{fontWeight: 'bold'}}></Text>
+        </Text>
+        <ScrollView horizontal style={styles.tableContainer}>
+          <View style={styles.table}>
+            {/* Table Header Row */}
+            <View style={[styles.tableRow, styles.headerRow]}>
+              {[
+                'Welder ID',
+                'Name',
+                'Total',
+                'Accepted',
+                'Repair',
+                'Retake',
+                'Failure Rate',
+              ].map((header, index) => (
+                <View key={index} style={[styles.tableCell, styles.headerCell]}>
+                  <Text style={styles.headerText}>{header}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Table Data Rows */}
+            {dashboardData.welder_count.map((item, index) => (
+              <View key={index} style={styles.tableRow}>
+                <View style={styles.tableCell}>
+                  <Text style={styles.cellText}>{item.welder_id}</Text>
+                </View>
+                <View style={styles.tableCell}>
+                  <Text style={styles.cellText}>{item.Name}</Text>
+                </View>
+                <View style={styles.tableCell}>
+                  <Text style={styles.cellText}>{item.Total}</Text>
+                </View>
+                <View style={styles.tableCell}>
+                  <Text style={styles.cellText}>{item.Accepted}</Text>
+                </View>
+                <View style={styles.tableCell}>
+                  <Text style={styles.cellText}>{item.Repair}</Text>
+                </View>
+                <View style={styles.tableCell}>
+                  <Text style={styles.cellText}>{item.Retake}</Text>
+                </View>
+                <View style={styles.tableCell}>
+                  <Text style={styles.cellText}>{item.Failure_Rate}%</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+      </>
+    );
+  };
+
+  const rendercomponentCount = () => {
+    if (!dashboardData || !dashboardData.component_count) return null;
+
+    return (
+      <>
+        <Text
+          style={{
+            fontWeight: 'bold',
+            fontSize: 18,
+          }}>
+          Component Count Table
+          <Text style={{fontWeight: 'bold'}}></Text>
+        </Text>
+
+        <ScrollView horizontal style={styles.tableContainer}>
+          <View style={styles.table}>
+            {/* Table Header Row */}
+            <View style={[styles.tableRow, styles.headerRow]}>
+              <View
+                style={[
+                  styles.tableCell,
+                  styles.headerCell,
+                  styles.leftColumn,
+                ]}>
+                <Text style={styles.headerText}>Component Name</Text>
+              </View>
+              {['Total', 'Accepted', 'Repair', 'Retake', 'Failure Rate'].map(
+                (header, index) => (
+                  <View
+                    key={index}
+                    style={[styles.tableCell, styles.headerCell]}>
+                    <Text style={styles.headerText}>{header}</Text>
+                  </View>
+                ),
+              )}
+            </View>
+
+            {/* Table Data Rows */}
+            {dashboardData.component_count.map((item, index) => (
+              <View key={index} style={styles.tableRow}>
+                <View style={[styles.tableCell, styles.leftColumn]}>
+                  <Text style={styles.cellText}>
+                    {item.pressure_part_component_name}
+                  </Text>
+                </View>
+                <View style={styles.tableCell}>
+                  <Text style={styles.cellText}>{item.Total}</Text>
+                </View>
+                <View style={styles.tableCell}>
+                  <Text style={styles.cellText}>{item.Accepted}</Text>
+                </View>
+                <View style={styles.tableCell}>
+                  <Text style={styles.cellText}>{item.Repair}</Text>
+                </View>
+                <View style={styles.tableCell}>
+                  <Text style={styles.cellText}>{item.Retake}</Text>
+                </View>
+                <View style={styles.tableCell}>
+                  <Text style={styles.cellText}>{item.Failure_Rate}%</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+      </>
+    );
+  };
+
+  const renderunitCount = () => {
+    if (!dashboardData || !dashboardData.unit_count) return null;
+
+    return (
+      <>
+        <Text
+          style={{
+            fontWeight: 'bold',
+            fontSize: 18,
+            marginBottom: 10,
+          }}>
+          Unit Count Table
+          <Text style={{fontWeight: 'bold'}}></Text>
+        </Text>
+
+        <ScrollView horizontal style={styles.tableContainer}>
+          <View style={styles.table}>
+            {/* Table Header Row */}
+            <View style={[styles.tableRow, styles.headerRow]}>
+              <View
+                style={[
+                  styles.tableCell,
+                  styles.headerCell,
+                  styles.leftColumn,
+                ]}>
+                <Text style={styles.headerText}>Unit No</Text>
+              </View>
+              {['Total Jobs', 'Accepted', 'Repair', 'Retake'].map(
+                (header, index) => (
+                  <View
+                    key={index}
+                    style={[styles.tableCell, styles.headerCell]}>
+                    <Text style={styles.headerText}>{header}</Text>
+                  </View>
+                ),
+              )}
+            </View>
+
+            {/* Table Data Rows */}
+            {dashboardData.unit_count.map((item, index) => (
+              <View key={index} style={styles.tableRow}>
+                <View style={[styles.tableCell, styles.leftColumn]}>
+                  <Text style={styles.cellText}>{item.unit_no}</Text>
+                </View>
+                <View style={styles.tableCell}>
+                  <Text style={styles.cellText}>{item.total_jobs}</Text>
+                </View>
+                <View style={styles.tableCell}>
+                  <Text style={styles.cellText}>{item.accepted_count}</Text>
+                </View>
+                <View style={styles.tableCell}>
+                  <Text style={styles.cellText}>{item.repair_count}</Text>
+                </View>
+                <View style={styles.tableCell}>
+                  <Text style={styles.cellText}>{item.retake_count}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+      </>
+    );
+  };
+
   return (
     <Fragment>
       <MyStatusBar backgroundColor={BRAND} barStyle={'light-content'} />
       <SafeAreaView style={appStyles.safeareacontainer}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}>
+          style={{flex: 1}}>
           <ScrollView
             keyboardShouldPersistTaps={'handled'}
             showsVerticalScrollIndicator={false}
@@ -256,11 +478,11 @@ const DashBoard = ({ navigation }) => {
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={refresh} />
             }>
-            <View style={{ flex: 1, width: WIDTH, backgroundColor: WHITE }}>
+            <View style={{flex: 1, width: WIDTH, backgroundColor: WHITE}}>
               <LinearGradient
                 colors={[BRAND, WHITE]}
-                start={{ x: 0.7, y: 0 }}
-                end={{ x: 0.3, y: 1.8 }}
+                start={{x: 0.7, y: 0}}
+                end={{x: 0.3, y: 1.8}}
                 style={{
                   width: '100%',
                   height: HEIGHT * 0.3,
@@ -273,7 +495,7 @@ const DashBoard = ({ navigation }) => {
                 <View
                   style={{
                     width: '100%',
-                    height: '20%',
+                    height: '25%',
                     alignItems: 'flex-start',
                     padding: 10,
                   }}>
@@ -293,6 +515,12 @@ const DashBoard = ({ navigation }) => {
                     marginBottom: 15,
                   }}>
                   <Text
+                    onPress={() => {
+                      navigation.navigate('Joints', {
+                        name: dashboardData?.stats[0]?.name,
+                      });
+                      console.log('item.namee', dashboardData?.stats[0]?.name);
+                    }}
                     style={{
                       fontSize: RFValue(13),
                       color: WHITE,
@@ -301,6 +529,12 @@ const DashBoard = ({ navigation }) => {
                     {dashboardData?.stats[0]?.name}
                   </Text>
                   <Text
+                    onPress={() => {
+                      navigation.navigate('Joints', {
+                        name: dashboardData?.stats[0]?.name,
+                      });
+                      console.log('item.namee', dashboardData?.stats[0]?.name);
+                    }}
                     style={{
                       fontSize: RFValue(25),
                       color: WHITE,
@@ -341,6 +575,10 @@ const DashBoard = ({ navigation }) => {
                         paddingHorizontal: 10,
                       }}>
                       <Text
+                        onPress={() => {
+                          navigation.navigate('Joints', {name: item.name});
+                          console.log('item.name', item.name);
+                        }}
                         style={{
                           fontSize: RFValue(9.5),
                           color: WHITE,
@@ -349,6 +587,10 @@ const DashBoard = ({ navigation }) => {
                         {item.name}
                       </Text>
                       <Text
+                        onPress={() => {
+                          navigation.navigate('Joints', {name: item.name});
+                          console.log('item.name', item.name);
+                        }}
                         style={{
                           fontSize: RFValue(10),
                           color: WHITE,
@@ -361,12 +603,8 @@ const DashBoard = ({ navigation }) => {
                 </View>
               </LinearGradient>
 
-              {/* Stats Cards Section */}
               {renderStatsCards()}
 
-              {/* table to be build */}
-
-              {/* Units Pie Chart */}
               <View style={styles.chartContainer}>
                 <View
                   style={{
@@ -378,9 +616,21 @@ const DashBoard = ({ navigation }) => {
                     justifyContent: 'center',
                     marginBottom: 10,
                   }}>
-                  <Text style={styles.tableTitle}>Job Status Overview</Text>
+                  <Text
+                    onPress={() => {
+                      // handleLogout();
+                      clearAll(); // Clear all stored data
+                      dispatch(checkuserToken());
+                    }}
+                    style={styles.tableTitle}>
+                    Job Status Overview
+                  </Text>
                 </View>
-                {renderStatusPieChart()}
+                {renderwelderCountTable()}
+
+                {rendercomponentCount()}
+
+                {renderunitCount()}
               </View>
             </View>
           </ScrollView>
@@ -393,30 +643,40 @@ const DashBoard = ({ navigation }) => {
           visible={isModalVisible}
           transparent={true}
           animationType="slide"
-          onRequestClose={() => setIsModalVisible(false)}
-        >
+          onRequestClose={() => setIsModalVisible(false)}>
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
               <TouchableOpacity
                 style={styles.closeButton}
-                onPress={() => setIsModalVisible(false)}
-              >
+                onPress={() => {
+                  setIsModalVisible(false);
+                  setModalData([]);
+                }}>
                 <Icon name="close" type="material" color="white" size={24} />
               </TouchableOpacity>
 
               {/* Show the selected job status in the modal title */}
-              <Text style={styles.modalTitle} numberOfLines={1} ellipsizeMode='tail'>
-                Job  {selectedItem ? selectedItem.name : 'Loading...'}
+              <Text
+                style={styles.modalTitle}
+                numberOfLines={1}
+                ellipsizeMode="tail">
+                Job {selectedItem ? selectedItem.name : 'Loading...'}
               </Text>
 
               {/* Check if modalData exists and display FlatList */}
-              {modalData ? (
+              {modalData === null ? (
+                <View style={styles.loaderContainer}>
+                  <ActivityIndicator size="large" color="blue" />
+                  <Text style={styles.loadingText}>Loading data...</Text>
+                </View>
+              ) : modalData.length > 0 ? (
                 <FlatList
-                  data={modalData} // Render the data from API
-                  keyExtractor={(item, index) => index.toString()} // Unique key for each item
-                  renderItem={({ item }) => (
+                  data={modalData}
+                  keyExtractor={(item, index) =>
+                    item.job_number || index.toString()
+                  }
+                  renderItem={({item}) => (
                     <View style={styles.card}>
-                      
                       <Text style={styles.cardTitle}>
                         Job Number: {item.job_number}
                       </Text>
@@ -429,28 +689,24 @@ const DashBoard = ({ navigation }) => {
                       <Text style={styles.cardText}>
                         Job Offer Date: {item.job_offer_date}
                       </Text>
-                      
                       <Text style={styles.cardText}>
                         Job Desc Number: {item.job_desc_number}
                       </Text>
-                      
                       <Text style={styles.cardText}>
                         Tube Joints: {item.tube_joints}
                       </Text>
-                      
-                      
                     </View>
                   )}
-                  contentContainerStyle={{ padding: 10 }}
+                  contentContainerStyle={{padding: 10}}
                 />
               ) : (
-                <Text style={styles.modalText}>Loading data...</Text>
+                <View style={styles.noDataContainer}>
+                  <Text style={styles.noDataText}>No Data Found</Text>
+                </View>
               )}
             </View>
           </View>
         </Modal>
-
-
       </SafeAreaView>
     </Fragment>
   );
@@ -501,7 +757,7 @@ const styles = StyleSheet.create({
     margin: 8,
     marginTop: 15,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
+    shadowOffset: {width: 0, height: 5},
     shadowOpacity: 0.2,
     shadowRadius: 10,
     elevation: 5,
@@ -533,6 +789,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 15,
   },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: 'gray',
+  },
   chartTitle: {
     fontSize: RFValue(15),
     color: BLACK,
@@ -540,14 +807,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   tableContainer: {
-    width: '100%',
+    width: WIDTH,
     paddingHorizontal: 10,
-    marginTop: 20,
+    // marginTop: 20,
     backgroundColor: WHITE,
     paddingBottom: 20,
     borderRadius: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
+    shadowOffset: {width: 0, height: 5},
     shadowOpacity: 0.2,
     shadowRadius: 10,
     elevation: 5,
@@ -571,7 +838,7 @@ const styles = StyleSheet.create({
     fontSize: RFValue(10),
     color: BLACK,
     fontFamily: BOLD,
-    flex: 1,
+    // flex: 1,
     textAlign: 'center',
   },
   tableRow: {
@@ -585,7 +852,7 @@ const styles = StyleSheet.create({
     fontSize: RFValue(11),
     color: BLACK,
     fontFamily: REGULAR,
-    flex: 1,
+    // flex: 1,
     textAlign: 'center',
   },
   modalContainer: {
@@ -612,6 +879,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   modalText: {
+    color: BLACK,
     fontSize: 14,
     fontFamily: REGULAR,
     marginBottom: 10,
@@ -633,7 +901,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
+    shadowOffset: {width: 0, height: 5},
     shadowOpacity: 0.2,
     shadowRadius: 10,
     elevation: 5,
@@ -653,7 +921,7 @@ const styles = StyleSheet.create({
     fontFamily: REGULAR,
     color: BLACK,
     marginBottom: 5,
-    fontWeight:'bold'
+    fontWeight: 'bold',
   },
   cardText: {
     fontSize: 13,
@@ -669,6 +937,67 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     padding: 10,
     zIndex: 10,
+  },
+  tableContainer: {
+    marginVertical: 20,
+    backgroundColor: '#f8f9fa', // Light background
+    borderRadius: 10,
+    padding: 10,
+    elevation: 3, // Shadow for Android
+    shadowColor: '#000', // Shadow for iOS
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  table: {
+    borderWidth: 1,
+    borderColor: '#ccc', // Outer border for the table
+    borderRadius: 8,
+    // overflow: 'hidden',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1, // Horizontal line between rows
+    borderColor: '#ccc',
+  },
+  headerRow: {
+    backgroundColor: '#007BFF', // Blue header
+  },
+  tableCell: {
+    // flex: 1,
+    width: WIDTH * 0.4,
+    height: HEIGHT * 0.049,
+    // paddingVertical: 12,
+    // paddingHorizontal: 15,
+    borderRightWidth: 1, // Vertical line between columns
+    borderColor: '#ccc',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
+  },
+  headerCell: {
+    padding: 10,
+    backgroundColor: '#007BFF', // Blue header cell
+  },
+  headerText: {
+    color: '#fff',
+    fontSize: RFPercentage(1.5),
+    fontFamily: BOLD,
+    // fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  cellText: {
+    // fontSize: RFPercentage(0.7),
+    color: '#333',
+    fontFamily: REGULAR,
+
+    textAlign: 'center',
+  },
+  cellText: {
+    textAlign: 'center',
+    fontSize: RFPercentage(1.5),
+    color: 'black',
+    fontFamily: BOLD,
   },
 });
 
