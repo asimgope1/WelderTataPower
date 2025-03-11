@@ -23,6 +23,7 @@ import {Icon} from 'react-native-elements';
 import {BAS_URL} from '../../constants/url';
 import {GETNETWORK} from '../../utils/Network';
 import {useFocusEffect} from '@react-navigation/native';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import {
   BOLD,
   EXTRABOLD,
@@ -37,6 +38,7 @@ import {white} from 'react-native-paper/lib/typescript/styles/themes/v2/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useDispatch} from 'react-redux';
 import {checkuserToken} from '../../redux/actions/auth';
+import DropDownPicker from 'react-native-dropdown-picker';
 
 const DashBoard = ({navigation}) => {
   const [JobList, SetJobList] = useState([]);
@@ -46,13 +48,135 @@ const DashBoard = ({navigation}) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalData, setModalData] = useState(null); // Store API data for the modal
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(null);
+  const [items, setItems] = useState([]);
+  const [shutdownID, setShutdownID] = useState(null);
+
+
   const dispatch = useDispatch();
 
+  // useFocusEffect(
+  //   React.useCallback(() => {
+  //     GetJobList();
+  //     GetDashboard();
+  //   }, [navigation]),
+  // );
+
+  // useFocusEffect(
+  //   React.useCallback(() => {
+  //     GetShutdown();
+  //     GetJobList(); 
+  //   }, [navigation])
+  // );
+
+  useEffect(() => {
+    const loadSelectedShutdown = async () => {
+      // setIsLoading(true)
+      try {
+        const storedValue = await AsyncStorage.getItem('selectedShutdown');
+        if (storedValue) {
+          setShutdownID(storedValue);
+          setValue(storedValue);
+          await GetDashboard(storedValue); // ✅ Load dashboard data based on stored value
+        } else {
+          GetShutdown(); // ✅ Load default value if none is stored
+        }
+      } catch (error) {
+        console.error('Failed to load shutdown:', error);
+      }
+      
+      // finally {
+      // setIsLoading(false)
+      // }
+    };
+  
+    loadSelectedShutdown();
+  }, []);
+  
+  const GetShutdown = async () => {
+
+    const url = `${BAS_URL}welding/api/v1/all-shutdown-details/`;
+  
+    try {
+      const response = await GETNETWORK(url, true);
+      if (response.status === 'success') {
+        console.log('Shutdown Data:', response.data);
+  
+        const formattedData = response.data.shutdowns.map(item => ({
+          label: item.shutdown_name,
+          value: item.shutdown_id,
+        }));
+  
+        if (response.data.current_shutdown) {
+          const currentShutdown = {
+            label: response.data.current_shutdown.shutdown_name,
+            value: response.data.current_shutdown.shutdown_id,
+          };
+  
+          if (!formattedData.some(item => item.value === currentShutdown.value)) {
+            formattedData.unshift(currentShutdown);
+          }
+  
+          // ✅ Only set default if shutdownID is not already set
+          if (!shutdownID) {
+            setShutdownID(currentShutdown.value);
+            setValue(currentShutdown.value);
+            await AsyncStorage.setItem('selectedShutdown', currentShutdown.value);
+            await GetDashboard(currentShutdown.value);
+          }
+        }
+  
+        setItems(formattedData);
+      } else {
+        console.log('Error:', response.message);
+      }
+    } catch (error) {
+      console.error('Fetch Error:', error);
+    }
+  };
+  
+  const GetDashboard = async (id) => {
+    setIsLoading(true);
+    try {
+      const url = `${BAS_URL}welding/api/v1/dashboard/?shutdown_id=${id}`;
+      const response = await GETNETWORK(url, true);
+  
+      if (response.status === 'success') {
+        setDashboardData(response.data);
+      } else {
+        console.log('Error:', response.message);
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    }finally{
+      setIsLoading(false);
+    }
+  };
+  
+  // ✅ Keep dashboard data updated when user changes dropdown
+  const handleChangeShutdown = async (selectedValue) => {
+    const selectedShutdown = items.find(item => item.value === selectedValue);
+    
+    if (selectedShutdown) {
+      // console.log('Selected Shutdown:', selectedShutdown.value);
+  
+      // ✅ Update state and persist selection
+      setShutdownID(selectedShutdown.value);
+      setValue(selectedShutdown.value);
+      await AsyncStorage.setItem('selectedShutdown', selectedShutdown.value);
+  
+      // ✅ Fetch new dashboard data based on selected value
+      await GetDashboard(selectedShutdown.value);
+    }
+  };
+  
   useFocusEffect(
     React.useCallback(() => {
-      GetJobList();
-      GetDashboard();
-    }, [navigation]),
+      if (shutdownID) {
+        GetDashboard(shutdownID);
+      }
+    }, [shutdownID])
   );
 
   useEffect(() => {
@@ -60,6 +184,9 @@ const DashBoard = ({navigation}) => {
     setTimeout(() => {
       setIsLoading(false);
     }, 3000);
+  }, []);
+  useEffect(() => {
+    GetShutdown(); 
   }, []);
 
   // Fetch Job List
@@ -85,16 +212,78 @@ const DashBoard = ({navigation}) => {
     alert('Logout Successfully. Please reload the app to log in again.');
   };
   // Fetch Dashboard Data
-  const GetDashboard = () => {
-    const url = `${BAS_URL}welding/api/v1/dashboard/`;
-    GETNETWORK(url, true).then(response => {
-      if (response.status === 'success') {
-        setDashboardData(response.data);
-      } else {
-        console.log('Error:', response.message);
-      }
-    });
-  };
+  // const GetDashboard = () => {
+  //   const url = `${BAS_URL}welding/api/v1/dashboard/?shutdown_id=${shutdownID}`;
+  //   GETNETWORK(url, true).then(response => {
+  //     if (response.status === 'success') {
+  //       setDashboardData(response.data);
+  //     } else {
+  //       console.log('Error:', response.message);
+  //     }
+  //   });
+  // };
+
+  // const GetDashboard = async (shutdownID) => {
+  //   const url = `${BAS_URL}welding/api/v1/dashboard/?shutdown_id=${shutdownID}`;
+    
+  //   try {
+  //     const response = await GETNETWORK(url, true);
+  //     if (response.status === 'success') {
+  //       setDashboardData(response.data);
+  //     } else {
+  //       console.log('Error:', response.message);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching dashboard data:', error);
+  //   }
+  // };
+  
+  
+
+
+  // const GetShutdown = async () => {
+  //   const url = `${BAS_URL}welding/api/v1/all-shutdown-details/`;
+  
+  //   try {
+  //     const response = await GETNETWORK(url, true);
+  //     if (response.status === 'success') {
+  //       console.log('Shutdown Data:', response.data);
+  
+  //       // ✅ Extract shutdowns and format data
+  //       const formattedData = response.data.shutdowns.map(item => ({
+  //         label: item.shutdown_name,
+  //         value: item.shutdown_id,
+  //       }));
+  
+  //       // ✅ Include current_shutdown in dropdown items
+  //       if (response.data.current_shutdown) {
+  //         const currentShutdown = {
+  //           label: response.data.current_shutdown.shutdown_name,
+  //           value: response.data.current_shutdown.shutdown_id,
+  //         };
+  
+  //         // Add current shutdown if it's not already included
+  //         if (!formattedData.some(item => item.value === currentShutdown.value)) {
+  //           formattedData.unshift(currentShutdown);
+  //         }
+  
+  //         // ✅ Set default value to current_shutdown
+  //         setValue(currentShutdown.value);
+  //         setShutdownID(currentShutdown.value);
+  
+  //         // ✅ Fetch default dashboard data based on current shutdown
+  //         await GetDashboard(currentShutdown.value);
+  //       }
+  
+  //       setItems(formattedData);
+  //     } else {
+  //       console.log('Error:', response.message);
+  //     }
+  //   } catch (error) {
+  //     console.error('Fetch Error:', error);
+  //   }
+  // };
+  
 
   // Refresh the Data
   const refresh = async () => {
@@ -135,7 +324,7 @@ const DashBoard = ({navigation}) => {
 
     try {
       const response = await fetch(
-        `${BAS_URL}welding/api/v1/job-status-details/?job_status=${name}`,
+        `${BAS_URL}welding/api/v1/job-status-details/?job_status=${name}&shutdown_id=a9261333-1039-454d-8a27-2a47518978a6`,
         requestOptions,
       );
       console.log('responseedd', JSON.stringify(response));
@@ -496,8 +685,10 @@ const DashBoard = ({navigation}) => {
                   style={{
                     width: '100%',
                     height: '25%',
-                    alignItems: 'flex-start',
                     padding: 10,
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                   }}>
                   <Icon
                     name="menu"
@@ -505,6 +696,49 @@ const DashBoard = ({navigation}) => {
                     color={WHITE}
                     onPress={() => navigation.toggleDrawer()}
                   />
+                  <View
+                    style={{
+                      paddingHorizontal: 10,
+                    }}>
+                   <DropDownPicker
+  open={open}
+  value={value}
+  items={items}
+  setOpen={setOpen}
+  setValue={setValue}
+  setItems={setItems}
+  // placeholder="Shut Down"
+  style={styles.dropdown}
+  dropDownContainerStyle={styles.dropdownContainer}
+  textStyle={styles.text}
+  listItemLabelStyle={styles.listItem}
+  placeholderStyle={styles.placeholder}
+  // onChangeValue={selectedValue => {
+  //   const selectedShutdown = items.find(
+  //     item => item.value === selectedValue,
+  //   );
+  //   console.log('Selected Shutdown:', selectedShutdown?.value);
+
+  //   setShutdownID(selectedShutdown?.value); 
+  //   setValue(selectedShutdown?.value);
+
+  //   // ✅ Fetch new dashboard data based on selected shutdown
+  //   if (selectedShutdown?.value) {
+  //     GetDashboard(selectedShutdown.value);
+  //     //console the GetDashboard selectedShutdown.value
+  //     console.log('.................', selectedShutdown.value);
+      
+  //   }
+  // }}
+  onChangeValue={handleChangeShutdown} 
+  // modalAnimationType="fade"
+  onOpen={() => {
+    // setValue(null);
+    GetShutdown(); // ✅ Refresh dropdown data when opened
+  }}
+/>
+
+                  </View>
                 </View>
                 <View
                   style={{
@@ -707,6 +941,34 @@ const DashBoard = ({navigation}) => {
             </View>
           </View>
         </Modal>
+
+        {/* <Modal
+        transparent={true}
+        animationType="fade"
+        visible={shutdownModalVisible}
+        onRequestClose={() => setShutdownModalVisible(false)}>
+        <TouchableOpacity
+          style={styles.overlay}
+          activeOpacity={1}
+          onPress={() => setShutdownModalVisible(false)}>
+          <View style={styles.dropdown}>
+            <FlatList
+              data={data}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    console.log('Item got clicked',item);
+                    setShutdownModalVisible(false);
+                  }}>
+                  <Text style={styles.itemText}>{item}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal> */}
       </SafeAreaView>
     </Fragment>
   );
@@ -998,6 +1260,44 @@ const styles = StyleSheet.create({
     fontSize: RFPercentage(1.5),
     color: 'black',
     fontFamily: BOLD,
+  },
+  dropdown: {
+    backgroundColor: '#3A9BDC',
+    borderRadius: 8,
+    borderWidth: 0,
+    // paddingHorizontal: 12,
+    // height: 10, // ✅ Decreased height of the dropdown button
+    width: 250,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
+
+  },
+  dropdownContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginTop: 5,
+    width: 250,
+    // maxHeight: 120, 
+
+    
+  },
+  text: {
+    fontSize: 10,
+    color: '#fff',
+    fontWeight: '500',
+  },
+  listItem: {
+    fontSize: 10,
+    color: '#333',
+  },
+  placeholder: {
+    color: '#fff',
+    fontSize: 10,
   },
 });
 

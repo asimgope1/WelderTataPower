@@ -56,6 +56,11 @@ const PAUTReport = ({navigation}) => {
   const [ApprovemodalVisible, SetApprovemodalVisible] = useState(false); // State for modal visibility
   const [remarks, setRemarks] = useState('');
 
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(null);
+  const [items, setItems] = useState([]);
+  const [shutdownID, setShutdownID] = useState(null);
+
   const handleCheckBoxPress = () => {
     setIsChecked(!isChecked);
   };
@@ -279,6 +284,10 @@ const PAUTReport = ({navigation}) => {
 
     fetchData();
   }, []);
+    useEffect(() => {
+      // Fetch defect types and job statuses when the modal is mounted
+  fetchData()
+    }, [shutdownID]);
 
   const [selectedFile, setSelectedFile] = useState(null);
 
@@ -358,7 +367,7 @@ const PAUTReport = ({navigation}) => {
     setLoading(true);
 
     // Base URL
-    const url = `${BAS_URL}welding/api/v1/to-be-paut-list/`;
+    const url = `${BAS_URL}welding/api/v1/to-be-paut-list/?shutdown_id=${shutdownID}`;
 
     // Check if there are any query params in the `params` object
     const queryString = Object.keys(params).length
@@ -410,6 +419,46 @@ const PAUTReport = ({navigation}) => {
         console.error('Fetch Error:', error);
       });
   };
+
+   const GetShutdown = () => {
+        const url = `${BAS_URL}welding/api/v1/all-shutdown-details/`;
+    
+        GETNETWORK(url, true)
+          .then(response => {
+            if (response.status === 'success') {
+              console.log('Shutdown Data:', response.data);
+    
+              // ✅ Format shutdowns data
+              const formattedData = response.data.shutdowns.map(item => ({
+                label: item.shutdown_name,
+                value: item.shutdown_id,
+              }));
+    
+              // ✅ Include current_shutdown in dropdown items
+              if (response.data.current_shutdown) {
+                const currentShutdown = {
+                  label: response.data.current_shutdown.shutdown_name,
+                  value: response.data.current_shutdown.shutdown_id,
+                };
+    
+                // ✅ Add to the list if it's not already included
+                if (!formattedData.some(item => item.value === currentShutdown.value)) {
+                  formattedData.unshift(currentShutdown);
+                }
+    
+                // ✅ Set current shutdown as default value
+                setValue(currentShutdown.value);
+              }
+    
+              setItems(formattedData);
+            } else {
+              console.log('Error:', response.message);
+            }
+          })
+          .catch(error => {
+            console.error('Fetch Error:', error);
+          });
+      };
 
   useFocusEffect(
     useCallback(() => {
@@ -732,7 +781,30 @@ const PAUTReport = ({navigation}) => {
               }}
               title="PAUT-Report"
             />
-
+            <DropDownPicker
+              open={open}
+              value={value}
+              items={items}
+              setOpen={setOpen}
+              setValue={setValue}
+              setItems={setItems}
+              // placeholder="Shut Down"
+              style={styles.dropdown}
+              dropDownContainerStyle={styles.dropdownContainer}
+              textStyle={styles.text}
+              listItemLabelStyle={styles.listItem}
+              placeholderStyle={styles.placeholder}
+              onChangeValue={(selectedValue) => {
+                const selectedShutdown = items.find(item => item.value === selectedValue);
+                console.log('Selected Shutdown:',selectedValue);
+                // fetchData(selectedShutdown?.value)
+                setShutdownID(selectedValue); 
+              }}
+             
+              onOpen={() => {
+                GetShutdown(); 
+              }}
+            />
             {loading ? (
               <ActivityIndicator size="large" color={BRAND} />
             ) : (
@@ -1750,5 +1822,48 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginTop: 15,
     alignSelf: 'center',
+  },
+
+  dropdown: {
+    backgroundColor: '#3A9BDC',
+    borderRadius: 8,
+    borderWidth: 0,
+    // paddingHorizontal: 12,
+    // height: 10, // ✅ Decreased height of the dropdown button
+    width: '95%',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: {width: 0, height: 2},
+    shadowRadius: 4,
+    elevation: 3,
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  dropdownContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginTop: 5,
+    width: '95%',
+    alignSelf: 'center',
+   
+
+    // maxHeight: 120,
+  },
+  text: {
+    fontSize: 10,
+    color: '#fff',
+    fontWeight: '500',
+  },
+  listItem: {
+    fontSize: 10,
+    color: '#333',
+  },
+  placeholder: {
+    color: '#fff',
+    fontSize: 10,
   },
 });

@@ -87,6 +87,11 @@ const AssignWelder = ({navigation}) => {
   const [selectAll, setSelectAll] = useState(false);
   const [selectedJobs, setSelectedJobs] = useState([]); // To hold selected job sl ids
 
+     const [openShutdown, setOpenShutdown] = useState(false);
+      const [valueShutdown, setValueShutdown] = useState(null);
+      const [itemsShutdown, setItemsShutdown] = useState([]);
+      const [shutdownID, setShutdownID] = useState(null);
+
  
   useEffect(() => {
     const fetchData = async () => {
@@ -146,11 +151,58 @@ const AssignWelder = ({navigation}) => {
     fetchData();
   }, []);
 
+
+    useEffect(() => {
+          // Fetch defect types and job statuses when the modal is mounted
+          fetchData()
+        }, [shutdownID]);
+
+   const GetShutdown = () => {
+        const url = `${BAS_URL}welding/api/v1/all-shutdown-details/`;
+    
+        GETNETWORK(url, true)
+          .then(response => {
+            if (response.status === 'success') {
+              console.log('Shutdown Data:', response.data);
+    
+              // ✅ Format shutdowns data
+              const formattedData = response.data.shutdowns.map(item => ({
+                label: item.shutdown_name,
+                value: item.shutdown_id,
+              }));
+    
+              // ✅ Include current_shutdown in dropdown items
+              if (response.data.current_shutdown) {
+                const currentShutdown = {
+                  label: response.data.current_shutdown.shutdown_name,
+                  value: response.data.current_shutdown.shutdown_id,
+                };
+    
+                // ✅ Add to the list if it's not already included
+                if (!formattedData.some(item => item.value === currentShutdown.value)) {
+                  formattedData.unshift(currentShutdown);
+                }
+    
+                // ✅ Set current shutdown as default value
+                setValueShutdown(currentShutdown.value);
+              }
+    
+              setItemsShutdown(formattedData);
+            } else {
+              console.log('Error:', response.message);
+            }
+          })
+          .catch(error => {
+            console.error('Fetch Error:', error);
+          });
+      };
+
   const fetchData = async (params = {}) => {
     setLoading(true);
+    
 
     // Base URL
-    const url = `${BAS_URL}welding/jobmaster/joblist/`;
+    const url = `${BAS_URL}welding/jobmaster/joblist/?shutdown_id=${shutdownID}`;
 
     // Check if there are any query params in the `params` object
     const queryString = Object.keys(params)?.length
@@ -648,6 +700,30 @@ const AssignWelder = ({navigation}) => {
               title="Assign-Welder"
             />
 
+<DropDownPicker
+  open={openShutdown}
+  value={valueShutdown}
+  items={itemsShutdown}
+  setOpen={setOpenShutdown}
+  setValue={setValueShutdown}
+  setItems={setItemsShutdown}
+  // placeholder="Shut Down"
+  style={styless.dropdown}
+  dropDownContainerStyle={styless.dropdownContainer}
+  textStyle={styles.text}
+  listItemLabelStyle={styless.listItem}
+  placeholderStyle={styless.placeholder}
+  onChangeValue={(selectedValue) => {
+    const selectedShutdown = items.find(item => item.value === selectedValue);
+    console.log('Selected Shutdown:',selectedValue);
+    // fetchData(selectedShutdown?.value)
+    setShutdownID(selectedValue); 
+  }}
+  onOpen={() => {
+     GetShutdown(); 
+  }}
+/>
+
             {/* Welder List Display */}
             <View style={{width: '100%', paddingHorizontal: 10, marginTop: 20}}>
               {loading ? (
@@ -1132,5 +1208,49 @@ const styless = StyleSheet.create({
     color: 'white',
     fontWeight: '600',
     textAlign: 'center',
+  },
+
+  dropdown: {
+    backgroundColor: '#3A9BDC',
+    borderRadius: 8,
+    borderWidth: 0,
+    // paddingHorizontal: 12,
+    // height: 10, // ✅ Decreased height of the dropdown button
+    width: '95%',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
+    alignSelf:'center',
+     alignItems:'center',
+    justifyContent:'center',
+    marginTop:10
+
+  },
+  dropdownContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginTop: 5,
+    width: '95%',
+    alignSelf:'center',
+     
+
+    
+  },
+  text: {
+    fontSize: 10,
+    color: '#fff',
+    fontWeight: '500',
+  },
+  listItem: {
+    fontSize: 10,
+    color: '#333',
+  },
+  placeholder: {
+    color: '#fff',
+    fontSize: 10,
   },
 });
