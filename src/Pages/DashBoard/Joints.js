@@ -7,8 +7,9 @@ import {
   FlatList,
   StyleSheet,
   TouchableOpacity,
+  TextInput,
 } from 'react-native';
-import React, {Fragment, useEffect, useState} from 'react';
+import React, {Fragment, useCallback, useEffect, useState} from 'react';
 import {HEIGHT, MyStatusBar, WIDTH} from '../../constants/config';
 import {BLACK, BRAND, WHITE} from '../../constants/color';
 import {appStyles} from '../../styles/AppStyles';
@@ -18,74 +19,130 @@ import {GETNETWORK} from '../../utils/Network';
 import {Icon} from 'react-native-elements';
 import {BOLD} from '../../constants/fontfamily';
 import {Loader} from '../../components/Loader';
+import { useFocusEffect } from '@react-navigation/native';
 
 const Joints = ({route, navigation}) => {
   const [filteredName, setFilteredName] = useState('');
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [shutdownID, setShutdownID] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredData, setFilteredData] = useState(data);
+  const [filterLoading, setFilterLoading] = useState(false);
+
+  
 
   useEffect(() => {
     if (route?.params?.name) {
       const name = route.params.name;
+      const id=route.params.id;
       const filtered = name.replace('Joints', '').trim();
       console.log('Filtered Name:', filtered);
       setFilteredName(filtered);
+      setShutdownID(id);
     }
   }, [route]);
 
+  useFocusEffect(
+    useCallback(
+      () =>{
+        setSearchQuery('');
+        setFilteredData(data);
+        console.log('Filter cleared');
+        return () => {
+          // Clean up if necessary
+        };
+      },[]
+    )
+  )
+
+  // useEffect(() => {
+    
+  //   const filtered = data.filter((item) =>
+  //     item?.job_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //     item?.job_desc_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //     item?.job_details?.toLowerCase().includes(searchQuery.toLowerCase())
+  //   );
+  //   setFilteredData(filtered);
+  // }, [searchQuery, data]);
+
+
   useEffect(() => {
-    const fetchData = async () => {
-      const jobStatus = filteredName === 'Total' ? 'All' : filteredName;
-      const url = `${BAS_URL}welding/api/v1/get-job-details/?job_status=${jobStatus}`;
-      console.log('Fetching URL:', url);
+    setFilterLoading(true); // Start the loader when filtering starts
+    
+    const timeout = setTimeout(() => {
+      const filtered = data.filter((item) =>
+        item?.job_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item?.job_desc_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item?.job_details?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredData(filtered);
+      setFilterLoading(false); // Stop the loader after filtering is done
+    }, 300); // Add a slight delay to prevent too many updates
+  
+    return () => clearTimeout(timeout);
+  }, [searchQuery, data]);
+  
+  const fetchData = useCallback(async () => {
+    if (!filteredName || !shutdownID) return;
+  
+    const jobStatus = filteredName === 'Total' ? 'All' : filteredName;
+    const url = `${BAS_URL}welding/api/v1/get-job-details/?job_status=${jobStatus}&shutdown_id=${shutdownID}`;
+    console.log('Fetching URL:', url);
+  
+    setLoading(true);
+    try {
+      const response = await GETNETWORK(url, true);
+      // console.log('Fetched Data:', JSON.stringify(response.data, null, 2));
 
-      setLoading(true);
-      try {
-        const response = await GETNETWORK(url, true);
-        console.log('Fetched Data:', response);
-        console.log('Length:', response?.data?.length || 0);
-
-        if (response?.data) {
-          setData(response.data);
-        }
-      } catch (error) {
-        console.error('Fetch Error:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (filteredName) {
-      fetchData();
+      setData(response?.data || []);
+    } catch (error) {
+      console.error('Fetch Error:', error);
+    } finally {
+      setLoading(false);
     }
-  }, [filteredName]);
+  }, [filteredName, shutdownID]);
+  
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+  
 
-  const renderItem = ({item}) => (
-    <View style={styles.card}>
+  const renderItem = ({item}) => {
+const date=item?.job_history[0]?.status_date
+const formattedDate = new Date(date).toISOString().split('T')[0];
+
+    return(
+      
+      <View style={styles.card}>
+      <View style={styles.row}>
+        <Text style={styles.title}>Job Number:</Text>
+        <Text style={styles.value}>{item.job_number}</Text>
+      </View>
       <View style={styles.row}>
         <Text style={styles.title}>Job Description:</Text>
         <Text style={styles.value}>{item.job_desc_number}</Text>
       </View>
-
+      {/* <View style={styles.row}>
+        <Text style={styles.title}>Job Details:</Text>
+        <Text style={styles.value}>{item.job_details}</Text>
+      </View> */}
       <View style={styles.row}>
-        <Text style={styles.title}>Status:</Text>
-        <Text style={styles.value}>{item.status}</Text>
+        <Text style={styles.title}>Offer Date:</Text>
+        <Text style={styles.value}>{item.job_offer_date}</Text>
       </View>
-
       <View style={styles.row}>
-        <Text style={styles.title}>Created By:</Text>
-        <Text style={styles.value}>{item.created_by}</Text>
+        <Text style={styles.title}>Fresh/Old:</Text>
+        <Text style={styles.value}>{item.fresh_old}</Text>
       </View>
-
-      <View style={styles.row}>
-        <Text style={styles.title}>Tube Joints:</Text>
-        <Text style={styles.value}>{item.tube_joints}</Text>
-      </View>
-
       <View style={styles.row}>
         <Text style={styles.title}>Unit Number:</Text>
         <Text style={styles.value}>{item.unit_number}</Text>
       </View>
+
+  
+
+ 
 
       {item.component && (
         <View style={styles.row}>
@@ -93,8 +150,23 @@ const Joints = ({route, navigation}) => {
           <Text style={styles.value}>{item.component.component_name}</Text>
         </View>
       )}
+      {item.job_history && (
+        <View style={styles.row}>
+          <Text style={styles.title}>Welder Name:</Text>
+          <Text style={styles.value}>{item.job_history[0].welder_name}</Text>
+        </View>
+      )}
+      {/* {item.job_history && (
+        <View style={styles.row}>
+          <Text style={styles.title}>Status Date:</Text>
+          <Text style={styles.value}>{formattedDate}</Text>
+        </View>
+      )} */}
     </View>
-  );
+    )
+  }
+  
+  
 
   return (
     <Fragment>
@@ -106,7 +178,7 @@ const Joints = ({route, navigation}) => {
           <View style={styles.header}>
             {/* back button */}
             <TouchableOpacity
-              onPress={() => navigation.goBack()}
+              onPress={() => navigation.navigate('Dashboard')}
               style={styles.backButton}>
               <Icon name="arrow-back" size={30} color={WHITE} />
             </TouchableOpacity>
@@ -121,6 +193,13 @@ const Joints = ({route, navigation}) => {
               {filteredName} joints job Details
             </Text>
           </View>
+          <TextInput
+        style={styles.searchInput}
+        placeholder="Search by Job Number, Description..."
+        placeholderTextColor="#999"
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+      />
           <ScrollView
             keyboardShouldPersistTaps={'handled'}
             showsVerticalScrollIndicator={false}
@@ -136,12 +215,47 @@ const Joints = ({route, navigation}) => {
                 </Text>
               ) : (
                 <View style={{width: '100%'}}>
-                  <FlatList
-                    data={data}
-                    keyExtractor={(item, index) => index.toString()}
-                    renderItem={renderItem}
-                    contentContainerStyle={{padding: 10}}
-                  />
+
+
+                 {/* <FlatList
+  data={filteredData}
+  keyExtractor={(item, index) => index.toString()}
+  renderItem={renderItem}
+  initialNumToRender={10}
+  maxToRenderPerBatch={10}
+  windowSize={5}
+  getItemLayout={(data, index) => ({
+    length: 100, // approximate height of each item
+    offset: 100 * index,
+    index,
+  })}
+  // contentContainerStyle={{padding: 1}}
+  removeClippedSubviews={true} // Unmount components outside of view
+/> */}
+
+
+{filterLoading ? (
+ <Loader visible={true} />
+) : filteredData.length === 0 ? (
+  <Text style={{textAlign: 'center', marginTop: 20}}>No Data Found</Text>
+) : (
+  <FlatList
+    data={filteredData}
+    keyExtractor={(item, index) => index.toString()}
+    renderItem={renderItem}
+    initialNumToRender={10}
+    maxToRenderPerBatch={10}
+    windowSize={5}
+    getItemLayout={(data, index) => ({
+      length: 10, 
+      offset: 10 * index,
+      index,
+    })}
+    removeClippedSubviews={true}
+  />
+)}
+
+
                 </View>
               )}
             </View>
@@ -156,8 +270,8 @@ const Joints = ({route, navigation}) => {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#f0f0f0',
-    padding: 15,
-    marginVertical: 10,
+    padding: 8,
+    marginVertical: 3,
     borderRadius: 10,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
@@ -166,7 +280,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   title: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: 'bold',
     marginBottom: 5,
     color: BLACK,
@@ -174,10 +288,10 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    // marginBottom: 3,
   },
   value: {
-    fontSize: 14,
+    fontSize: 12,
     color: BLACK,
   },
   header: {
@@ -186,6 +300,17 @@ const styles = StyleSheet.create({
     padding: 15,
     backgroundColor: BRAND,
     alignItems: 'center',
+  },
+  searchInput: {
+    height: 50,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    marginHorizontal: 10,
+    marginVertical: 10,
+    fontSize: 16,
+    backgroundColor: '#fafafa',
   },
 });
 

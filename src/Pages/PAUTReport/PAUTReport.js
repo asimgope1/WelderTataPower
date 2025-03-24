@@ -288,6 +288,9 @@ const PAUTReport = ({navigation}) => {
       // Fetch defect types and job statuses when the modal is mounted
   fetchData()
     }, [shutdownID]);
+      useEffect(() => {
+        GetShutdown(); // ✅ Load current shutdown on page load
+      }, []);
 
   const [selectedFile, setSelectedFile] = useState(null);
 
@@ -788,7 +791,7 @@ const PAUTReport = ({navigation}) => {
               setOpen={setOpen}
               setValue={setValue}
               setItems={setItems}
-              // placeholder="Shut Down"
+              placeholder=""
               style={styles.dropdown}
               dropDownContainerStyle={styles.dropdownContainer}
               textStyle={styles.text}

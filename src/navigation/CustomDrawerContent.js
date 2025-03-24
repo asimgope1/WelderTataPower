@@ -39,7 +39,7 @@ const menuItems = [
     name: 'RT-Report-Upload',
     icon: 'receipt',
     label: 'RT-Report-Upload',
-    requiredPermission: 'add_tpuser',
+    requiredPermission: 'rt_report_entry',
   },
   {
     name: 'New Job',
@@ -76,6 +76,7 @@ const menuItems = [
     icon: 'check-circle-outline',
     label: 'Q-Verification',
     requiredPermission: 'contractor_quality_verification',
+
   },
   {
     name: 'TPI',
@@ -89,6 +90,7 @@ const menuItems = [
     label: 'Final Approval',
     requiredPermission: 'final_approval',
   },
+  
 ];
 
 const CustomDrawerContent = props => {
@@ -154,9 +156,13 @@ const CustomDrawerContent = props => {
   // Call the function to fetch the profile data
 
   const filteredMenuItems = menuItems.filter(
+    
     item =>
-      !item.requiredPermission || permissions.includes(item.requiredPermission),
+      !item.requiredPermission || permissions.includes(item.requiredPermission)
+    &&!['Q-Verification', 'Final Approval','TPI-Verification'].includes(item.label),
+
   );
+
 
   const handleLogout = async () => {
     try {

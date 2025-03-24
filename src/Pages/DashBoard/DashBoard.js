@@ -154,19 +154,16 @@ const DashBoard = ({navigation}) => {
     }
   };
   
-  // ✅ Keep dashboard data updated when user changes dropdown
   const handleChangeShutdown = async (selectedValue) => {
     const selectedShutdown = items.find(item => item.value === selectedValue);
     
     if (selectedShutdown) {
       // console.log('Selected Shutdown:', selectedShutdown.value);
   
-      // ✅ Update state and persist selection
       setShutdownID(selectedShutdown.value);
       setValue(selectedShutdown.value);
       await AsyncStorage.setItem('selectedShutdown', selectedShutdown.value);
   
-      // ✅ Fetch new dashboard data based on selected value
       await GetDashboard(selectedShutdown.value);
     }
   };
@@ -311,7 +308,7 @@ const DashBoard = ({navigation}) => {
   };
   // Fetch job status details
   const fetchJobStatusDetails = async name => {
-    console.log('Fetching details for:', name);
+    console.log('Fetching details for:', name,shutdownID);
 
     const myHeaders = new Headers();
     myHeaders.append('Authorization', `Token ${Token}`);
@@ -324,11 +321,12 @@ const DashBoard = ({navigation}) => {
 
     try {
       const response = await fetch(
-        `${BAS_URL}welding/api/v1/job-status-details/?job_status=${name}&shutdown_id=a9261333-1039-454d-8a27-2a47518978a6`,
+        `${BAS_URL}welding/api/v1/job-status-details/?job_status=${name}&shutdown_id=${shutdownID}`,
         requestOptions,
       );
       console.log('responseedd', JSON.stringify(response));
       const result = await response.json();
+      console.log('result',result)
 
       if (result.status === 'success' && Array.isArray(result.data)) {
         setModalData(result.data.length > 0 ? result.data : []); // Ensure empty array is set
@@ -699,6 +697,7 @@ const DashBoard = ({navigation}) => {
                   <View
                     style={{
                       paddingHorizontal: 10,
+                      height:HEIGHT*0.07
                     }}>
                    <DropDownPicker
   open={open}
@@ -752,6 +751,7 @@ const DashBoard = ({navigation}) => {
                     onPress={() => {
                       navigation.navigate('Joints', {
                         name: dashboardData?.stats[0]?.name,
+                        id:shutdownID
                       });
                       console.log('item.namee', dashboardData?.stats[0]?.name);
                     }}
@@ -766,8 +766,9 @@ const DashBoard = ({navigation}) => {
                     onPress={() => {
                       navigation.navigate('Joints', {
                         name: dashboardData?.stats[0]?.name,
+                        id:shutdownID
                       });
-                      console.log('item.namee', dashboardData?.stats[0]?.name);
+                      console.log('item.namee', dashboardData?.stats[0]?.name,'shutdownID',shutdownID);
                     }}
                     style={{
                       fontSize: RFValue(25),
@@ -810,7 +811,9 @@ const DashBoard = ({navigation}) => {
                       }}>
                       <Text
                         onPress={() => {
-                          navigation.navigate('Joints', {name: item.name});
+                          navigation.navigate('Joints', {name: item.name,
+                              id: shutdownID
+                          });
                           console.log('item.name', item.name);
                         }}
                         style={{
@@ -822,7 +825,9 @@ const DashBoard = ({navigation}) => {
                       </Text>
                       <Text
                         onPress={() => {
-                          navigation.navigate('Joints', {name: item.name});
+                          navigation.navigate('Joints', {name: item.name,
+                              id: shutdownID
+                          });
                           console.log('item.name', item.name);
                         }}
                         style={{
@@ -1265,9 +1270,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#3A9BDC',
     borderRadius: 8,
     borderWidth: 0,
-    // paddingHorizontal: 12,
-    // height: 10, // ✅ Decreased height of the dropdown button
-    width: 250,
+    width: WIDTH*0.75,
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
@@ -1281,7 +1284,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
     marginTop: 5,
-    width: 250,
+    width: WIDTH*0.75,
     // maxHeight: 120, 
 
     

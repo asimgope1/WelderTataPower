@@ -48,6 +48,8 @@ const RTReport = ({navigation}) => {
   const [reportDate, setReportDate] = useState('');
   const [reportTime, setReportTime] = useState('');
   const [filterCriteria, setFilterCriteria] = useState({});
+  const [permissions, setPermissions] = React.useState([]);
+  
 
   const [DefectOpen, setDefectOpen] = useState(false);
   const [selectedDefect, setSelectedDefect] = useState(null);
@@ -171,10 +173,11 @@ const RTReport = ({navigation}) => {
 
   const [selectedJobs, setSelectedJobs] = useState([]); // To hold selected job sl ids
   const [selectAll, setSelectAll] = useState(false);
-    const [open, setOpen] = useState(false);
-    const [value, setValue] = useState(null);
-    const [items, setItems] = useState([]);
-    const [shutdownID, setShutdownID] = useState(null);
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(null);
+  const [items, setItems] = useState([]);
+  const [shutdownID, setShutdownID] = useState(null);
+  const [canSubmit, setCanSubmit] = useState(false);
 
   const handleCheckBoxPress = () => {
     setIsChecked(!isChecked);
@@ -202,6 +205,7 @@ const RTReport = ({navigation}) => {
         setLoading(true);
         const url = `${BAS_URL}welding/api/v1/query/filters/`;
         const response = await GETNETWORK(url, true); // Use GETNETWORK instead of fetch
+        
 
         if (response.status === 'success') {
           setLoading(true);
@@ -397,7 +401,8 @@ const RTReport = ({navigation}) => {
   };
 
   const handleApiCall = async () => {
-    if (selectedFile) {
+    console.log('hereeee api')
+    // if (selectedFile) {
       try {
         // Create a new instance of Headers and add the Authorization token
         const myHeaders = new Headers();
@@ -405,15 +410,17 @@ const RTReport = ({navigation}) => {
 
         // Create a FormData object and append necessary fields
         const formData = new FormData();
-        formData.append('sl', SelectedJob);
+        formData.append('sl', JSON.stringify(selectedJobs)); // Send jobslArray as a stringified array
+  
         formData.append('report_number', selectedReport);
-        formData.append('report_date', startDate);
-        // Append the selected file to the form data
-        formData.append('file', {
-          uri: selectedFile.uri,
-          name: selectedFile.name,
-          type: selectedFile.type || 'application/octet-stream', // Default MIME type if not provided
-        });
+        // formData.append('report_date', reportDate);
+        // formData.append('file', selectedFile); // Assuming selectedFile is a File object
+        formData.append('defect_type', selectedDefect);
+        formData.append('job_status', selectedJobStatus); // Example value
+        formData.append('remarks', remarks); // Example value
+        formData.append('checkshot', isChecked); // Example value
+        formData.append('assign_welder', isCheck); // Example value
+  
         console.log('formData', formData);
         // Construct request options
         const requestOptions = {
@@ -425,35 +432,52 @@ const RTReport = ({navigation}) => {
 
         // Make the API call
         const response = await fetch(
-          `${BAS_URL}welding/api/v1/rt-assignment/`,
+          `${BAS_URL}welding/api/v1/bulk-rt-assignment/`,
           requestOptions,
         );
         const result = await response.json();
         setModalVisible(false);
-        console.log('API Response:', result);
-        if (result.status === 'error') {
+        console.log('API Response: on submit', result);
+
+
+
+        if (response.ok && result.status === 'success') {
+          console.log('API Response:', result);
+          setSelectAll(false); // Deselect Select All after approval
+          SetApprovemodalVisible(false); // Close the modal
+          setSelectedDefect(null);
+          setSelectedJobStatus(null);
           setReportDate('');
           setReportNumber('');
           setSelectedReport(null);
-          setSelectedFile(null);
+          setRemarks('');
+          setIsChecked(false);
+          setIsCheck(false);
+
           fetchData();
-          alert(`Error: ${result.errors.error || result.message}`);
+          alert('RT Report submitted successfully.');
         } else {
-          alert(`Success: ${JSON.stringify(result.data.message)}`);
+          alert('Failed to submit RT Report. Please try again.');
           fetchData();
+          setSelectAll(false); // Deselect Select All after approval
+          SetApprovemodalVisible(false); // Close the modal
+          setSelectedDefect(null);
+          setSelectedJobStatus(null);
           setReportDate('');
           setReportNumber('');
           setSelectedReport(null);
-          setSelectedFile(null);
+          setRemarks('');
+          setIsChecked(false);
+          setIsCheck(false);
         }
       } catch (error) {
         alert('Error in API call:', error);
         console.error('Error in API call:', error);
       }
-    } else {
-      setModalVisible(false);
-      console.warn('No file selected.');
-    }
+    // } else {
+    //   setModalVisible(false);
+    //   console.warn('No file selected.');
+    // }
   };
 
   // Fetch API data
@@ -493,6 +517,8 @@ const RTReport = ({navigation}) => {
           // setSelectedJoint(null);
           // setSelectedWelder(null);
           setLoading(false);
+          console.log('RTReport Data:', response.data); 
+
         } else {
           // Reset selected filters in case of error
           setLoading(false);
@@ -515,47 +541,47 @@ const RTReport = ({navigation}) => {
       });
   };
 
-
   const GetShutdown = () => {
-      const url = `${BAS_URL}welding/api/v1/all-shutdown-details/`;
-  
-      GETNETWORK(url, true)
-        .then(response => {
-          if (response.status === 'success') {
-            console.log('Shutdown Data:', response.data);
-  
-            // ✅ Format shutdowns data
-            const formattedData = response.data.shutdowns.map(item => ({
-              label: item.shutdown_name,
-              value: item.shutdown_id,
-            }));
-  
-            // ✅ Include current_shutdown in dropdown items
-            if (response.data.current_shutdown) {
-              const currentShutdown = {
-                label: response.data.current_shutdown.shutdown_name,
-                value: response.data.current_shutdown.shutdown_id,
-              };
-  
-              // ✅ Add to the list if it's not already included
-              if (!formattedData.some(item => item.value === currentShutdown.value)) {
-                formattedData.unshift(currentShutdown);
-              }
-  
-              // ✅ Set current shutdown as default value
-              setValue(currentShutdown.value);
+    const url = `${BAS_URL}welding/api/v1/all-shutdown-details/`;
+
+    GETNETWORK(url, true)
+      .then(response => {
+        if (response.status === 'success') {
+          console.log('Shutdown Data:', response.data);
+
+          //  Format shutdowns data
+          const formattedData = response.data.shutdowns.map(item => ({
+            label: item.shutdown_name,
+            value: item.shutdown_id,
+          }));
+
+          //  Include current_shutdown in dropdown items
+          if (response.data.current_shutdown) {
+            const currentShutdown = {
+              label: response.data.current_shutdown.shutdown_name,
+              value: response.data.current_shutdown.shutdown_id,
+            };
+
+            //  Add to the list if it's not already included
+            if (
+              !formattedData.some(item => item.value === currentShutdown.value)
+            ) {
+              formattedData.unshift(currentShutdown);
             }
-  
-            setItems(formattedData);
-          } else {
-            console.log('Error:', response.message);
+
+            //  Set current shutdown as default value
+            setValue(currentShutdown.value);
           }
-        })
-        .catch(error => {
-          console.error('Fetch Error:', error);
-        });
-    };
-    
+
+          setItems(formattedData);
+        } else {
+          console.log('Error:', response.message);
+        }
+      })
+      .catch(error => {
+        console.error('Fetch Error:', error);
+      });
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -569,6 +595,8 @@ const RTReport = ({navigation}) => {
   );
 
   const handleApproveAll = async () => {
+
+    console.log('hii')
     if (selectedJobs.length > 0) {
       console.log('selectedJobs', selectedReport);
 
@@ -649,8 +677,14 @@ const RTReport = ({navigation}) => {
   }, []);
   useEffect(() => {
     // Fetch defect types and job statuses when the modal is mounted
-fetchData()
+    fetchData();
   }, [shutdownID]);
+  useEffect(() => {
+    GetShutdown(); //  Load current shutdown on page load
+  }, []);
+  useEffect(() => {
+    GetPermissions(); // Call permissions on component load
+  }, []);
 
   const GetDefectStatus = async () => {
     try {
@@ -691,6 +725,27 @@ fetchData()
       }
     } catch (error) {
       console.error('Error fetching defect and status data:', error);
+    }
+  };
+
+  const GetPermissions = async () => {
+    const Permissions = await getObjByKey('loginResponse');
+    console.log('permissions', Permissions);
+
+    if (Permissions && Permissions.permissions) {
+      setPermissions(Permissions.permissions); // Store permissions in state
+
+      // Check if 'change_rtreports' exists in permissions
+      if (Permissions.permissions.includes('change_rtreports')) {
+        console.log('Submit action allowed');
+        // Enable submit action here
+        Alert.alert('Submit action allowed');
+
+        setCanSubmit(true);
+      } else {
+        console.log('Submit action not allowed');
+        setCanSubmit(false);
+      }
     }
   };
 
@@ -871,49 +926,51 @@ fetchData()
               }}
               title="RT-Report"
             />
-                 <DropDownPicker
-  open={open}
-  value={value}
-  items={items}
-  setOpen={setOpen}
-  setValue={setValue}
-  setItems={setItems}
-  // placeholder="Shut Down"
-  style={styles.dropdown}
-  dropDownContainerStyle={styles.dropdownContainer}
-  textStyle={styles.text}
-  listItemLabelStyle={styles.listItem}
-  placeholderStyle={styles.placeholder}
-  onChangeValue={(selectedValue) => {
-    const selectedShutdown = items.find(item => item.value === selectedValue);
-    console.log('Selected Shutdown:',selectedValue);
-    // fetchData(selectedShutdown?.value)
-    setShutdownID(selectedValue); 
-  }}
-  // onChangeValue={selectedValue => {
-  //   const selectedShutdown = items.find(
-  //     item => item.value === selectedValue,
-  //   );
-  //   console.log('Selected Shutdown:', selectedShutdown?.value);
+            <DropDownPicker
+              open={open}
+              value={value}
+              items={items}
+              setOpen={setOpen}
+              setValue={setValue}
+              setItems={setItems}
+              placeholder=""
+              style={styles.dropdown}
+              dropDownContainerStyle={styles.dropdownContainer}
+              textStyle={styles.text}
+              listItemLabelStyle={styles.listItem}
+              placeholderStyle={styles.placeholder}
+              onChangeValue={selectedValue => {
+                const selectedShutdown = items.find(
+                  item => item.value === selectedValue,
+                );
+                console.log('Selected Shutdown:', selectedValue);
+                // fetchData(selectedShutdown?.value)
+                setShutdownID(selectedValue);
+              }}
+              // onChangeValue={selectedValue => {
+              //   const selectedShutdown = items.find(
+              //     item => item.value === selectedValue,
+              //   );
+              //   console.log('Selected Shutdown:', selectedShutdown?.value);
 
-  //   setShutdownID(selectedShutdown?.value); 
-  //   setValue(selectedShutdown?.value);
+              //   setShutdownID(selectedShutdown?.value);
+              //   setValue(selectedShutdown?.value);
 
-  //   // ✅ Fetch new dashboard data based on selected shutdown
-  //   if (selectedShutdown?.value) {
-  //     GetDashboard(selectedShutdown.value);
-  //     //console the GetDashboard selectedShutdown.value
-  //     console.log('.................', selectedShutdown.value);
-      
-  //   }
-  // }}
-  // onChangeValue={handleChangeShutdown} --------------------
-  // modalAnimationType="fade"
-  onOpen={() => {
-    // setValue(null);
-     GetShutdown(); 
-  }}
-/>
+              //   //  Fetch new dashboard data based on selected shutdown
+              //   if (selectedShutdown?.value) {
+              //     GetDashboard(selectedShutdown.value);
+              //     //console the GetDashboard selectedShutdown.value
+              //     console.log('.................', selectedShutdown.value);
+
+              //   }
+              // }}
+              // onChangeValue={handleChangeShutdown} --------------------
+              // modalAnimationType="fade"
+              onOpen={() => {
+                // setValue(null);
+                GetShutdown();
+              }}
+            />
 
             {loading ? (
               // <ActivityIndicator size="large" color={BRAND} />
@@ -939,7 +996,6 @@ fetchData()
                     <TouchableOpacity
                       style={styles.selectButton}
                       onPress={() => handleFilter('select')}>
-                      {' '}
                       <Icon
                         name={'filter-alt'}
                         type="material"
@@ -977,7 +1033,7 @@ fetchData()
                           fontSize: 10,
                           fontWeight: 'bold',
                         }}>
-                        Clear{' '}
+                        Clear
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -1019,6 +1075,7 @@ fetchData()
                         }}
                         onPress={() => {
                           SetApprovemodalVisible(true);
+
                         }}>
                         {selectAll == true ? (
                           <Icon
@@ -1191,8 +1248,15 @@ fetchData()
               </View>
               <View style={styles.buttonContainer}>
                 <TouchableOpacity
-                  style={[styles.actionButton, styles.submitButton]}
-                  onPress={handleApiCall}>
+                  style={[
+                    styles.actionButton,
+                    styles.submitButton,
+                   
+                  ]}
+                  onPress={()=>{{
+                    handleApiCall()
+                  }}}
+                 >
                   <Text style={styles.buttonText}>Submit</Text>
                 </TouchableOpacity>
               </View>
@@ -1345,7 +1409,46 @@ fetchData()
 
                 <TouchableOpacity
                   style={[styles.actionButton, styles.submitButton]}
-                  onPress={handleApproveAll}>
+                  onPress={()=>{
+                    if (!selectedReport) {
+                      Alert.alert('Missing Field', 'Please select a Report Number.');
+                      return;
+                    }
+                    if (!selectedDefect) {
+                      Alert.alert('Missing Field', 'Please select a Defect Type.');
+                      return;
+                    }
+                    if (!selectedJobStatus) {
+                      Alert.alert('Missing Field', 'Please select a Job Status.');
+                      return;
+                    }
+                    if (!remarks.trim()) {
+                      Alert.alert('Missing Field', 'Please enter Remarks.');
+                      return;
+                    }
+                    // if (!isChecked && !isCheck) {
+                    //   Alert.alert('Missing Field', 'Please select at least one checkbox.');
+                    //   return;
+                    // }
+                  
+
+
+                    handleApiCall()
+                    // GetPermissions()
+
+
+
+                    SetApprovemodalVisible(false);
+                    setSelectedReport(null);
+                    setSelectedDefect(null);
+                    setSelectedJobStatus(null);
+                    setRemarks('');
+                    setReportDate('');
+                    setSelectedFile(null);
+                    setReportNumber('');
+                    setIsChecked(false);
+                    setIsCheck(false);
+                  }}>
                   <Text style={styles.buttonText}>Submit</Text>
                 </TouchableOpacity>
               </View>
@@ -1838,14 +1941,13 @@ const styles = StyleSheet.create({
     width: '95%',
     shadowColor: '#000',
     shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowRadius: 4,
     elevation: 3,
-    justifyContent:'center',
+    justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
-    marginTop:10
-
+    marginTop: 10,
   },
   dropdownContainer: {
     backgroundColor: '#fff',
@@ -1854,11 +1956,9 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     marginTop: 5,
     width: '95%',
-    // maxHeight: 120, 
-  
-    alignSelf: 'center',
+    // maxHeight: 120,
 
-    
+    alignSelf: 'center',
   },
   text: {
     fontSize: 10,
