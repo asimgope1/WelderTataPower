@@ -308,7 +308,7 @@ const PAUTReport = ({navigation}) => {
   };
 
   const handleApiCall = async () => {
-    if (selectedFile) {
+    // if (selectedFile) {
       try {
         // Create a new instance of Headers and add the Authorization token
         const myHeaders = new Headers();
@@ -316,16 +316,19 @@ const PAUTReport = ({navigation}) => {
 
         // Create a FormData object and append necessary fields
         const formData = new FormData();
-        formData.append('sl', SelectedJob);
+        formData.append('sl', JSON.stringify(selectedJobs)); // Send jobslArray as a stringified array
+  
         formData.append('report_number', selectedReport);
-        // formData.append('report_date', startDate);
-        // Append the selected file to the form data
-        // formData.append('file', {
-        //   uri: selectedFile.uri,
-        //   name: selectedFile.name,
-        //   type: selectedFile.type || 'application/octet-stream', // Default MIME type if not provided
-        // });
-        console.log('formData', formData);
+        // formData.append('report_date', reportDate);
+        // formData.append('file', selectedFile); // Assuming selectedFile is a File object
+        formData.append('defect_type', selectedDefect);
+        formData.append('job_status', selectedJobStatus); // Example value
+        formData.append('remarks', remarks); // Example value
+        formData.append('checkshot', isChecked); // Example value
+        formData.append('assign_welder', isCheck); // Example value
+        formData.append('rt_required', isChec); // Example value
+  
+        console.log('formData bulkk paut', formData);
         // Construct request options
         const requestOptions = {
           method: 'POST',
@@ -336,34 +339,52 @@ const PAUTReport = ({navigation}) => {
 
         // Make the API call
         const response = await fetch(
-          `${BAS_URL}welding/api/v1/paut-assignment/`,
+          `${BAS_URL}welding/api/v1/bulk-paut-assignment/`,
           requestOptions,
         );
         const result = await response.json();
         setModalVisible(false);
         console.log('API Response:', result);
-        if (result.status === 'error') {
+        if (response.ok && result.status === 'success') {
+          console.log('API Response:', result);
+          setSelectAll(false); // Deselect Select All after approval
+          SetApprovemodalVisible(false); // Close the modal
+          setSelectedDefect(null);
+          setSelectedJobStatus(null);
+          setSelectedJobs([])
           setReportDate('');
           setReportNumber('');
           setSelectedReport(null);
-          setSelectedFile(null);
+          setRemarks('');
+          setIsChecked(false);
+          setIsCheck(false);
+          setIsChec(false);
+
           fetchData();
-          alert(`Error: ${result.errors.error || result.message}`);
+          alert('PAUT Report submitted successfully.');
         } else {
-          alert(`Success: ${JSON.stringify(result.data.message)}`);
+          alert('Failed to submit PAUT Report. Please try again.');
+          fetchData();
+          setSelectAll(false); // Deselect Select All after approval
+          SetApprovemodalVisible(false); // Close the modal
+          setSelectedDefect(null);
+          setSelectedJobStatus(null);
+          setSelectedJobs([])
           setReportDate('');
           setReportNumber('');
-          setSelectedFile(null);
-          fetchData();
+          setSelectedReport(null);
+          setRemarks('');
+          setIsChecked(false);
+          setIsCheck(false);
         }
       } catch (error) {
         alert('Error in API call:', error);
         console.error('Error in API call:', error);
       }
-    } else {
-      setModalVisible(false);
-      console.warn('No file selected.');
-    }
+    // } else {
+    //   setModalVisible(false);
+    //   console.warn('No file selected.');
+    // }
   };
 
   const fetchData = async (params = {}) => {
@@ -578,6 +599,7 @@ const PAUTReport = ({navigation}) => {
           SetApprovemodalVisible(false); // Close the modal
           setSelectedDefect(null);
           setSelectedJobStatus(null);
+          setSelectedJobs([])
           setReportDate('');
           setReportNumber('');
           setSelectedReport(null);

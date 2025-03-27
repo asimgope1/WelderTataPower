@@ -26,13 +26,16 @@ import {getObjByKey} from '../../utils/Storage';
 import {RefreshControl} from 'react-native-gesture-handler';
 import {useFocusEffect} from '@react-navigation/native';
 import {Loader} from '../../components/Loader';
-
+import ImageCropPicker from 'react-native-image-crop-picker';
+import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 const RTReportUpload = ({navigation}) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [reportNumber, setReportNumber] = useState('');
   const [reportDate, setReportDate] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+
 
   const handleDateSelect = day => {
     setReportDate(day.dateString);
@@ -41,16 +44,80 @@ const RTReportUpload = ({navigation}) => {
   };
 
   const handleFilePick = async () => {
+    setModalVisible(false); 
     try {
-      // const [pickResult] = await pick()
-      const [pickResult] = await pick({mode: 'import'}); // equivalent
-      console.log('picked one', pickResult);
-      setSelectedFile(pickResult);
-      // do something with the picked file
-    } catch (err) {
-      // see error handling
+      const options = {
+        mediaType: 'photo',
+        cameraType: 'back', // Use the back camera
+        quality: 1,
+        includeBase64: false,
+        saveToPhotos: false, // Don't save to gallery (optional)
+      };
+  
+      launchCamera(options, async response => {
+        if (response.didCancel) {
+          console.log('User cancelled image picker');
+        } else if (response.errorMessage) {
+          console.log('Image Picker Error:', response.errorMessage);
+          Alert.alert('Error', 'Failed to capture image');
+        } else {
+          const image = response.assets[0]; // Get the captured image details
+  
+          console.log('Captured Image:', image);
+  
+          try {
+            // Pass the captured image URI to crop
+            const croppedImage = await ImageCropPicker.openCropper({
+              path: image.uri,
+              width: 300, // Desired crop width
+              height: 300, // Desired crop height
+              cropping: true, // Enable cropping
+              mediaType: 'photo', // Ensure it's a photo
+            });
+  
+            console.log('Cropped Image:', croppedImage);
+            setSelectedFile({
+              uri: croppedImage.path,
+              name: `cropped_${Date.now()}.jpg`, // Unique file name
+              type: croppedImage.mime, // Image type (e.g., image/jpeg)
+            });
+          } catch (cropError) {
+            console.error('Cropping error:', cropError);
+            Alert.alert('Error', 'Failed to crop image');
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Camera Error:', error);
+      Alert.alert('Error', 'Something went wrong while capturing image');
     }
   };
+
+  
+  const handleImagePick = async () => {
+    setModalVisible(false); 
+    try {
+      const pickResult = await ImageCropPicker.openPicker({
+        width: 300, // Desired cropped width
+        height: 300, // Desired cropped height
+        cropping: true, // Enable cropping
+        mediaType: 'photo', // Allows only images
+      });
+
+      console.log('Cropped Image:', pickResult);
+      setSelectedFile({
+        uri: pickResult.path,
+        name: `cropped_${Date.now()}.jpg`, // Give a unique name
+        type: pickResult.mime, // Image type (e.g., image/jpeg)
+      });
+    } catch (error) {
+      console.error('File picking/cropping error:', error);
+      Alert.alert('Error', 'Failed to pick or crop image');
+    }
+  };
+
+  
+  
 
   const [ReportOpen, setReportOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
@@ -128,6 +195,7 @@ const RTReportUpload = ({navigation}) => {
     setLoading(true);
     if (!reportNumber || !reportDate || !selectedFile) {
       Alert.alert('Error', 'Please fill all fields');
+      setLoading(false);
       return;
     }
 
@@ -140,7 +208,7 @@ const RTReportUpload = ({navigation}) => {
     formdata.append('file', {
       uri: selectedFile.uri,
       name: selectedFile.name,
-      type: selectedFile.type, // e.g., 'image/jpeg' or 'application/pdf'
+      type: selectedFile.type,
     });
 
     const requestOptions = {
@@ -172,6 +240,7 @@ const RTReportUpload = ({navigation}) => {
     } catch (error) {
       Alert.alert('Error', 'Something went wrong. Please try again.');
       console.error('Upload Error:', error);
+      setLoading(false);
     }
   };
 
@@ -241,13 +310,43 @@ const RTReportUpload = ({navigation}) => {
                   flexDirection: 'row',
                   alignItems: 'center',
                 }}
-                onPress={handleFilePick}>
+                // onPress={handleFilePick}
+                onPress={()=>{
+                  setModalVisible(true)
+                }}
+                
+                >
                 <Text
                   style={{color: 'white', fontSize: 16, fontWeight: 'bold'}}>
                   Attach File
                 </Text>
                 <Icon name="attachment" size={25} style={{marginLeft: 10}} />
               </TouchableOpacity>
+              <Modal
+        visible={modalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Choose an Option</Text>
+
+            <TouchableOpacity style={styles.optionButton} onPress={handleFilePick}>
+              <Text style={styles.optionText}> Capture from Camera</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.optionButton} onPress={handleImagePick}>
+              <Text style={styles.optionText}> Pick from Gallery</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setModalVisible(false)}>
+              <Text style={styles.cancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
               {selectedFile && (
                 <View style={styles.previewContainer}>
@@ -482,4 +581,36 @@ const styles = StyleSheet.create({
     marginTop: 15,
     alignSelf: 'center',
   },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: 300,
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 20 },
+  optionButton: {
+    backgroundColor: '#007bff',
+    padding: 10,
+    borderRadius: 5,
+    marginVertical: 10,
+    width: '100%',
+    alignItems: 'center',
+  },
+  optionText: { color: 'white', fontSize: 16 },
+  cancelButton: {
+    marginTop: 10,
+    padding: 10,
+    borderRadius: 5,
+    width: '100%',
+    alignItems: 'center',
+    backgroundColor: 'red',
+  },
+  cancelText: { color: 'white', fontSize: 16 },
 });

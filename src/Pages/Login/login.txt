@@ -21,7 +21,7 @@ import {appStyles} from '../../styles/AppStyles';
 import {RFValue} from 'react-native-responsive-fontsize';
 import {useFocusEffect} from '@react-navigation/native';
 import {BASE_URL} from '../../constants/url';
-import {clearAll, storeObjByKey} from '../../utils/Storage';
+import {storeObjByKey} from '../../utils/Storage';
 import {checkuserToken} from '../../redux/actions/auth';
 import {useDispatch} from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -31,8 +31,6 @@ import {Switch, TextInput} from 'react-native-paper';
 import LinearGradient from 'react-native-linear-gradient';
 import Alertmodal from '../../components/Alertmodal/Alertmodal';
 import Exitmodal from '../../components/Exitmodal';
-import DeviceInfo, { getIpAddress } from 'react-native-device-info';
-import { encode } from 'base-64';
 
 // === Constants ===
 const MAX_ATTEMPTS = 5;
@@ -75,25 +73,15 @@ const Login = ({navigation, route}) => {
   };
 
   // === Log Login Attempts ===
-  const logLoginAttempt = async (email, status, message) => {
-    try {
-      const ipAddress = await DeviceInfo.getIpAddress(); // Fetch IP Address
-      const logData = {
-        email,
-        ipAddress,
-        status,
-        message,
-        timestamp: new Date().toISOString(),
-      };
-  
-      console.log('logLoginAttempt ', logData); // Console Log
-  
-      const existingLogs = JSON.parse(await AsyncStorage.getItem('loginLogs')) || [];
-      existingLogs.push(logData);
-      await AsyncStorage.setItem('loginLogs', JSON.stringify(existingLogs));
-    } catch (error) {
-      console.error('Error logging login attempt:', error);
-    }
+  const logLoginAttempt = async (email, status) => {
+    const logData = {
+      email,
+      status,
+      timestamp: new Date().toISOString(),
+    };
+    const existingLogs = JSON.parse(await AsyncStorage.getItem('loginLogs')) || [];
+    existingLogs.push(logData);
+    await AsyncStorage.setItem('loginLogs', JSON.stringify(existingLogs));
   };
 
   // === Brute Force Protection ===
@@ -142,173 +130,48 @@ const Login = ({navigation, route}) => {
   };
 
   // === Handle Login ===
- 
-// const handleLogin = async () => {
-//   if (!validateInput(email, password)) {
-//     return;
-//   }
-//   const proceedWithLogin = await checkLoginAttempts(email);
-//   if (!proceedWithLogin) return;
+  const handleLogin = async () => {
+    if (!validateInput(email, password)) {
+      return;
+    }
+    const proceedWithLogin = await checkLoginAttempts(email);
+    if (!proceedWithLogin) return;
 
-//   const rateLimitPassed = await checkRateLimit(email);
-//   if (!rateLimitPassed) return;
+    const rateLimitPassed = await checkRateLimit(email);
+    if (!rateLimitPassed) return;
 
-//   const url = `${BASE_URL}auth/`;
+    const url = `${BASE_URL}auth/`;
+    const obj = {
+      username: email,
+      password: password,
+    };
+    setLoader(true);
 
-//   // Encode email and password separately
-//   const encodedPassword = encode(password);
-  
-//   // Encode full credentials string
-//   const encodedCredentials = encode(`${email}:${encodedPassword}`);
-
-//   console.log("Original Password:", password);
-//   console.log("Encoded Credentials:", encodedCredentials);
-
-//   const obj = {
-//     credentials: encodedCredentials, // Send as a single encoded string
-//   };
-
-//   setLoader(true);
-
-//   fetch(url, {
-//     method: 'POST',
-//     headers: { 'Content-Type': 'application/json' },
-//     body: JSON.stringify(obj),
-//   })
-//     .then(response => response.json())
-//     .then(async res => {
-//       console.log('response', res);
-//       if (res?.token) {
-//         await logLoginAttempt(email, 'success');
-//         storeObjByKey('loginResponse', res);
-//         dispatch(checkuserToken());
-//         navigation.navigate('DashBoard');
-//       } else {
-//         await logLoginAttempt(email, 'failed');
-//         Alert.alert('Invalid Credentials', 'Please check your details.');
-//       }
-//     })
-//     .catch(() => {
-//       Alert.alert('Error', 'Something went wrong!');
-//     })
-//     .finally(() => {
-//       setLoader(false);
-//     });
-// };
-
-const handleLogin = async () => {
-  if (!validateInput(email, password)) {
-    return;
-  }
-  const proceedWithLogin = await checkLoginAttempts(email);
-  if (!proceedWithLogin) return;
-
-  const rateLimitPassed = await checkRateLimit(email);
-  if (!rateLimitPassed) return;
-
-  const url = `${BASE_URL}auth/`;
-
-  // Encode password
-  const encodedPassword = encode(password);
-  const encodedCredentials = encode(`${email}:${encodedPassword}`);
-
-  console.log("Original Password:", password);
-  console.log("Encoded Credentials:", encodedCredentials);
-
-  // Set headers
-  const myHeaders = new Headers();
-  myHeaders.append("Authorization", `Basic ${encodedCredentials}`);
-  myHeaders.append("Content-Type", "application/json");
-
-  // Request body
-  const raw = JSON.stringify({
-    username: email,
-    password: password, // Send the original password
-  });
-
-  // Request options
-  const requestOptions = {
-    method: "POST",
-    headers: myHeaders,
-    body: raw,
-    redirect: "follow",
+    fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(obj),
+    })
+      .then(response => response.json())
+      .then(async res => {
+        console.log('response', res);
+        if (res?.token) {
+          await logLoginAttempt(email, 'success');
+          storeObjByKey('loginResponse', res);
+          dispatch(checkuserToken());
+          navigation.navigate('DashBoard');
+        } else {
+          await logLoginAttempt(email, 'failed');
+          Alert.alert('Invalid Credentials', 'Please check your details.');
+        }
+      })
+      .catch(() => {
+        Alert.alert('Error', 'Something went wrong!');
+      })
+      .finally(() => {
+        setLoader(false);
+      });
   };
-
-  setLoader(true);
-
-  // API call
-  fetch(url, requestOptions)
-    .then(response => response.json())
-    .then(async res => {
-      console.log('API Response:', res);
-      
-      if (res?.message === "OK") {
-        console.log("LOGIN_SUCCESS");
-        console.log("User logged in successfully.");
-      
-        // Modify the login log message before saving
-        const successData = {
-          email: email,
-          ipAddress: res?.ipAddress || "Unknown IP",
-          status: "LOGIN_SUCCESS",
-          message: "User logged in successfully.", // Replacing "OK" with descriptive message
-          timestamp: new Date().toISOString(),
-        };
-      
-        // Save login logs to AsyncStorage
-        await AsyncStorage.setItem("loginStatus", JSON.stringify(successData));
-      
-        // Log login attempt
-        await logLoginAttempt(email, successData.status,successData.message );
-      
-        // Store response and navigate
-        storeObjByKey('loginResponse', res.data);
-        dispatch(checkuserToken());
-        navigation.navigate('DashBoard');
-      }
-      
-      else if (res.status==='error')
-      {
-        console.log("LOGIN_FAILURE");
-        console.log("User login failed.");
-      
-        // Modify the failure message before saving
-        const failureData = {
-          email: email,
-          ipAddress: res?.ipAddress || "Unknown IP",
-          status: "LOGIN_FAILURE",
-          message: "Invalid Username or password", // Descriptive failure message
-          timestamp: new Date().toISOString(),
-        };
-      
-        // Save failure logs to AsyncStorage
-        await AsyncStorage.setItem("loginStatus", JSON.stringify(failureData));
-      
-        // Log login attempt
-        await logLoginAttempt(email, failureData.status,failureData.message);
-      
-        Alert.alert('Invalid Credentials', 'Please check your details.');
-      }
-      
-    })
-    .catch(async (error) => {
-      console.error("API Error:", error);
-
-      // Save error response
-      const errorData = {
-        status: "ERROR",
-        message: error.message || "Something went wrong!",
-        timestamp: new Date().toISOString(),
-      };
-      await AsyncStorage.setItem("loginStatus", JSON.stringify(errorData));
-
-      Alert.alert('Error', 'Something went wrong!');
-    })
-    .finally(() => {
-      setLoader(false);
-    });
-};
-
 
   // === Modal & Navigation Handling ===
   useEffect(() => {
@@ -463,12 +326,7 @@ const handleLogin = async () => {
                   onChangeText={text => setPassword(text)}
                 />
                 <TouchableOpacity
-                  onPress={() =>
-                    
-                    handleLogin()
-                    // clearAll()
-                  
-                  }
+                  onPress={() => handleLogin()}
                   style={{
                     width: WIDTH * 0.9,
                     height: HEIGHT * 0.065,

@@ -52,6 +52,8 @@ const DashBoard = ({navigation}) => {
   const [value, setValue] = useState(null);
   const [items, setItems] = useState([]);
   const [shutdownID, setShutdownID] = useState(null);
+  
+  
 
 
   const dispatch = useDispatch();
@@ -71,6 +73,21 @@ const DashBoard = ({navigation}) => {
   // );
 
   useEffect(() => {
+    const fetchLoginLogs = async () => {
+      try {
+        const logs = await AsyncStorage.getItem('loginLogs');
+        if (logs) {
+          const parsedLogs = JSON.parse(logs);
+          console.log('Retrieved login logs:', parsedLogs); // Console log the logs
+        } else {
+          console.log('No login logs found');
+        }
+      } catch (error) {
+        console.error('Error retrieving login logs:', error);
+      }
+    };
+
+    fetchLoginLogs();
     const loadSelectedShutdown = async () => {
       // setIsLoading(true)
       try {
