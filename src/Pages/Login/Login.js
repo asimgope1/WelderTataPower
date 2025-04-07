@@ -77,10 +77,10 @@ const Login = ({navigation, route}) => {
   // === Log Login Attempts ===
   const logLoginAttempt = async (email, status, message) => {
     try {
-      const ipAddress = await DeviceInfo.getIpAddress(); // Fetch IP Address
+      const ip_address = await DeviceInfo.getIpAddress(); // Fetch IP Address
       const logData = {
         email,
-        ipAddress,
+        ip_address,
         status,
         message,
         timestamp: new Date().toISOString(),
@@ -88,13 +88,27 @@ const Login = ({navigation, route}) => {
   
       console.log('logLoginAttempt ', logData); // Console Log
   
+      // Save to AsyncStorage
       const existingLogs = JSON.parse(await AsyncStorage.getItem('loginLogs')) || [];
       existingLogs.push(logData);
       await AsyncStorage.setItem('loginLogs', JSON.stringify(existingLogs));
+  
+      // Call API to send log data
+      const response = await fetch(`${BASE_URL}add-audit-log/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(logData),
+      });
+  
+      const result = await response.json();
+      console.log('Audit Log API Response:', result);
     } catch (error) {
       console.error('Error logging login attempt:', error);
     }
   };
+  
 
   // === Brute Force Protection ===
   const checkLoginAttempts = async email => {
@@ -249,7 +263,7 @@ const handleLogin = async () => {
         // Modify the login log message before saving
         const successData = {
           email: email,
-          ipAddress: res?.ipAddress || "Unknown IP",
+          ip_address: res?.ip_address || "Unknown IP",
           status: "LOGIN_SUCCESS",
           message: "User logged in successfully.", // Replacing "OK" with descriptive message
           timestamp: new Date().toISOString(),
@@ -264,7 +278,7 @@ const handleLogin = async () => {
         // Store response and navigate
         storeObjByKey('loginResponse', res.data);
         dispatch(checkuserToken());
-        navigation.navigate('DashBoard');
+        // navigation.navigate('DashBoard');
       }
       
       else if (res.status==='error')
@@ -275,7 +289,7 @@ const handleLogin = async () => {
         // Modify the failure message before saving
         const failureData = {
           email: email,
-          ipAddress: res?.ipAddress || "Unknown IP",
+          ip_address: res?.ip_address || "Unknown IP",
           status: "LOGIN_FAILURE",
           message: "Invalid Username or password", // Descriptive failure message
           timestamp: new Date().toISOString(),

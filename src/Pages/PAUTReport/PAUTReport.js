@@ -444,45 +444,59 @@ const PAUTReport = ({navigation}) => {
       });
   };
 
-   const GetShutdown = () => {
-        const url = `${BAS_URL}welding/api/v1/all-shutdown-details/`;
-    
-        GETNETWORK(url, true)
-          .then(response => {
-            if (response.status === 'success') {
-              console.log('Shutdown Data:', response.data);
-    
-              // ✅ Format shutdowns data
-              const formattedData = response.data.shutdowns.map(item => ({
-                label: item.shutdown_name,
-                value: item.shutdown_id,
-              }));
-    
-              // ✅ Include current_shutdown in dropdown items
-              if (response.data.current_shutdown) {
-                const currentShutdown = {
-                  label: response.data.current_shutdown.shutdown_name,
-                  value: response.data.current_shutdown.shutdown_id,
-                };
-    
-                // ✅ Add to the list if it's not already included
-                if (!formattedData.some(item => item.value === currentShutdown.value)) {
-                  formattedData.unshift(currentShutdown);
-                }
-    
-                // ✅ Set current shutdown as default value
-                setValue(currentShutdown.value);
-              }
-    
-              setItems(formattedData);
-            } else {
-              console.log('Error:', response.message);
-            }
-          })
-          .catch(error => {
-            console.error('Fetch Error:', error);
-          });
-      };
+  const GetShutdown = async () => {
+    const url = `${BAS_URL}welding/api/v1/all-shutdown-details/`;
+  
+    try {
+      const response = await GETNETWORK(url, true);
+  
+      if (response.status === 'success') {
+        const formattedData = response.data.shutdowns.map(item => ({
+          label: item.shutdown_name,
+          value: item.shutdown_id,
+        }));
+  
+        setItemsShutdown(formattedData); // 👈 Update dropdown items
+  
+        const currentShutdownData = response.data.current_shutdown;
+  
+        let defaultShutdownID = null;
+  
+        if (currentShutdownData && currentShutdownData.shutdown_id != null) {
+          const currentShutdown = {
+            label: currentShutdownData.shutdown_name,
+            value: currentShutdownData.shutdown_id,
+          };
+  
+          // Add to top if not present
+          if (!formattedData.some(item => item.value === currentShutdown.value)) {
+            formattedData.unshift(currentShutdown);
+            setItemsShutdown(formattedData); // 👈 Refresh items again
+          }
+  
+          defaultShutdownID = currentShutdown.value;
+  
+        } else if (formattedData.length > 0) {
+          defaultShutdownID = formattedData[0].value;
+        }
+  
+        // ✅ Set value in state only if not already selected
+        if (!valueShutdown && defaultShutdownID != null) {
+          setShutdownID(defaultShutdownID);
+          setValueShutdown(defaultShutdownID);
+          await AsyncStorage.setItem('selectedShutdown', defaultShutdownID);
+          await GetDashboard(defaultShutdownID);
+        }
+  
+      } else {
+        console.log('Error:', response.message);
+      }
+  
+    } catch (error) {
+      console.error('Fetch Error:', error);
+    }
+  };
+  
 
   useFocusEffect(
     useCallback(() => {
@@ -813,7 +827,6 @@ const PAUTReport = ({navigation}) => {
               setOpen={setOpen}
               setValue={setValue}
               setItems={setItems}
-              placeholder=""
               style={styles.dropdown}
               dropDownContainerStyle={styles.dropdownContainer}
               textStyle={styles.text}
@@ -1887,7 +1900,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#333',
   },
-  placeholder: {
+    placeholder: {
     color: '#fff',
     fontSize: 10,
   },

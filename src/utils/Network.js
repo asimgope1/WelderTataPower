@@ -68,6 +68,8 @@ export const GETNETWORK = async (url, token = false) => {
     // If a token is required, add the Authorization header
     if (token) {
       const loginRes = await getObjByKey('loginResponse');
+      console.log('loginRes',loginRes)
+      console.log('loginRes loginRes token',loginRes.token)
       headers = { ...headers, Authorization: `Token ${loginRes?.token}` };
     }
 
