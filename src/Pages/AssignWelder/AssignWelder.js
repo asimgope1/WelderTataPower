@@ -707,7 +707,7 @@ const AssignWelder = ({navigation}) => {
   setOpen={setOpenShutdown}
   setValue={setValueShutdown}
   setItems={setItemsShutdown}
-  // placeholder="Shut Down"
+  placeholder="Select a Shutdown"
   style={styless.dropdown}
   dropDownContainerStyle={styless.dropdownContainer}
   textStyle={styles.text}

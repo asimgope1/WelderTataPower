@@ -432,7 +432,9 @@ const JobApproval = ({navigation}) => {
   useEffect(() => {
     GetJobList();
   }, [navigation]);
-
+  useEffect(() => {
+    GetShutdown(); // ✅ Load current shutdown on page load
+  }, []);
 
   useEffect(() => {
         // Fetch defect types and job statuses when the modal is mounted
@@ -440,8 +442,39 @@ const JobApproval = ({navigation}) => {
       }, [shutdownID]);
   useEffect(() => {
         // Fetch defect types and job statuses when the modal is mounted
-        fetchData()
+        // fetchData()
+        GetShutdowndata()
       }, [shutdownID]);
+
+      const GetShutdowndata=async()=>{
+        const url = `${BAS_URL}welding/jobmaster/joblist/?shutdown_id=${shutdownID}`;
+        try {
+          const response = await GETNETWORK(url, true); // Make API call
+    
+          if (response.status === 'success') {
+            if (response.data && response.data.length > 0) {
+              // Populate the job list with fetched data
+              SetJobList(response.data);
+              console.log('joblist', response);
+            } else {
+              // No data returned; set JobList to empty array
+              SetJobList([]);
+              console.log('No data available for the selected query parameters.');
+            }
+          } else {
+            // API responded with an error
+            SetJobList([]); // Reset job list
+            console.log('Error:', response.message);
+          }
+        } catch (error) {
+          // Handle fetch error
+          SetJobList([]); // Reset job list
+          console.error('Fetch Error:', error);
+        } finally {
+          setLoading(false); // Always reset loading state
+        }
+
+      }
 
   const fetchData = async (params = {}) => {
     // Do not call the API if no parameters are provided
@@ -454,7 +487,7 @@ const JobApproval = ({navigation}) => {
     setLoading(true);
 
     // Base URL
-    const url = `${BAS_URL}welding/jobmaster/joblist/?shutdown_id=${shutdownID}`;
+    const url = `${BAS_URL}welding/jobmaster/joblist/`;
 
     // Construct query string
     const queryString = `?${new URLSearchParams(params).toString()}`;
@@ -676,7 +709,7 @@ const JobApproval = ({navigation}) => {
   setOpen={setOpen}
   setValue={setValue}
   setItems={setItems}
-  // placeholder="Shut Down"
+  placeholder=""
   style={styles.dropdown}
   dropDownContainerStyle={styles.dropdownContainer}
   textStyle={styles.text}

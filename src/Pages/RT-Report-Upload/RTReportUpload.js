@@ -26,6 +26,7 @@ import {getObjByKey} from '../../utils/Storage';
 import {RefreshControl} from 'react-native-gesture-handler';
 import {useFocusEffect} from '@react-navigation/native';
 import {Loader} from '../../components/Loader';
+import ImageCropPicker from 'react-native-image-crop-picker';
 
 const RTReportUpload = ({navigation}) => {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -42,13 +43,22 @@ const RTReportUpload = ({navigation}) => {
 
   const handleFilePick = async () => {
     try {
-      // const [pickResult] = await pick()
-      const [pickResult] = await pick({mode: 'import'}); // equivalent
-      console.log('picked one', pickResult);
-      setSelectedFile(pickResult);
-      // do something with the picked file
-    } catch (err) {
-      // see error handling
+      const pickResult = await ImageCropPicker.openPicker({
+        width: 300, // Desired cropped width
+        height: 300, // Desired cropped height
+        cropping: true, // Enable cropping
+        mediaType: 'photo', // Allows only images
+      });
+
+      console.log('Cropped Image:', pickResult);
+      setSelectedFile({
+        uri: pickResult.path,
+        name: `cropped_${Date.now()}.jpg`, // Give a unique name
+        type: pickResult.mime, // Image type (e.g., image/jpeg)
+      });
+    } catch (error) {
+      console.error('File picking/cropping error:', error);
+      Alert.alert('Error', 'Failed to pick or crop image');
     }
   };
 
@@ -128,6 +138,7 @@ const RTReportUpload = ({navigation}) => {
     setLoading(true);
     if (!reportNumber || !reportDate || !selectedFile) {
       Alert.alert('Error', 'Please fill all fields');
+      setLoading(false);
       return;
     }
 
@@ -140,7 +151,7 @@ const RTReportUpload = ({navigation}) => {
     formdata.append('file', {
       uri: selectedFile.uri,
       name: selectedFile.name,
-      type: selectedFile.type, // e.g., 'image/jpeg' or 'application/pdf'
+      type: selectedFile.type,
     });
 
     const requestOptions = {
@@ -172,6 +183,7 @@ const RTReportUpload = ({navigation}) => {
     } catch (error) {
       Alert.alert('Error', 'Something went wrong. Please try again.');
       console.error('Upload Error:', error);
+      setLoading(false);
     }
   };
 
