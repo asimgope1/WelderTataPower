@@ -421,7 +421,7 @@ const RTReport = ({navigation}) => {
         formData.append('checkshot', isChecked); // Example value
         formData.append('assign_welder', isCheck); // Example value
   
-        console.log('formData', formData);
+        console.log('formData bulkkk', formData);
         // Construct request options
         const requestOptions = {
           method: 'POST',
@@ -435,6 +435,7 @@ const RTReport = ({navigation}) => {
           `${BAS_URL}welding/api/v1/bulk-rt-assignment/`,
           requestOptions,
         );
+      
         const result = await response.json();
         setModalVisible(false);
         console.log('API Response: on submit', result);
@@ -447,6 +448,7 @@ const RTReport = ({navigation}) => {
           SetApprovemodalVisible(false); // Close the modal
           setSelectedDefect(null);
           setSelectedJobStatus(null);
+          setSelectedJobs([])
           setReportDate('');
           setReportNumber('');
           setSelectedReport(null);
@@ -463,6 +465,7 @@ const RTReport = ({navigation}) => {
           SetApprovemodalVisible(false); // Close the modal
           setSelectedDefect(null);
           setSelectedJobStatus(null);
+          setSelectedJobs([])
           setReportDate('');
           setReportNumber('');
           setSelectedReport(null);
@@ -613,7 +616,7 @@ const RTReport = ({navigation}) => {
       formData.append('checkshot', isChecked); // Example value
       formData.append('assign_welder', isCheck); // Example value
 
-      console.log('formData', formData);
+      console.log('formData bulk', formData);
 
       try {
         // API call using fetch
@@ -729,17 +732,18 @@ const RTReport = ({navigation}) => {
   };
 
   const GetPermissions = async () => {
+    console.log('hii inside the report get permissions')
     const Permissions = await getObjByKey('loginResponse');
-    console.log('permissions', Permissions);
+    console.log('permissions inside rt rreport', Permissions.permissions);
 
     if (Permissions && Permissions.permissions) {
       setPermissions(Permissions.permissions); // Store permissions in state
 
       // Check if 'change_rtreports' exists in permissions
-      if (Permissions.permissions.includes('change_rtreports')) {
+      if (Permissions.permissions.includes('welding.change_rtreports')) {
         console.log('Submit action allowed');
         // Enable submit action here
-        Alert.alert('Submit action allowed');
+        // Alert.alert('Submit action allowed');
 
         setCanSubmit(true);
       } else {
@@ -1422,10 +1426,10 @@ const RTReport = ({navigation}) => {
                       Alert.alert('Missing Field', 'Please select a Job Status.');
                       return;
                     }
-                    if (!remarks.trim()) {
-                      Alert.alert('Missing Field', 'Please enter Remarks.');
-                      return;
-                    }
+                    // if (!remarks.trim()) {
+                    //   Alert.alert('Missing Field', 'Please enter Remarks.');
+                    //   return;
+                    // }
                     // if (!isChecked && !isCheck) {
                     //   Alert.alert('Missing Field', 'Please select at least one checkbox.');
                     //   return;

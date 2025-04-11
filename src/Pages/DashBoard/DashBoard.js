@@ -11,6 +11,7 @@ import {
   RefreshControl,
   FlatList,
   Modal,
+  Dimensions,
 } from 'react-native';
 import React, {Fragment, useEffect, useState} from 'react';
 import {HEIGHT, MyStatusBar, WIDTH} from '../../constants/config';
@@ -24,6 +25,9 @@ import {BAS_URL} from '../../constants/url';
 import {GETNETWORK} from '../../utils/Network';
 import {useFocusEffect} from '@react-navigation/native';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import { StackedBarChart } from 'react-native-chart-kit';
+const screenWidth = Dimensions.get('window').width;
+
 import {
   BOLD,
   EXTRABOLD,
@@ -52,6 +56,13 @@ const DashBoard = ({navigation}) => {
   const [value, setValue] = useState(null);
   const [items, setItems] = useState([]);
   const [shutdownID, setShutdownID] = useState(null);
+  const [isTableModalVisible, setTableModalVisible] = useState(false);
+  const [isComponentModalVisible, setComponentModalVisible] = useState(false);
+  const[isUnitModalVisible,setUnitModalVisible]= useState(false);
+
+
+  
+  
 
 
   const dispatch = useDispatch();
@@ -71,6 +82,21 @@ const DashBoard = ({navigation}) => {
   // );
 
   useEffect(() => {
+    const fetchLoginLogs = async () => {
+      try {
+        const logs = await AsyncStorage.getItem('loginLogs');
+        if (logs) {
+          const parsedLogs = JSON.parse(logs);
+          // console.log('Retrieved login logs:', parsedLogs); // Console log the logs
+        } else {
+          console.log('No login logs found');
+        }
+      } catch (error) {
+        console.error('Error retrieving login logs:', error);
+      }
+    };
+
+    fetchLoginLogs();
     const loadSelectedShutdown = async () => {
       // setIsLoading(true)
       try {
@@ -79,7 +105,8 @@ const DashBoard = ({navigation}) => {
           setShutdownID(storedValue);
           setValue(storedValue);
           await GetDashboard(storedValue); // ✅ Load dashboard data based on stored value
-        } else {
+        }
+         else {
           GetShutdown(); // ✅ Load default value if none is stored
         }
       } catch (error) {
@@ -95,46 +122,59 @@ const DashBoard = ({navigation}) => {
   }, []);
   
   const GetShutdown = async () => {
-
     const url = `${BAS_URL}welding/api/v1/all-shutdown-details/`;
   
     try {
       const response = await GETNETWORK(url, true);
-      if (response.status === 'success') {
-        console.log('Shutdown Data:', response.data);
   
+      if (response.status === 'success') {
         const formattedData = response.data.shutdowns.map(item => ({
           label: item.shutdown_name,
           value: item.shutdown_id,
         }));
   
-        if (response.data.current_shutdown) {
+        setItems(formattedData); // Set the items no matter what
+  
+        const currentShutdownData = response.data.current_shutdown;
+  
+        let defaultShutdownID = null;
+  
+        if (currentShutdownData && currentShutdownData.shutdown_id != null) {
           const currentShutdown = {
-            label: response.data.current_shutdown.shutdown_name,
-            value: response.data.current_shutdown.shutdown_id,
+            label: currentShutdownData.shutdown_name,
+            value: currentShutdownData.shutdown_id,
           };
   
+          // Add to the top if not already in the list
           if (!formattedData.some(item => item.value === currentShutdown.value)) {
             formattedData.unshift(currentShutdown);
+            setItems(formattedData); // Update with current at top
           }
   
-          // ✅ Only set default if shutdownID is not already set
-          if (!shutdownID) {
-            setShutdownID(currentShutdown.value);
-            setValue(currentShutdown.value);
-            await AsyncStorage.setItem('selectedShutdown', currentShutdown.value);
-            await GetDashboard(currentShutdown.value);
-          }
+          defaultShutdownID = currentShutdown.value;
+  
+        } else if (formattedData.length > 0) {
+          // If currentShutdown is null, fallback to first shutdown in array
+          defaultShutdownID = formattedData[0].value;
         }
   
-        setItems(formattedData);
+        // ✅ Only proceed if we don’t already have a shutdownID set
+        if (!shutdownID && defaultShutdownID != null) {
+          setShutdownID(defaultShutdownID);
+          setValue(defaultShutdownID);
+          await AsyncStorage.setItem('selectedShutdown', defaultShutdownID);
+          await GetDashboard(defaultShutdownID);
+        }
+  
       } else {
         console.log('Error:', response.message);
       }
+  
     } catch (error) {
       console.error('Fetch Error:', error);
     }
   };
+  
   
   const GetDashboard = async (id) => {
     setIsLoading(true);
@@ -308,7 +348,7 @@ const DashBoard = ({navigation}) => {
   };
   // Fetch job status details
   const fetchJobStatusDetails = async name => {
-    console.log('Fetching details for:', name,shutdownID);
+    // console.log('Fetching details for:', name,shutdownID);
 
     const myHeaders = new Headers();
     myHeaders.append('Authorization', `Token ${Token}`);
@@ -326,7 +366,7 @@ const DashBoard = ({navigation}) => {
       );
       console.log('responseedd', JSON.stringify(response));
       const result = await response.json();
-      console.log('result',result)
+      // console.log('result',result)
 
       if (result.status === 'success' && Array.isArray(result.data)) {
         setModalData(result.data.length > 0 ? result.data : []); // Ensure empty array is set
@@ -334,7 +374,7 @@ const DashBoard = ({navigation}) => {
         setModalData([]); // Handle unexpected API response
       }
 
-      console.log('API Response:', result.data.length);
+      // console.log('API Response:', result.data.length);
     } catch (error) {
       console.error('Error fetching data:', error);
       setModalData([]); // Set empty array on error
@@ -362,7 +402,7 @@ const DashBoard = ({navigation}) => {
                 setSelectedItem(item);
                 setIsModalVisible(true);
                 fetchJobStatusDetails(item.name);
-                console.log('itemname updated', item.name);
+                // console.log('itemname updated', item.name);
               }}>
               <View
                 style={{
@@ -451,201 +491,869 @@ const DashBoard = ({navigation}) => {
     );
   };
 
-  const renderwelderCountTable = () => {
-    if (!dashboardData || !dashboardData.welder_count) return null;
+//   const renderwelderCountTable = () => {
+//     if (!dashboardData || !dashboardData.welder_count) return null;
+//     const chartData = {
+//       labels: dashboardData.welder_count.map(item => item.Name),
+//       legend: ['Accepted', 'Retake', 'Repair'],
+//       data: dashboardData.welder_count.map(item => [
+//         item.Accepted,
+//         item.Retake,
+//         item.Repair,
+//       ]),
+//       barColors: ['#4CAF50', '#FFC107', '#F44336'],
+//     };
+  
+//     return (
+//       <>
+//        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+//   <Text style={{ fontWeight: 'bold', fontSize: 18 }}>
+//     Welder Count Overview
+//   </Text>
 
-    return (
-      <>
-        <Text
-          style={{
-            fontWeight: 'bold',
-            fontSize: 18,
-            // marginBottom: 10,
-          }}>
-          Welder Count Table <Text style={{fontWeight: 'bold'}}></Text>
-        </Text>
-        <ScrollView horizontal style={styles.tableContainer}>
-          <View style={styles.table}>
-            {/* Table Header Row */}
-            <View style={[styles.tableRow, styles.headerRow]}>
-              {[
-                'Welder ID',
-                'Name',
-                'Total',
-                'Accepted',
-                'Repair',
-                'Retake',
-                'Failure Rate',
-              ].map((header, index) => (
-                <View key={index} style={[styles.tableCell, styles.headerCell]}>
-                  <Text style={styles.headerText}>{header}</Text>
-                </View>
-              ))}
-            </View>
+//   <TouchableOpacity
+//     onPress={() => {
+//       // your action here
+//       setTableModalVisible(true)
+//     }}
+//     style={{
+//       backgroundColor: '#007bff',
+//       paddingVertical: 6,
+//       paddingHorizontal: 12,
+//       borderRadius: 5,
+      
+//     }}>
+//     <Text style={{ color: '#fff', fontWeight: 'bold' }}>View Table</Text>
+//   </TouchableOpacity>
+// </View>
 
-            {/* Table Data Rows */}
-            {dashboardData.welder_count.map((item, index) => (
-              <View key={index} style={styles.tableRow}>
-                <View style={styles.tableCell}>
-                  <Text style={styles.cellText}>{item.welder_id}</Text>
-                </View>
-                <View style={styles.tableCell}>
-                  <Text style={styles.cellText}>{item.Name}</Text>
-                </View>
-                <View style={styles.tableCell}>
-                  <Text style={styles.cellText}>{item.Total}</Text>
-                </View>
-                <View style={styles.tableCell}>
-                  <Text style={styles.cellText}>{item.Accepted}</Text>
-                </View>
-                <View style={styles.tableCell}>
-                  <Text style={styles.cellText}>{item.Repair}</Text>
-                </View>
-                <View style={styles.tableCell}>
-                  <Text style={styles.cellText}>{item.Retake}</Text>
-                </View>
-                <View style={styles.tableCell}>
-                  <Text style={styles.cellText}>{item.Failure_Rate}%</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </ScrollView>
-      </>
-    );
+  
+//         <ScrollView horizontal>
+//         <StackedBarChart
+//   data={chartData}
+//   width={Math.max(chartData.labels.length * 170, screenWidth)}
+//   height={300}
+//   chartConfig={{
+//     backgroundGradientFrom: '#ffffff',
+//     backgroundGradientTo: '#ffffff',
+//     color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+//     labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+//     barPercentage: 0.9,
+//     decimalPlaces: 0,
+//     propsForLabels: {
+//       fontSize: 10, // helps prevent overlap
+//     },
+//   }}
+//   style={{
+//     marginVertical: 8,
+//     // marginHorizontal:50,
+//     borderRadius: 10,
+//   }}
+// />
+
+//         </ScrollView>
+//       </>
+//     );
+    
+
+//     // return (
+//     //   <>
+//     //     <Text
+//     //       style={{
+//     //         fontWeight: 'bold',
+//     //         fontSize: 18,
+//     //         // marginBottom: 10,
+//     //       }}>
+//     //       Welder Count Table <Text style={{fontWeight: 'bold'}}></Text>
+//     //     </Text>
+//     //     <ScrollView horizontal style={styles.tableContainer}>
+//     //       <View style={styles.table}>
+//     //         {/* Table Header Row */}
+//     //         <View style={[styles.tableRow, styles.headerRow]}>
+//     //           {[
+//     //             'Welder ID',
+//     //             'Name',
+//     //             'Total',
+//     //             'Accepted',
+//     //             'Repair',
+//     //             'Retake',
+//     //             'Failure Rate',
+//     //           ].map((header, index) => (
+//     //             <View key={index} style={[styles.tableCell, styles.headerCell]}>
+//     //               <Text style={styles.headerText}>{header}</Text>
+//     //             </View>
+//     //           ))}
+//     //         </View>
+
+//     //         {/* Table Data Rows */}
+//     //         {dashboardData.welder_count.map((item, index) => (
+//     //           <View key={index} style={styles.tableRow}>
+//     //             <View style={styles.tableCell}>
+//     //               <Text style={styles.cellText}>{item.welder_id}</Text>
+//     //             </View>
+//     //             <View style={styles.tableCell}>
+//     //               <Text style={styles.cellText}>{item.Name}</Text>
+//     //             </View>
+//     //             <View style={styles.tableCell}>
+//     //               <Text style={styles.cellText}>{item.Total}</Text>
+//     //             </View>
+//     //             <View style={styles.tableCell}>
+//     //               <Text style={styles.cellText}>{item.Accepted}</Text>
+//     //             </View>
+//     //             <View style={styles.tableCell}>
+//     //               <Text style={styles.cellText}>{item.Repair}</Text>
+//     //             </View>
+//     //             <View style={styles.tableCell}>
+//     //               <Text style={styles.cellText}>{item.Retake}</Text>
+//     //             </View>
+//     //             <View style={styles.tableCell}>
+//     //               <Text style={styles.cellText}>{item.Failure_Rate}%</Text>
+//     //             </View>
+//     //           </View>
+//     //         ))}
+//     //       </View>
+//     //     </ScrollView>
+//     //   </>
+//     // );
+    
+//   };
+ 
+
+const renderwelderCountTable = () => {
+  if (!dashboardData || !dashboardData.welder_count) return null;
+
+  const labels = dashboardData.welder_count.map(item =>
+    item.Name.length > 4 ? item.Name.slice(0, 4) + '...' : item.Name
+  );
+
+  const legend = ['Accepted', 'Retake', 'Repair'];
+
+  const data = dashboardData.welder_count.map(item => {
+    const values = [item.Accepted, item.Retake, item.Repair];
+    console.log('Welder Data:', values); // ✅ Clean array output
+    return values;
+  });
+
+  const chartData = {
+    labels,
+    legend,
+    data,
+    barColors: ['#00A389', '#FFB951', '#FF5252'],
   };
 
-  const rendercomponentCount = () => {
-    if (!dashboardData || !dashboardData.component_count) return null;
-
-    return (
-      <>
-        <Text
-          style={{
-            fontWeight: 'bold',
-            fontSize: 18,
-          }}>
-          Component Count Table
-          <Text style={{fontWeight: 'bold'}}></Text>
+  return (
+    <>
+      {/* Header with button */}
+      <View style={{
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+      }}>
+        <Text style={{ fontWeight: 'bold', fontSize: 18 }}>
+          Welder Count Overview
         </Text>
 
-        <ScrollView horizontal style={styles.tableContainer}>
-          <View style={styles.table}>
-            {/* Table Header Row */}
-            <View style={[styles.tableRow, styles.headerRow]}>
-              <View
-                style={[
-                  styles.tableCell,
-                  styles.headerCell,
-                  styles.leftColumn,
-                ]}>
-                <Text style={styles.headerText}>Component Name</Text>
-              </View>
-              {['Total', 'Accepted', 'Repair', 'Retake', 'Failure Rate'].map(
-                (header, index) => (
-                  <View
-                    key={index}
-                    style={[styles.tableCell, styles.headerCell]}>
-                    <Text style={styles.headerText}>{header}</Text>
+        <View style={{
+          marginLeft:WIDTH*0.15
+        }}>
+        <TouchableOpacity
+          onPress={() => setTableModalVisible(true)}
+          style={{
+            backgroundColor: '#007bff',
+            paddingVertical: 6,
+            paddingHorizontal: 12,
+            borderRadius: 5,
+          }}>
+          <Text style={{ color: '#fff', fontWeight: 'bold' }}>View Table</Text>
+        </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Custom Legend */}
+      <View style={{ flexDirection: 'row', marginBottom: 10, flexWrap: 'wrap' }}>
+        {chartData.legend.map((label, index) => (
+          <View
+            key={index}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              marginRight: 15,
+              marginBottom: 5,
+            }}>
+            <View
+              style={{
+                width: 12,
+                height: 12,
+                backgroundColor: chartData.barColors[index],
+                marginRight: 5,
+                borderRadius: 2,
+              }}
+            />
+            <Text style={{ fontSize: 12 }}>{label}</Text>
+          </View>
+        ))}
+      </View>
+
+      {/* Chart */}
+     {/* Chart with overlayed values */}
+     <ScrollView
+  horizontal
+  showsHorizontalScrollIndicator={false}
+  contentContainerStyle={{ paddingBottom: 10 }}>
+
+  <View style={{ position: 'relative' }}>
+    {/* Overlayed Segment Values with Color Matching */}
+    <View style={{
+  position: 'absolute',
+
+  top: 0,
+  left: 20,
+  flexDirection: 'row',
+  zIndex: 1,
+}}>
+  {chartData.data.map((dataArr, i) => {
+    const barHeight = 300;
+    const barMaxValue = Math.max(...chartData.data.map(arr => arr.reduce((a, b) => a + b, 0)));
+    const barScale = barHeight / barMaxValue;
+
+    const totalHeight = dataArr.reduce((sum, val) => sum + val * barScale, 0);
+
+    const entries = dataArr
+      .map((val, idx) => ({
+        value: val,
+        color: chartData.barColors[idx],
+      }))
+      .filter(entry => entry.value !== 0);
+
+    return (
+      <View
+        key={i}
+        style={{
+          width: 90,
+          alignItems: 'center',
+          justifyContent: 'flex-end',
+          height: barHeight,
+        }}>
+        <View
+          style={{
+            position: 'absolute',
+            bottom:  Math.min(totalHeight + 8, barHeight - 30),
+            backgroundColor: '#ffffffee',
+            padding: 4,
+            borderRadius: 6,
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+          }}>
+          {entries.map((entry, idx) => (
+            <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginRight: 6 }}>
+              <View style={{
+                width: 8,
+                height: 8,
+                backgroundColor: entry.color,
+                borderRadius: 4,
+                marginRight: 3,
+              }} />
+              <Text style={{
+                fontSize: 10,
+                fontWeight: '600',
+                color: '#000',
+              }}>
+                {entry.value}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  })}
+</View>
+
+
+    {/* Stacked Bar Chart */}
+    <StackedBarChart
+      data={chartData}
+      
+      width={chartData.labels.length * 90}
+      height={HEIGHT*0.45}
+      yAxisLabel=""
+      yAxisSuffix=""
+      chartConfig={{
+        backgroundGradientFrom: '#ffffff',
+        backgroundGradientTo: '#ffffff',
+        color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+        labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+        barPercentage: 0.4,
+        decimalPlaces: 0,
+        formatYLabel: yValue => `${parseInt(yValue, 10)}`,
+        propsForVerticalLabels: {
+          fontSize: 10,
+          fontWeight: '600',
+          fill: '#222222',
+          textAnchor: 'middle',
+          dx: 10,
+        },
+        propsForHorizontalLabels: {
+          fontSize: 11,
+          fontWeight: '500',
+          dy: 10,
+        },
+        propsForLabels: {
+          fontSize: 5,
+          fontWeight: '600',
+          rotation: 0,
+          originY: 35,
+          originX: 10,
+          textAnchor: 'end',
+        },
+        propsForBackgroundLines: {
+          stroke: 'blue',
+        },
+        fillShadowGradientOpacity: 1,
+        yAxisInterval: 1,
+        xAxisHeight: 60,
+        yAxisWidth: 60,
+      }}
+      style={{
+        marginVertical: 10,
+        borderRadius: 8,
+        paddingRight: 35,
+        paddingLeft: 10,     // ← Should match overlay
+        // paddingBottom: 45,
+        paddingTop: 40,      // ← Should match overlay
+      }}
+      
+      withHorizontalLabels={true}
+      withCustomBarColorFromData={true}
+      flatColor={true}
+      fromZero={true}
+      hideLegend={true}
+      segments={6}
+      horizontalLabelRotation={0}
+      verticalLabelRotation={0}
+      withInnerLines={true}
+      withOuterLines={true}
+      withScrollableDot={false}
+    />
+  </View>
+</ScrollView>
+
+
+
+
+      {/* Table Modal */}
+      <Modal
+        visible={isTableModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setTableModalVisible(false)}>
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
+          <View style={{
+            backgroundColor: '#fff',
+            padding: 20,
+            borderRadius: 12,
+            maxHeight: '80%',
+            width: '95%',
+          }}>
+            {/* Modal Header */}
+            <View style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              marginBottom: 10,
+            }}>
+              <Text style={{ fontWeight: 'bold', fontSize: 20 }}>
+                Welder Count Table
+              </Text>
+              <TouchableOpacity onPress={() => setTableModalVisible(false)}>
+                <Text style={{ fontSize: 18, color: 'red' }}>Close</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Table */}
+            <ScrollView horizontal style={styles.tableContainer}>
+              <View style={styles.table}>
+                <View style={[styles.tableRow, styles.headerRow]}>
+                  {['Welder ID', 'Name', 'Total', 'Accepted', 'Repair', 'Retake', 'Failure Rate']
+                    .map((header, index) => (
+                      <View
+                        key={index}
+                        style={[styles.tableCell, styles.headerCell]}>
+                        <Text style={styles.headerText}>{header}</Text>
+                      </View>
+                    ))}
+                </View>
+
+                {dashboardData.welder_count.map((item, index) => (
+                  <View key={index} style={styles.tableRow}>
+                    <View style={styles.tableCell}>
+                      <Text style={styles.cellText}>{item.welder_id}</Text>
+                    </View>
+                    <View style={styles.tableCell}>
+                      <Text style={styles.cellText}>{item.Name}</Text>
+                    </View>
+                    <View style={styles.tableCell}>
+                      <Text style={styles.cellText}>{item.Total}</Text>
+                    </View>
+                    <View style={styles.tableCell}>
+                      <Text style={styles.cellText}>{item.Accepted}</Text>
+                    </View>
+                    <View style={styles.tableCell}>
+                      <Text style={styles.cellText}>{item.Repair}</Text>
+                    </View>
+                    <View style={styles.tableCell}>
+                      <Text style={styles.cellText}>{item.Retake}</Text>
+                    </View>
+                    <View style={styles.tableCell}>
+                      <Text style={styles.cellText}>{item.Failure_Rate}%</Text>
+                    </View>
                   </View>
-                ),
-              )}
-            </View>
-
-            {/* Table Data Rows */}
-            {dashboardData.component_count.map((item, index) => (
-              <View key={index} style={styles.tableRow}>
-                <View style={[styles.tableCell, styles.leftColumn]}>
-                  <Text style={styles.cellText}>
-                    {item.pressure_part_component_name}
-                  </Text>
-                </View>
-                <View style={styles.tableCell}>
-                  <Text style={styles.cellText}>{item.Total}</Text>
-                </View>
-                <View style={styles.tableCell}>
-                  <Text style={styles.cellText}>{item.Accepted}</Text>
-                </View>
-                <View style={styles.tableCell}>
-                  <Text style={styles.cellText}>{item.Repair}</Text>
-                </View>
-                <View style={styles.tableCell}>
-                  <Text style={styles.cellText}>{item.Retake}</Text>
-                </View>
-                <View style={styles.tableCell}>
-                  <Text style={styles.cellText}>{item.Failure_Rate}%</Text>
-                </View>
+                ))}
               </View>
-            ))}
+            </ScrollView>
           </View>
-        </ScrollView>
-      </>
-    );
+        </View>
+      </Modal>
+    </>
+  );
+};
+
+
+const rendercomponentCount = () => {
+  if (!dashboardData || !dashboardData.component_count) return null;
+
+  const visibleData = dashboardData.component_count;
+
+  const labels = visibleData.map(item => {
+    const name = item.pressure_part_component_name;
+    return name.length > 6
+      ? name.slice(0, 3) + '\n' + name.slice(3, 6) + '...'
+      : name.slice(0, 3) + '\n' + name.slice(3, 6);
+  });
+
+  const legend = ['Accepted', 'Retake', 'Repair'];
+
+  const data = visibleData.map(item => [item.Accepted, item.Retake, item.Repair]);
+
+  const chartData = {
+    labels,
+    legend,
+    data,
+    barColors: ['#00A389', '#FFB951', '#FF5252'],
   };
 
-  const renderunitCount = () => {
-    if (!dashboardData || !dashboardData.unit_count) return null;
+  const barHeight = 300;
+  const barMaxValue = Math.max(...data.map(arr => arr.reduce((a, b) => a + b, 0)));
+  const barScale = barHeight / barMaxValue;
 
-    return (
-      <>
-        <Text
-          style={{
-            fontWeight: 'bold',
-            fontSize: 18,
-            marginBottom: 10,
-          }}>
-          Unit Count Table
-          <Text style={{fontWeight: 'bold'}}></Text>
-        </Text>
+  return (
+    <>
+      {/* Header */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <Text style={{ fontWeight: 'bold', fontSize: 18 }}>Component Count Overview</Text>
+        <View style={{
+          marginLeft:WIDTH*0.07
 
-        <ScrollView horizontal style={styles.tableContainer}>
-          <View style={styles.table}>
-            {/* Table Header Row */}
-            <View style={[styles.tableRow, styles.headerRow]}>
-              <View
-                style={[
-                  styles.tableCell,
-                  styles.headerCell,
-                  styles.leftColumn,
-                ]}>
-                <Text style={styles.headerText}>Unit No</Text>
-              </View>
-              {['Total Jobs', 'Accepted', 'Repair', 'Retake'].map(
-                (header, index) => (
-                  <View
-                    key={index}
-                    style={[styles.tableCell, styles.headerCell]}>
-                    <Text style={styles.headerText}>{header}</Text>
+        }}>
+        <TouchableOpacity
+          onPress={() => setComponentModalVisible(true)}
+          style={{ backgroundColor: '#007bff', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 5 }}>
+          <Text style={{ color: '#fff', fontWeight: 'bold' }}>View Table</Text>
+        </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Custom Legend */}
+      <View style={{ flexDirection: 'row', marginBottom: 10, flexWrap: 'wrap' }}>
+        {legend.map((label, index) => (
+          <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginRight: 15 }}>
+            <View style={{ width: 12, height: 12, backgroundColor: chartData.barColors[index], marginRight: 5, borderRadius: 2 }} />
+            <Text style={{ fontSize: 12 }}>{label}</Text>
+          </View>
+        ))}
+      </View>
+
+      {/* Chart */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
+        <View style={{ position: 'relative' }}>
+          
+          {/* Overlayed values */}
+          <View style={{ position: 'absolute', top: 0, left: 20, flexDirection: 'row', zIndex: 1 }}>
+            {chartData.data.map((dataArr, i) => {
+              const totalHeight = dataArr.reduce((sum, val) => sum + val * barScale, 0);
+
+              const entries = dataArr
+                .map((val, idx) => ({
+                  value: val,
+                  color: chartData.barColors[idx],
+                }))
+                .filter(entry => entry.value !== 0);
+
+              return (
+                <View key={i} style={{ width: 90, alignItems: 'center', justifyContent: 'flex-end', height: barHeight }}>
+                  <View style={{
+                    position: 'absolute',
+                    bottom:  Math.min(totalHeight + 8, barHeight - 30),
+                    backgroundColor: '#ffffffee',
+                    padding: 4,
+                    borderRadius: 6,
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    justifyContent: 'center',
+                  }}>
+                    {entries.map((entry, idx) => (
+                      <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginRight: 6 }}>
+                        <View style={{ width: 8, height: 8, backgroundColor: entry.color, borderRadius: 4, marginRight: 3 }} />
+                        <Text style={{ fontSize: 10, fontWeight: '600', color: '#000' }}>{entry.value}</Text>
+                      </View>
+                    ))}
                   </View>
-                ),
-              )}
+                </View>
+              );
+            })}
+          </View>
+
+          {/* Stacked Chart */}
+          <StackedBarChart
+            data={chartData}
+            width={chartData.labels.length * 90}
+            height={barHeight}
+            chartConfig={{
+              backgroundGradientFrom: '#ffffff',
+              backgroundGradientTo: '#ffffff',
+              color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+              labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+              barPercentage: 0.4,
+              decimalPlaces: 0,
+              formatYLabel: yValue => `${parseInt(yValue, 10)}`,
+              propsForVerticalLabels: {
+                fontSize: 10,
+                fontWeight: '600',
+                fill: '#222222',
+                textAnchor: 'middle',
+                dx: 10,
+              },
+              propsForHorizontalLabels: {
+                fontSize: 11,
+                fontWeight: '500',
+                dy: 10,
+              },
+              propsForBackgroundLines: {
+                stroke: 'blue',
+              },
+              yAxisInterval: 1,
+              xAxisHeight: 60,
+              yAxisWidth: 60,
+            }}
+            style={{
+              marginVertical: 10,
+              borderRadius: 8,
+              paddingRight: 35,
+              paddingLeft: 10,
+              paddingTop: 40,
+            }}
+            withHorizontalLabels={true}
+            withCustomBarColorFromData={true}
+            flatColor={true}
+            fromZero={true}
+            hideLegend={true}
+            segments={6}
+            horizontalLabelRotation={0}
+            verticalLabelRotation={0}
+            withInnerLines={true}
+            withOuterLines={true}
+          />
+        </View>
+      </ScrollView>
+
+      {/* Table Modal */}
+      <Modal
+        visible={isComponentModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setComponentModalVisible(false)}>
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
+          <View style={{
+            backgroundColor: '#fff',
+            padding: 20,
+            borderRadius: 10,
+            maxHeight: '85%',
+            width: '95%',
+          }}>
+            {/* Modal Header */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+              <Text style={{ fontWeight: 'bold', fontSize: 18 }}>Component Count Table</Text>
+              <TouchableOpacity onPress={() => setComponentModalVisible(false)}>
+                <Text style={{ fontSize: 18, color: 'red' }}>Close</Text>
+              </TouchableOpacity>
             </View>
 
-            {/* Table Data Rows */}
-            {dashboardData.unit_count.map((item, index) => (
-              <View key={index} style={styles.tableRow}>
-                <View style={[styles.tableCell, styles.leftColumn]}>
-                  <Text style={styles.cellText}>{item.unit_no}</Text>
+            {/* Table */}
+            <ScrollView horizontal contentContainerStyle={styles.tableContainer}>
+              <View style={styles.table}>
+                <View style={[styles.tableRow, styles.headerRow]}>
+                  {['Component Name', 'Total', 'Accepted', 'Repair', 'Retake', 'Failure Rate'].map((header, index) => (
+                    <View key={index} style={[styles.tableCell, styles.headerCell]}>
+                      <Text style={styles.headerText}>{header}</Text>
+                    </View>
+                  ))}
                 </View>
-                <View style={styles.tableCell}>
-                  <Text style={styles.cellText}>{item.total_jobs}</Text>
-                </View>
-                <View style={styles.tableCell}>
-                  <Text style={styles.cellText}>{item.accepted_count}</Text>
-                </View>
-                <View style={styles.tableCell}>
-                  <Text style={styles.cellText}>{item.repair_count}</Text>
-                </View>
-                <View style={styles.tableCell}>
-                  <Text style={styles.cellText}>{item.retake_count}</Text>
-                </View>
+
+                {visibleData.map((item, index) => (
+                  <View key={index} style={styles.tableRow}>
+                    <View style={styles.tableCell}>
+                      <Text style={styles.cellText}>{item.pressure_part_component_name}</Text>
+                    </View>
+                    <View style={styles.tableCell}>
+                      <Text style={styles.cellText}>{item.Total}</Text>
+                    </View>
+                    <View style={styles.tableCell}>
+                      <Text style={styles.cellText}>{item.Accepted}</Text>
+                    </View>
+                    <View style={styles.tableCell}>
+                      <Text style={styles.cellText}>{item.Repair}</Text>
+                    </View>
+                    <View style={styles.tableCell}>
+                      <Text style={styles.cellText}>{item.Retake}</Text>
+                    </View>
+                    <View style={styles.tableCell}>
+                      <Text style={styles.cellText}>{item.Failure_Rate}%</Text>
+                    </View>
+                  </View>
+                ))}
               </View>
-            ))}
+            </ScrollView>
           </View>
-        </ScrollView>
-      </>
-    );
+        </View>
+      </Modal>
+    </>
+  );
+};
+
+
+
+const renderunitCount = () => {
+  if (!dashboardData || !dashboardData.unit_count) return null;
+
+  const unitData = dashboardData.unit_count;
+
+  const labels = unitData.map(item =>
+    item.unit_no.length > 6
+      ? item.unit_no.slice(0, 3) + '\n' + item.unit_no.slice(3, 6) + '...'
+      : item.unit_no.slice(0, 3) + '\n' + item.unit_no.slice(3)
+  );
+
+  const legend = ['Accepted', 'Repair', 'Retake'];
+
+  const data = unitData.map(item => [
+    item.accepted_count,
+    item.repair_count,
+    item.retake_count,
+  ]);
+
+  const chartData = {
+    labels,
+    legend,
+    data,
+    barColors: ['#00A389', '#FFB951', '#FF5252'],
   };
+
+  const barHeight = 300;
+  const barMaxValue = Math.max(...data.map(arr => arr.reduce((a, b) => a + b, 0)));
+  const barScale = barHeight / barMaxValue;
+
+  return (
+    <>
+      {/* Header */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <Text style={{ fontWeight: 'bold', fontSize: 18 }}>Unit Count Overview</Text>
+        <View style={{
+          marginLeft:WIDTH*0.22
+        }}>
+        <TouchableOpacity
+          onPress={() => setUnitModalVisible(true)}
+          style={{ backgroundColor: '#007bff', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 5 }}>
+          <Text style={{ color: '#fff', fontWeight: 'bold' }}>View Table</Text>
+        </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Custom Legend */}
+      <View style={{ flexDirection: 'row', marginBottom: 10 }}>
+        {legend.map((label, index) => (
+          <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginRight: 15 }}>
+            <View style={{ width: 12, height: 12, backgroundColor: chartData.barColors[index], marginRight: 5, borderRadius: 2 }} />
+            <Text style={{ fontSize: 12 }}>{label}</Text>
+          </View>
+        ))}
+      </View>
+
+      {/* Chart with Overlayed Values */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <View style={{ position: 'relative' }}>
+          {/* Overlay values */}
+          <View style={{ position: 'absolute', top: 0, left: 20, flexDirection: 'row', zIndex: 1 }}>
+            {chartData.data.map((dataArr, i) => {
+              const totalHeight = dataArr.reduce((sum, val) => sum + val * barScale, 0);
+              const entries = dataArr
+                .map((val, idx) => ({
+                  value: val,
+                  color: chartData.barColors[idx],
+                }))
+                .filter(entry => entry.value !== 0);
+
+              return (
+                <View key={i} style={{ width: 90, alignItems: 'center', height: barHeight }}>
+                  <View style={{
+                    position: 'absolute',
+                    bottom: Math.min(totalHeight + 8, barHeight - 30),
+                    backgroundColor: '#ffffffee',
+                    padding: 4,
+                    borderRadius: 6,
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    justifyContent: 'center',
+                  }}>
+                    {entries.map((entry, idx) => (
+                      <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginRight: 6 }}>
+                        <View style={{ width: 8, height: 8, backgroundColor: entry.color, borderRadius: 4, marginRight: 3 }} />
+                        <Text style={{ fontSize: 10, fontWeight: '600', color: '#000' }}>{entry.value}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+
+          {/* Chart */}
+          <StackedBarChart
+            data={chartData}
+            width={chartData.labels.length * 120}
+            height={barHeight}
+            chartConfig={{
+              backgroundGradientFrom: '#ffffff',
+              backgroundGradientTo: '#ffffff',
+              color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+              labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+              barPercentage: 0.4,
+              decimalPlaces: 0,
+              formatYLabel: yValue => `${parseInt(yValue, 10)}`,
+              propsForVerticalLabels: {
+                fontSize: 10,
+                fontWeight: '600',
+                fill: '#222222',
+                textAnchor: 'middle',
+                dx: 10,
+              },
+              propsForHorizontalLabels: {
+                fontSize: 11,
+                fontWeight: '500',
+                dy: 10,
+              },
+              propsForBackgroundLines: {
+                stroke: 'blue',
+              },
+              yAxisInterval: 1,
+              xAxisHeight: 60,
+              yAxisWidth: 60,
+            }}
+            style={{
+              marginVertical: 10,
+              borderRadius: 8,
+              paddingRight: 35,
+              paddingLeft: 10,
+              paddingTop: 40,
+            }}
+            withHorizontalLabels={true}
+            withCustomBarColorFromData={true}
+            flatColor={true}
+            fromZero={true}
+            hideLegend={true}
+            segments={6}
+            horizontalLabelRotation={0}
+            verticalLabelRotation={0}
+            withInnerLines={true}
+            withOuterLines={true}
+          />
+        </View>
+      </ScrollView>
+
+      {/* Modal Table */}
+      <Modal
+        visible={isUnitModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setUnitModalVisible(false)}>
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
+          <View style={{
+            backgroundColor: '#fff',
+            padding: 20,
+            borderRadius: 10,
+            maxHeight: '85%',
+            width: '95%',
+          }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+              <Text style={{ fontWeight: 'bold', fontSize: 18 }}>Unit Count Table</Text>
+              <TouchableOpacity onPress={() => setUnitModalVisible(false)}>
+                <Text style={{ fontSize: 18, color: 'red' }}>Close</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Table */}
+            <ScrollView horizontal contentContainerStyle={styles.tableContainer}>
+              <View style={styles.table}>
+                <View style={[styles.tableRow, styles.headerRow]}>
+                  {['Unit No', 'Total Jobs', 'Accepted', 'Repair', 'Retake'].map((header, index) => (
+                    <View key={index} style={[styles.tableCell, styles.headerCell]}>
+                      <Text style={styles.headerText}>{header}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                {unitData.map((item, index) => (
+                  <View key={index} style={styles.tableRow}>
+                    <View style={styles.tableCell}>
+                      <Text style={styles.cellText}>{item.unit_no}</Text>
+                    </View>
+                    <View style={styles.tableCell}>
+                      <Text style={styles.cellText}>{item.total_jobs}</Text>
+                    </View>
+                    <View style={styles.tableCell}>
+                      <Text style={styles.cellText}>{item.accepted_count}</Text>
+                    </View>
+                    <View style={styles.tableCell}>
+                      <Text style={styles.cellText}>{item.repair_count}</Text>
+                    </View>
+                    <View style={styles.tableCell}>
+                      <Text style={styles.cellText}>{item.retake_count}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    </>
+  );
+};
+
 
   return (
     <Fragment>
@@ -753,7 +1461,7 @@ const DashBoard = ({navigation}) => {
                         name: dashboardData?.stats[0]?.name,
                         id:shutdownID
                       });
-                      console.log('item.namee', dashboardData?.stats[0]?.name);
+                      // console.log('item.namee', dashboardData?.stats[0]?.name);
                     }}
                     style={{
                       fontSize: RFValue(13),
@@ -768,7 +1476,7 @@ const DashBoard = ({navigation}) => {
                         name: dashboardData?.stats[0]?.name,
                         id:shutdownID
                       });
-                      console.log('item.namee', dashboardData?.stats[0]?.name,'shutdownID',shutdownID);
+                      // console.log('item.namee', dashboardData?.stats[0]?.name,'shutdownID',shutdownID);
                     }}
                     style={{
                       fontSize: RFValue(25),
@@ -814,7 +1522,7 @@ const DashBoard = ({navigation}) => {
                           navigation.navigate('Joints', {name: item.name,
                               id: shutdownID
                           });
-                          console.log('item.name', item.name);
+                          // console.log('item.name', item.name);
                         }}
                         style={{
                           fontSize: RFValue(9.5),
@@ -828,7 +1536,7 @@ const DashBoard = ({navigation}) => {
                           navigation.navigate('Joints', {name: item.name,
                               id: shutdownID
                           });
-                          console.log('item.name', item.name);
+                          // console.log('item.name', item.name);
                         }}
                         style={{
                           fontSize: RFValue(10),

@@ -308,7 +308,7 @@ const PAUTReport = ({navigation}) => {
   };
 
   const handleApiCall = async () => {
-    if (selectedFile) {
+    // if (selectedFile) {
       try {
         // Create a new instance of Headers and add the Authorization token
         const myHeaders = new Headers();
@@ -316,16 +316,19 @@ const PAUTReport = ({navigation}) => {
 
         // Create a FormData object and append necessary fields
         const formData = new FormData();
-        formData.append('sl', SelectedJob);
+        formData.append('sl', JSON.stringify(selectedJobs)); // Send jobslArray as a stringified array
+  
         formData.append('report_number', selectedReport);
-        // formData.append('report_date', startDate);
-        // Append the selected file to the form data
-        // formData.append('file', {
-        //   uri: selectedFile.uri,
-        //   name: selectedFile.name,
-        //   type: selectedFile.type || 'application/octet-stream', // Default MIME type if not provided
-        // });
-        console.log('formData', formData);
+        // formData.append('report_date', reportDate);
+        // formData.append('file', selectedFile); // Assuming selectedFile is a File object
+        formData.append('defect_type', selectedDefect);
+        formData.append('job_status', selectedJobStatus); // Example value
+        formData.append('remarks', remarks); // Example value
+        formData.append('checkshot', isChecked); // Example value
+        formData.append('assign_welder', isCheck); // Example value
+        formData.append('rt_required', isChec); // Example value
+  
+        console.log('formData bulkk paut', formData);
         // Construct request options
         const requestOptions = {
           method: 'POST',
@@ -336,34 +339,52 @@ const PAUTReport = ({navigation}) => {
 
         // Make the API call
         const response = await fetch(
-          `${BAS_URL}welding/api/v1/paut-assignment/`,
+          `${BAS_URL}welding/api/v1/bulk-paut-assignment/`,
           requestOptions,
         );
         const result = await response.json();
         setModalVisible(false);
         console.log('API Response:', result);
-        if (result.status === 'error') {
+        if (response.ok && result.status === 'success') {
+          console.log('API Response:', result);
+          setSelectAll(false); // Deselect Select All after approval
+          SetApprovemodalVisible(false); // Close the modal
+          setSelectedDefect(null);
+          setSelectedJobStatus(null);
+          setSelectedJobs([])
           setReportDate('');
           setReportNumber('');
           setSelectedReport(null);
-          setSelectedFile(null);
+          setRemarks('');
+          setIsChecked(false);
+          setIsCheck(false);
+          setIsChec(false);
+
           fetchData();
-          alert(`Error: ${result.errors.error || result.message}`);
+          alert('PAUT Report submitted successfully.');
         } else {
-          alert(`Success: ${JSON.stringify(result.data.message)}`);
+          alert('Failed to submit PAUT Report. Please try again.');
+          fetchData();
+          setSelectAll(false); // Deselect Select All after approval
+          SetApprovemodalVisible(false); // Close the modal
+          setSelectedDefect(null);
+          setSelectedJobStatus(null);
+          setSelectedJobs([])
           setReportDate('');
           setReportNumber('');
-          setSelectedFile(null);
-          fetchData();
+          setSelectedReport(null);
+          setRemarks('');
+          setIsChecked(false);
+          setIsCheck(false);
         }
       } catch (error) {
         alert('Error in API call:', error);
         console.error('Error in API call:', error);
       }
-    } else {
-      setModalVisible(false);
-      console.warn('No file selected.');
-    }
+    // } else {
+    //   setModalVisible(false);
+    //   console.warn('No file selected.');
+    // }
   };
 
   const fetchData = async (params = {}) => {
@@ -423,45 +444,59 @@ const PAUTReport = ({navigation}) => {
       });
   };
 
-   const GetShutdown = () => {
-        const url = `${BAS_URL}welding/api/v1/all-shutdown-details/`;
-    
-        GETNETWORK(url, true)
-          .then(response => {
-            if (response.status === 'success') {
-              console.log('Shutdown Data:', response.data);
-    
-              // ✅ Format shutdowns data
-              const formattedData = response.data.shutdowns.map(item => ({
-                label: item.shutdown_name,
-                value: item.shutdown_id,
-              }));
-    
-              // ✅ Include current_shutdown in dropdown items
-              if (response.data.current_shutdown) {
-                const currentShutdown = {
-                  label: response.data.current_shutdown.shutdown_name,
-                  value: response.data.current_shutdown.shutdown_id,
-                };
-    
-                // ✅ Add to the list if it's not already included
-                if (!formattedData.some(item => item.value === currentShutdown.value)) {
-                  formattedData.unshift(currentShutdown);
-                }
-    
-                // ✅ Set current shutdown as default value
-                setValue(currentShutdown.value);
-              }
-    
-              setItems(formattedData);
-            } else {
-              console.log('Error:', response.message);
-            }
-          })
-          .catch(error => {
-            console.error('Fetch Error:', error);
-          });
-      };
+  const GetShutdown = async () => {
+    const url = `${BAS_URL}welding/api/v1/all-shutdown-details/`;
+  
+    try {
+      const response = await GETNETWORK(url, true);
+  
+      if (response.status === 'success') {
+        const formattedData = response.data.shutdowns.map(item => ({
+          label: item.shutdown_name,
+          value: item.shutdown_id,
+        }));
+  
+        setItemsShutdown(formattedData); // 👈 Update dropdown items
+  
+        const currentShutdownData = response.data.current_shutdown;
+  
+        let defaultShutdownID = null;
+  
+        if (currentShutdownData && currentShutdownData.shutdown_id != null) {
+          const currentShutdown = {
+            label: currentShutdownData.shutdown_name,
+            value: currentShutdownData.shutdown_id,
+          };
+  
+          // Add to top if not present
+          if (!formattedData.some(item => item.value === currentShutdown.value)) {
+            formattedData.unshift(currentShutdown);
+            setItemsShutdown(formattedData); // 👈 Refresh items again
+          }
+  
+          defaultShutdownID = currentShutdown.value;
+  
+        } else if (formattedData.length > 0) {
+          defaultShutdownID = formattedData[0].value;
+        }
+  
+        // ✅ Set value in state only if not already selected
+        if (!valueShutdown && defaultShutdownID != null) {
+          setShutdownID(defaultShutdownID);
+          setValueShutdown(defaultShutdownID);
+          await AsyncStorage.setItem('selectedShutdown', defaultShutdownID);
+          await GetDashboard(defaultShutdownID);
+        }
+  
+      } else {
+        console.log('Error:', response.message);
+      }
+  
+    } catch (error) {
+      console.error('Fetch Error:', error);
+    }
+  };
+  
 
   useFocusEffect(
     useCallback(() => {
@@ -578,6 +613,7 @@ const PAUTReport = ({navigation}) => {
           SetApprovemodalVisible(false); // Close the modal
           setSelectedDefect(null);
           setSelectedJobStatus(null);
+          setSelectedJobs([])
           setReportDate('');
           setReportNumber('');
           setSelectedReport(null);
@@ -791,7 +827,6 @@ const PAUTReport = ({navigation}) => {
               setOpen={setOpen}
               setValue={setValue}
               setItems={setItems}
-              placeholder=""
               style={styles.dropdown}
               dropDownContainerStyle={styles.dropdownContainer}
               textStyle={styles.text}
@@ -1865,7 +1900,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#333',
   },
-  placeholder: {
+    placeholder: {
     color: '#fff',
     fontSize: 10,
   },

@@ -33,62 +33,62 @@ const menuItems = [
     name: 'Registration',
     icon: 'receipt',
     label: 'Registration',
-    requiredPermission: 'add_tpuser',
+    requiredPermission: 'commons.add_tpuser',
   },
   {
     name: 'RT-Report-Upload',
     icon: 'receipt',
     label: 'RT-Report-Upload',
-    requiredPermission: 'rt_report_entry',
+    requiredPermission: 'welding.rt_report_entry',
   },
   {
     name: 'New Job',
     icon: 'new-label',
     label: 'New Job',
-    requiredPermission: 'add_jobmaster',
+    requiredPermission: 'welding.add_jobmaster',
   },
   {
     name: 'Job Approval',
     icon: 'thumb-up',
     label: 'Job Approval',
-    requiredPermission: 'job_approval',
+    requiredPermission: 'welding.job_approval',
   },
   {
     name: 'Assign Welder',
     icon: 'work',
     label: 'Assign Welder',
-    requiredPermission: 'user_role_management',
+    requiredPermission: 'commons.user_role_management',
   },
   {
     name: 'RT Report',
     icon: 'menu-book',
     label: 'RT Report',
-    requiredPermission: 'rt_report_entry',
+    requiredPermission: 'welding.rt_report_entry',
   },
   {
     name: 'PAUT-Report',
     icon: 'menu-book',
     label: 'PAUT Report',
-    requiredPermission: 'paut_report_entry',
+    requiredPermission: 'welding.paut_report_entry',
   },
   {
     name: 'Quality Verification',
     icon: 'check-circle-outline',
     label: 'Q-Verification',
-    requiredPermission: 'contractor_quality_verification',
+    requiredPermission: 'welding.contractor_quality_verification',
 
   },
   {
     name: 'TPI',
     icon: 'report-gmailerrorred',
     label: 'TPI-Verification',
-    requiredPermission: 'tpi_quality_engineer_verification',
+    requiredPermission: 'welding.tpi_quality_engineer_verification',
   },
   {
     name: 'Final Approval',
     icon: 'thumbs-up-down',
     label: 'Final Approval',
-    requiredPermission: 'final_approval',
+    requiredPermission: 'welding.final_approval',
   },
   
 ];
@@ -106,11 +106,11 @@ const CustomDrawerContent = props => {
 
   const GetPermissions = async () => {
     const Permissions = await getObjByKey('loginResponse');
-    console.log('permissions', Permissions);
-    if (Permissions && Permissions.permissions) {
-      setPermissions(Permissions.permissions); // Store permissions in state
+    // console.log('permissionss', Permissions?.permissions);
+    if (Permissions?.permissions && Permissions?.permissions) {
+      setPermissions(Permissions?.permissions); // Store permissions in state
     }
-    console.log('Permissions', Permissions);
+    // console.log('Permissions', Permissions);
   };
 
   const fetchProfileData = async () => {
@@ -158,10 +158,14 @@ const CustomDrawerContent = props => {
   const filteredMenuItems = menuItems.filter(
     
     item =>
+
       !item.requiredPermission || permissions.includes(item.requiredPermission)
-    &&!['Q-Verification', 'Final Approval','TPI-Verification'].includes(item.label),
+    &&!['Final Approval', 'Q-Verification','TPI-Verification'].includes(item.label),
 
   );
+  // const filteredMenuItems =()=>{
+
+  // }
 
 
   const handleLogout = async () => {
@@ -179,6 +183,8 @@ const CustomDrawerContent = props => {
       console.error('Logout Error:', error);
     }
   };
+
+  // console.log('permissionsses',permissions)
 
   return (
     <DrawerContentScrollView

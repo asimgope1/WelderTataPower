@@ -16,26 +16,29 @@ import {
 } from 'react-native';
 import React, {Fragment, useEffect, useState} from 'react';
 import {BLACK, BRAND, GRAY, GREEN, ORANGE, WHITE} from '../../constants/color';
-import CustomButton from '../../components/CustomButton';
-import {loginStyles} from './LoginStyles';
 import {HEIGHT, MyStatusBar, WIDTH} from '../../constants/config';
-import {CustomTextInput} from '../../components/CustomTextInput';
-import {Loader} from '../../components/Loader';
 import {appStyles} from '../../styles/AppStyles';
-import {EXTRABOLD, MEDIUM, REGULAR, SEMIBOLD} from '../../constants/fontfamily';
 import {RFValue} from 'react-native-responsive-fontsize';
 import {useFocusEffect} from '@react-navigation/native';
 import {BASE_URL} from '../../constants/url';
-import {POSTNETWORK} from '../../utils/Network';
 import {clearAll, storeObjByKey} from '../../utils/Storage';
-import Alertmodal from '../../components/Alertmodal/Alertmodal';
-import Exitmodal from '../../components/Exitmodal';
-import {BG, LOGO, TATA} from '../../constants/imagepath';
-import {Card, Icon, Input} from 'react-native-elements';
-import LinearGradient from 'react-native-linear-gradient';
-import {Switch, TextInput} from 'react-native-paper';
 import {checkuserToken} from '../../redux/actions/auth';
 import {useDispatch} from 'react-redux';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {Loader} from '../../components/Loader';
+import {BG, LOGO, TATA} from '../../constants/imagepath';
+import {Switch, TextInput} from 'react-native-paper';
+import LinearGradient from 'react-native-linear-gradient';
+import Alertmodal from '../../components/Alertmodal/Alertmodal';
+import Exitmodal from '../../components/Exitmodal';
+import DeviceInfo, { getIpAddress } from 'react-native-device-info';
+import { encode } from 'base-64';
+
+// === Constants ===
+const MAX_ATTEMPTS = 5;
+const LOCK_TIME_MS = 10 * 60 * 1000; // 10 minutes lockout
+const RATE_LIMIT_MS = 60000; // 1 minute rate limit
+const MAX_REQUESTS = 3;
 
 const Login = ({navigation, route}) => {
   const [loader, setLoader] = useState(false);
@@ -44,89 +47,295 @@ const Login = ({navigation, route}) => {
   const [alertMsg, setAlertMsg] = useState('');
   const [alertModal, setAlertModal] = useState(false);
   const [exitModal, setExitModal] = useState(false);
+  const [isSwitchOn, setIsSwitchOn] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const dispatch = useDispatch();
 
-  const [isModalVisible, setIsModalVisible] = useState(false);
-
-  const toggleModal = () => {
-    setIsModalVisible(!isModalVisible);
-  };
-
-  const [isSwitchOn, setIsSwitchOn] = React.useState(false);
-
+  // === Modal Toggle ===
+  const toggleModal = () => setIsModalVisible(!isModalVisible);
   const onToggleSwitch = () => setIsSwitchOn(!isSwitchOn);
 
+  // === Validate Email & Password ===
+  const validateInput = (email, password) => {
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const passwordPattern = /^[a-zA-Z0-9@!#%&]+$/;
+
+    if (!emailPattern.test(email.trim())) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return false;
+    }
+    if (password.length < 8 || !passwordPattern.test(password)) {
+      Alert.alert(
+        'Weak Password',
+        'Password must be at least 8 characters and contain only allowed characters.',
+      );
+      return false;
+    }
+    return true;
+  };
+
+  // === Log Login Attempts ===
+  const logLoginAttempt = async (email, status, message) => {
+    try {
+      const ip_address = await DeviceInfo.getIpAddress(); // Fetch IP Address
+      const logData = {
+        email,
+        ip_address,
+        status,
+        message,
+        timestamp: new Date().toISOString(),
+      };
+  
+      console.log('logLoginAttempt ', logData); // Console Log
+  
+      // Save to AsyncStorage
+      const existingLogs = JSON.parse(await AsyncStorage.getItem('loginLogs')) || [];
+      existingLogs.push(logData);
+      await AsyncStorage.setItem('loginLogs', JSON.stringify(existingLogs));
+  
+      // Call API to send log data
+      const response = await fetch(`${BASE_URL}add-audit-log/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(logData),
+      });
+  
+      const result = await response.json();
+      console.log('Audit Log API Response:', result);
+    } catch (error) {
+      console.error('Error logging login attempt:', error);
+    }
+  };
+  
+
+  // === Brute Force Protection ===
+  const checkLoginAttempts = async email => {
+    const logs = JSON.parse(await AsyncStorage.getItem('loginLogs')) || [];
+    const recentAttempts = logs.filter(
+      log =>
+        log.email === email &&
+        log.status === 'failed' &&
+        new Date() - new Date(log.timestamp) < LOCK_TIME_MS,
+    );
+
+    if (recentAttempts.length >= MAX_ATTEMPTS) {
+      const lockTimeRemaining =
+        LOCK_TIME_MS - (new Date() - new Date(recentAttempts[0].timestamp));
+      Alert.alert(
+        'Account Locked',
+        `Too many failed attempts. Try again in ${
+          Math.round(lockTimeRemaining / 60000) || 1
+        } minute(s).`,
+      );
+      return false;
+    }
+    return true;
+  };
+
+  // === Rate Limiting Check ===
+  const checkRateLimit = async email => {
+    const rateLimitData = JSON.parse(await AsyncStorage.getItem('rateLimit')) || {};
+    const userRate = rateLimitData[email] || {count: 0, lastAttempt: null};
+
+    if (userRate.lastAttempt && new Date() - new Date(userRate.lastAttempt) < RATE_LIMIT_MS) {
+      if (userRate.count >= MAX_REQUESTS) {
+        Alert.alert('Too Many Requests', 'Please wait before trying again.');
+        return false;
+      }
+      userRate.count += 1;
+    } else {
+      userRate.count = 1;
+      userRate.lastAttempt = new Date().toISOString();
+    }
+
+    rateLimitData[email] = userRate;
+    await AsyncStorage.setItem('rateLimit', JSON.stringify(rateLimitData));
+    return true;
+  };
+
+  // === Handle Login ===
+ 
+// const handleLogin = async () => {
+//   if (!validateInput(email, password)) {
+//     return;
+//   }
+//   const proceedWithLogin = await checkLoginAttempts(email);
+//   if (!proceedWithLogin) return;
+
+//   const rateLimitPassed = await checkRateLimit(email);
+//   if (!rateLimitPassed) return;
+
+//   const url = `${BASE_URL}auth/`;
+
+//   // Encode email and password separately
+//   const encodedPassword = encode(password);
+  
+//   // Encode full credentials string
+//   const encodedCredentials = encode(`${email}:${encodedPassword}`);
+
+//   console.log("Original Password:", password);
+//   console.log("Encoded Credentials:", encodedCredentials);
+
+//   const obj = {
+//     credentials: encodedCredentials, // Send as a single encoded string
+//   };
+
+//   setLoader(true);
+
+//   fetch(url, {
+//     method: 'POST',
+//     headers: { 'Content-Type': 'application/json' },
+//     body: JSON.stringify(obj),
+//   })
+//     .then(response => response.json())
+//     .then(async res => {
+//       console.log('response', res);
+//       if (res?.token) {
+//         await logLoginAttempt(email, 'success');
+//         storeObjByKey('loginResponse', res);
+//         dispatch(checkuserToken());
+//         navigation.navigate('DashBoard');
+//       } else {
+//         await logLoginAttempt(email, 'failed');
+//         Alert.alert('Invalid Credentials', 'Please check your details.');
+//       }
+//     })
+//     .catch(() => {
+//       Alert.alert('Error', 'Something went wrong!');
+//     })
+//     .finally(() => {
+//       setLoader(false);
+//     });
+// };
+
+const handleLogin = async () => {
+  if (!validateInput(email, password)) {
+    return;
+  }
+  const proceedWithLogin = await checkLoginAttempts(email);
+  if (!proceedWithLogin) return;
+
+  const rateLimitPassed = await checkRateLimit(email);
+  if (!rateLimitPassed) return;
+
+  const url = `${BASE_URL}auth/`;
+
+  // Encode password
+  const encodedPassword = encode(password);
+  const encodedCredentials = encode(`${email}:${encodedPassword}`);
+
+  console.log("Original Password:", password);
+  console.log("Encoded Credentials:", encodedCredentials);
+
+  // Set headers
+  const myHeaders = new Headers();
+  myHeaders.append("Authorization", `Basic ${encodedCredentials}`);
+  myHeaders.append("Content-Type", "application/json");
+
+  // Request body
+  const raw = JSON.stringify({
+    username: email,
+    password: password, // Send the original password
+  });
+
+  // Request options
+  const requestOptions = {
+    method: "POST",
+    headers: myHeaders,
+    body: raw,
+    redirect: "follow",
+  };
+
+  setLoader(true);
+
+  // API call
+  fetch(url, requestOptions)
+    .then(response => response.json())
+    .then(async res => {
+      console.log('API Response:', res);
+      
+      if (res?.message === "OK") {
+        console.log("LOGIN_SUCCESS");
+        console.log("User logged in successfully.");
+      
+        // Modify the login log message before saving
+        const successData = {
+          email: email,
+          ip_address: res?.ip_address || "Unknown IP",
+          status: "LOGIN_SUCCESS",
+          message: "User logged in successfully.", // Replacing "OK" with descriptive message
+          timestamp: new Date().toISOString(),
+        };
+      
+        // Save login logs to AsyncStorage
+        await AsyncStorage.setItem("loginStatus", JSON.stringify(successData));
+      
+        // Log login attempt
+        await logLoginAttempt(email, successData.status,successData.message );
+      
+        // Store response and navigate
+        storeObjByKey('loginResponse', res.data);
+        dispatch(checkuserToken());
+        // navigation.navigate('DashBoard');
+      }
+      
+      else if (res.status==='error')
+      {
+        console.log("LOGIN_FAILURE");
+        console.log("User login failed.");
+      
+        // Modify the failure message before saving
+        const failureData = {
+          email: email,
+          ip_address: res?.ip_address || "Unknown IP",
+          status: "LOGIN_FAILURE",
+          message: "Invalid Username or password", // Descriptive failure message
+          timestamp: new Date().toISOString(),
+        };
+      
+        // Save failure logs to AsyncStorage
+        await AsyncStorage.setItem("loginStatus", JSON.stringify(failureData));
+      
+        // Log login attempt
+        await logLoginAttempt(email, failureData.status,failureData.message);
+      
+        Alert.alert('Invalid Credentials', 'Please check your details.');
+      }
+      
+    })
+    .catch(async (error) => {
+      console.error("API Error:", error);
+
+      // Save error response
+      const errorData = {
+        status: "ERROR",
+        message: error.message || "Something went wrong!",
+        timestamp: new Date().toISOString(),
+      };
+      await AsyncStorage.setItem("loginStatus", JSON.stringify(errorData));
+
+      Alert.alert('Error', 'Something went wrong!');
+    })
+    .finally(() => {
+      setLoader(false);
+    });
+};
+
+
+  // === Modal & Navigation Handling ===
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       setPassword('');
       setEmail('');
-
-      // Reset the entire navigation stack
-    });
-
-    return unsubscribe; // Cleanup listener on unmount
-  }, [navigation]);
-
-  const handleLogin = () => {
-    const url = `${BASE_URL}auth/`;
-    const obj = {
-      username: email,
-      password: password,
-    };
-
-    setLoader(true);
-
-    // Prepare the headers
-    const myHeaders = new Headers();
-    myHeaders.append('Content-Type', 'application/json');
-
-    // Prepare the request options
-    const requestOptions = {
-      method: 'POST',
-      headers: myHeaders,
-      body: JSON.stringify(obj),
-      redirect: 'follow',
-    };
-
-    // Use fetch instead of POSTNETWORK
-    fetch(url, requestOptions)
-      .then(response => response.json())
-      .then(res => {
-        console.log('response', res);
-        if (res?.token) {
-          storeObjByKey('loginResponse', res);
-
-          dispatch(checkuserToken());
-
-          // });
-        } else {
-          setLoader(false);
-          alert('Invalid credentials');
-        }
-      })
-      .catch(() => {
-        Alert.alert('Error', 'Something went wrong!');
-      })
-      .finally(() => {
-        setLoader(false);
-      });
-  };
-
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      if (route?.params?.registered) {
-        setAlertMsg('Registered successfully, Please login!');
-        setAlertModal(true);
-        navigation.setParams({registered: false});
-      }
     });
     return unsubscribe;
-  }, [navigation, route]);
+  }, [navigation]);
 
   useFocusEffect(() => {
     const backAction = () => {
       setExitModal(true);
-      setAlertMsg('Are you sure you want to Exit app?');
       return true;
     };
     const backHandler = BackHandler.addEventListener(
@@ -136,9 +345,25 @@ const Login = ({navigation, route}) => {
     return () => backHandler.remove();
   });
 
-  const login = () => {
-    navigation.navigate('DashBoard');
+  // === Password Expiry Check ===
+  const checkPasswordExpiry = async () => {
+    const loginData = JSON.parse(await AsyncStorage.getItem('loginResponse'));
+    if (loginData?.passwordSetDate) {
+      const passwordAge =
+        (new Date() - new Date(loginData.passwordSetDate)) / (1000 * 60 * 60 * 24);
+      if (passwordAge > 90) {
+        Alert.alert(
+          'Password Expired',
+          'Your password has expired. Please reset it.',
+        );
+        navigation.navigate('ResetPassword');
+      }
+    }
   };
+
+  useEffect(() => {
+    checkPasswordExpiry();
+  }, []);
 
   return (
     <Fragment>
@@ -151,7 +376,6 @@ const Login = ({navigation, route}) => {
           <ImageBackground
             style={{
               flex: 1,
-
               justifyContent: 'center',
               alignItems: 'center',
             }}
@@ -165,7 +389,6 @@ const Login = ({navigation, route}) => {
                 flexGrow: 1,
                 alignItems: 'center',
                 paddingBottom: 50,
-                alignSelf: 'center',
                 justifyContent: 'center',
               }}>
               <View
@@ -181,8 +404,8 @@ const Login = ({navigation, route}) => {
                   shadowOpacity: 0.2,
                   shadowRadius: 5,
                   elevation: 10,
-                  paddingTop: HEIGHT * 0.1, // Adds space to prevent overlap
-                  marginTop: HEIGHT * 0.22, // Increased margin to avoid overlap
+                  paddingTop: HEIGHT * 0.1,
+                  marginTop: HEIGHT * 0.22,
                 }}>
                 <LinearGradient
                   colors={['white', BRAND]}
@@ -191,14 +414,9 @@ const Login = ({navigation, route}) => {
                   style={{
                     width: WIDTH * 0.86,
                     height: HEIGHT * 0.16,
-                    marginBottom: HEIGHT * 0.1, // Increased margin to avoid overlap
                     position: 'absolute',
                     top: -HEIGHT * 0.05,
                     borderRadius: 10,
-                    shadowColor: '#000',
-                    shadowOffset: {width: 0, height: 4},
-                    shadowOpacity: 0.3,
-                    shadowRadius: 8,
                     elevation: 12,
                   }}>
                   <View
@@ -206,7 +424,6 @@ const Login = ({navigation, route}) => {
                       width: '100%',
                       height: '100%',
                       borderRadius: 10,
-                      overflow: 'hidden',
                       alignItems: 'center',
                     }}>
                     <Image
@@ -241,7 +458,6 @@ const Login = ({navigation, route}) => {
                   outlineColor={BRAND}
                   activeOutlineColor={BRAND}
                   placeholder="Email"
-                  placeholderTextColor={GRAY}
                   value={email}
                   onChangeText={text => setEmail(text)}
                 />
@@ -257,63 +473,16 @@ const Login = ({navigation, route}) => {
                   outlineColor={BRAND}
                   activeOutlineColor={BRAND}
                   placeholder="Password"
-                  placeholderTextColor={GRAY}
                   value={password}
                   onChangeText={text => setPassword(text)}
                 />
-
-                <View
-                  style={{
-                    width: WIDTH * 0.95,
-                    height: HEIGHT * 0.07,
-                    alignItems: 'center',
-                    flexDirection: 'row',
-                    marginRight: HEIGHT * 0.075,
-                    marginTop: HEIGHT * 0.02,
-                  }}>
-                  <Switch
-                    value={isSwitchOn}
-                    onValueChange={onToggleSwitch}
-                    style={{
-                      width: WIDTH * 0.22,
-                      height: HEIGHT * 0.1,
-
-                      tintColor: isSwitchOn ? WHITE : ORANGE,
-                    }}
-                    color="orange"
-                  />
-                  <Text
-                    style={{
-                      color: BLACK,
-                      fontSize: RFValue(12),
-                      fontFamily: REGULAR,
-                    }}>
-                    Remember Me
-                  </Text>
-                </View>
                 <TouchableOpacity
-                  onPress={toggleModal}
-                  // clearAll()
-                  // dispatch(checkuserToken())
-
-                  style={{
-                    width: WIDTH * 0.9,
-                    height: HEIGHT * 0.05,
-                    alignItems: 'flex-end',
-                    justifyContent: 'center',
-                    marginTop: HEIGHT * 0.02,
-                  }}>
-                  <Text
-                    style={{
-                      color: BLACK,
-                      fontSize: RFValue(12),
-                      fontFamily: SEMIBOLD,
-                    }}>
-                    Forgot Password?
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => handleLogin()}
+                  onPress={() =>
+                    
+                    handleLogin()
+                    // clearAll()
+                  
+                  }
                   style={{
                     width: WIDTH * 0.9,
                     height: HEIGHT * 0.065,
@@ -327,42 +496,13 @@ const Login = ({navigation, route}) => {
                     style={{
                       color: WHITE,
                       fontSize: RFValue(14),
-                      fontFamily: REGULAR,
                     }}>
                     Login
                   </Text>
                 </TouchableOpacity>
               </View>
-
-              <View
-                style={{
-                  width: WIDTH * 0.9,
-                  height: HEIGHT * 0.04,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginTop: HEIGHT * 0.06,
-                  marginBottom: HEIGHT * 0.005,
-                }}>
-                <Text
-                  style={{
-                    color: WHITE,
-                    fontSize: RFValue(12),
-                    fontFamily: MEDIUM,
-                  }}>
-                  © 2025,made by{' '}
-                  <Text
-                    style={{
-                      color: WHITE,
-                      fontSize: RFValue(14),
-                      fontFamily: EXTRABOLD,
-                    }}>
-                    Epsumlabs
-                  </Text>
-                </Text>
-              </View>
             </ScrollView>
           </ImageBackground>
-
           {loader && <Loader visible={loader} />}
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -383,21 +523,6 @@ const Login = ({navigation, route}) => {
           onConfirm={() => BackHandler.exitApp()}
         />
       )}
-
-      <Modal
-        visible={isModalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={toggleModal}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalText}>Please contact your admin.</Text>
-            <TouchableOpacity style={styles.closeButton} onPress={toggleModal}>
-              <Text style={styles.closeButtonText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </Fragment>
   );
 };
@@ -405,25 +530,9 @@ const Login = ({navigation, route}) => {
 export default Login;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  openButton: {
-    backgroundColor: '#007BFF',
-    padding: 10,
-    borderRadius: 5,
-  },
-  openButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
   modalOverlay: {
     flex: 1,
-
     justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
@@ -431,25 +540,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 20,
     borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
     width: '80%',
-  },
-  modalText: {
-    fontSize: RFValue(15),
-    color: 'black',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  closeButton: {
-    backgroundColor: '#FF5C5C',
-    padding: 10,
-    borderRadius: 5,
-    width: '100%',
-    alignItems: 'center',
-  },
-  closeButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
   },
 });
