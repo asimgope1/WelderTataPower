@@ -232,17 +232,10 @@ const Login = ({navigation, route}) => {
     myHeaders.append('Authorization', `Basic ${encodedCredentials}`);
     myHeaders.append('Content-Type', 'application/json');
 
-    // Request body
-    const raw = JSON.stringify({
-      username: email,
-      password: password, // Send the original password
-    });
-
     // Request options
     const requestOptions = {
       method: 'POST',
       headers: myHeaders,
-      body: raw,
       redirect: 'follow',
     };
 
