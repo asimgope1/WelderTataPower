@@ -56,6 +56,11 @@ const PAUTReport = ({navigation}) => {
   const [ApprovemodalVisible, SetApprovemodalVisible] = useState(false); // State for modal visibility
   const [remarks, setRemarks] = useState('');
 
+  const [openShutdown, setOpenShutdown] = useState(false);
+const [valueShutdown, setValueShutdown] = useState(null);
+const [itemsShutdown, setItemsShutdown] = useState([]);
+
+
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(null);
   const [items, setItems] = useState([]);
@@ -781,7 +786,7 @@ const PAUTReport = ({navigation}) => {
           {item.report_no ?? 'NA'} : {item.report_date ?? 'NA'}
         </Text>
 
-        <TouchableOpacity
+        {/* <TouchableOpacity
           onPress={() => {
             setSelectedJob(item.sl);
             setModalVisible(true);
@@ -794,7 +799,7 @@ const PAUTReport = ({navigation}) => {
             marginTop: 10,
           }}>
           <Text style={styles.buttonText}>Submit</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
     );
   };
@@ -820,29 +825,54 @@ const PAUTReport = ({navigation}) => {
               }}
               title="PAUT-Report"
             />
+             <View style={{
+                          marginTop:10,
+                          marginRight:30
+                        }}>
+                               <TouchableOpacity
+                                onPress={() => {
+                                  setLoading(true); 
+                              setTimeout(async () => {
+                                await GetShutdown(); 
+                                setLoading(false); // Hide loader after timeout
+                                // Call your refresh logic
+                              }, 1000); // 2 seconds delay (you can change it)
+                            }}
+                                style={{
+                                  // position:'absolute',
+                                  left:'75%',
+                                  // top:100,
+                                  width:100,
+                                  padding: 10,
+                                  backgroundColor: '#007BFF',
+                                  borderRadius: 5,
+                                }}>
+                                <Text style={{ color: '#fff', fontWeight: 'bold',textAlign:'center' }}>Refresh</Text>
+                              </TouchableOpacity>
+                        </View>
             <DropDownPicker
-              open={open}
-              value={value}
-              items={items}
-              setOpen={setOpen}
-              setValue={setValue}
-              setItems={setItems}
-              style={styles.dropdown}
-              dropDownContainerStyle={styles.dropdownContainer}
-              textStyle={styles.text}
-              listItemLabelStyle={styles.listItem}
-              placeholderStyle={styles.placeholder}
-              onChangeValue={(selectedValue) => {
-                const selectedShutdown = items.find(item => item.value === selectedValue);
-                console.log('Selected Shutdown:',selectedValue);
-                // fetchData(selectedShutdown?.value)
-                setShutdownID(selectedValue); 
-              }}
-             
-              onOpen={() => {
-                GetShutdown(); 
-              }}
-            />
+  open={openShutdown}
+  value={valueShutdown}
+  items={itemsShutdown}
+  setOpen={setOpenShutdown}
+  setValue={setValueShutdown}
+  setItems={setItemsShutdown}
+  style={styles.dropdown}
+  dropDownContainerStyle={styles.dropdownContainer}
+  textStyle={styles.text}
+  listItemLabelStyle={styles.listItem}
+  placeholderStyle={styles.placeholder}
+  placeholder="Select Shutdown"
+  onChangeValue={(selectedValue) => {
+    const selectedShutdown = itemsShutdown.find(item => item.value === selectedValue);
+    console.log('Selected Shutdown:', selectedValue);
+    setShutdownID(selectedValue); // Your existing function
+  }}
+  onOpen={() => {
+    GetShutdown(); // 👈 Fetch list when dropdown opens
+  }}
+/>
+
             {loading ? (
               <ActivityIndicator size="large" color={BRAND} />
             ) : (
@@ -946,8 +976,11 @@ const PAUTReport = ({navigation}) => {
                           marginBottom: 10,
                           alignItems: 'center',
                         }}
-                        onPress={() => {
+                        onPress={async() => {
                           SetApprovemodalVisible(true);
+                          await GetReportNumber()
+                          await GetDefectStatus()
+
                         }}>
                         {selectAll == true ? (
                           <Icon
