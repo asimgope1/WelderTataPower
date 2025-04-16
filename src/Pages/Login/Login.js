@@ -433,6 +433,7 @@ const Login = ({navigation, route}) => {
                 </LinearGradient>
 
                 <TextInput
+                  autoComplete="off"
                   label="Email"
                   style={{
                     width: WIDTH * 0.9,
@@ -447,6 +448,7 @@ const Login = ({navigation, route}) => {
                   onChangeText={text => setEmail(text)}
                 />
                 <TextInput
+                  autoComplete="off"
                   secureTextEntry={true}
                   label="Password"
                   style={{
@@ -490,7 +492,7 @@ const Login = ({navigation, route}) => {
                     fontSize: RFValue(12),
                     color: BRAND,
                   }}>
-                  version: 1.0
+                  version: 1.0.1
                 </Text>
               </View>
             </ScrollView>
