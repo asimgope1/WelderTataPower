@@ -31,8 +31,8 @@ import {Switch, TextInput} from 'react-native-paper';
 import LinearGradient from 'react-native-linear-gradient';
 import Alertmodal from '../../components/Alertmodal/Alertmodal';
 import Exitmodal from '../../components/Exitmodal';
-import DeviceInfo, { getIpAddress } from 'react-native-device-info';
-import { encode } from 'base-64';
+import DeviceInfo, {getIpAddress} from 'react-native-device-info';
+import {encode} from 'base-64';
 
 // === Constants ===
 const MAX_ATTEMPTS = 5;
@@ -85,14 +85,13 @@ const Login = ({navigation, route}) => {
         message,
         timestamp: new Date().toISOString(),
       };
-  
-      console.log('logLoginAttempt ', logData); // Console Log
-  
+
       // Save to AsyncStorage
-      const existingLogs = JSON.parse(await AsyncStorage.getItem('loginLogs')) || [];
+      const existingLogs =
+        JSON.parse(await AsyncStorage.getItem('loginLogs')) || [];
       existingLogs.push(logData);
       await AsyncStorage.setItem('loginLogs', JSON.stringify(existingLogs));
-  
+
       // Call API to send log data
       const response = await fetch(`${BASE_URL}add-audit-log/`, {
         method: 'POST',
@@ -101,14 +100,12 @@ const Login = ({navigation, route}) => {
         },
         body: JSON.stringify(logData),
       });
-  
+
       const result = await response.json();
-      console.log('Audit Log API Response:', result);
     } catch (error) {
       console.error('Error logging login attempt:', error);
     }
   };
-  
 
   // === Brute Force Protection ===
   const checkLoginAttempts = async email => {
@@ -136,10 +133,14 @@ const Login = ({navigation, route}) => {
 
   // === Rate Limiting Check ===
   const checkRateLimit = async email => {
-    const rateLimitData = JSON.parse(await AsyncStorage.getItem('rateLimit')) || {};
+    const rateLimitData =
+      JSON.parse(await AsyncStorage.getItem('rateLimit')) || {};
     const userRate = rateLimitData[email] || {count: 0, lastAttempt: null};
 
-    if (userRate.lastAttempt && new Date() - new Date(userRate.lastAttempt) < RATE_LIMIT_MS) {
+    if (
+      userRate.lastAttempt &&
+      new Date() - new Date(userRate.lastAttempt) < RATE_LIMIT_MS
+    ) {
       if (userRate.count >= MAX_REQUESTS) {
         Alert.alert('Too Many Requests', 'Please wait before trying again.');
         return false;
@@ -156,173 +157,156 @@ const Login = ({navigation, route}) => {
   };
 
   // === Handle Login ===
- 
-// const handleLogin = async () => {
-//   if (!validateInput(email, password)) {
-//     return;
-//   }
-//   const proceedWithLogin = await checkLoginAttempts(email);
-//   if (!proceedWithLogin) return;
 
-//   const rateLimitPassed = await checkRateLimit(email);
-//   if (!rateLimitPassed) return;
+  // const handleLogin = async () => {
+  //   if (!validateInput(email, password)) {
+  //     return;
+  //   }
+  //   const proceedWithLogin = await checkLoginAttempts(email);
+  //   if (!proceedWithLogin) return;
 
-//   const url = `${BASE_URL}auth/`;
+  //   const rateLimitPassed = await checkRateLimit(email);
+  //   if (!rateLimitPassed) return;
 
-//   // Encode email and password separately
-//   const encodedPassword = encode(password);
-  
-//   // Encode full credentials string
-//   const encodedCredentials = encode(`${email}:${encodedPassword}`);
+  //   const url = `${BASE_URL}auth/`;
 
-//   console.log("Original Password:", password);
-//   console.log("Encoded Credentials:", encodedCredentials);
+  //   // Encode email and password separately
+  //   const encodedPassword = encode(password);
 
-//   const obj = {
-//     credentials: encodedCredentials, // Send as a single encoded string
-//   };
+  //   // Encode full credentials string
+  //   const encodedCredentials = encode(`${email}:${encodedPassword}`);
 
-//   setLoader(true);
+  //   console.log("Original Password:", password);
+  //   console.log("Encoded Credentials:", encodedCredentials);
 
-//   fetch(url, {
-//     method: 'POST',
-//     headers: { 'Content-Type': 'application/json' },
-//     body: JSON.stringify(obj),
-//   })
-//     .then(response => response.json())
-//     .then(async res => {
-//       console.log('response', res);
-//       if (res?.token) {
-//         await logLoginAttempt(email, 'success');
-//         storeObjByKey('loginResponse', res);
-//         dispatch(checkuserToken());
-//         navigation.navigate('DashBoard');
-//       } else {
-//         await logLoginAttempt(email, 'failed');
-//         Alert.alert('Invalid Credentials', 'Please check your details.');
-//       }
-//     })
-//     .catch(() => {
-//       Alert.alert('Error', 'Something went wrong!');
-//     })
-//     .finally(() => {
-//       setLoader(false);
-//     });
-// };
+  //   const obj = {
+  //     credentials: encodedCredentials, // Send as a single encoded string
+  //   };
 
-const handleLogin = async () => {
-  if (!validateInput(email, password)) {
-    return;
-  }
-  const proceedWithLogin = await checkLoginAttempts(email);
-  if (!proceedWithLogin) return;
+  //   setLoader(true);
 
-  const rateLimitPassed = await checkRateLimit(email);
-  if (!rateLimitPassed) return;
+  //   fetch(url, {
+  //     method: 'POST',
+  //     headers: { 'Content-Type': 'application/json' },
+  //     body: JSON.stringify(obj),
+  //   })
+  //     .then(response => response.json())
+  //     .then(async res => {
+  //       console.log('response', res);
+  //       if (res?.token) {
+  //         await logLoginAttempt(email, 'success');
+  //         storeObjByKey('loginResponse', res);
+  //         dispatch(checkuserToken());
+  //         navigation.navigate('DashBoard');
+  //       } else {
+  //         await logLoginAttempt(email, 'failed');
+  //         Alert.alert('Invalid Credentials', 'Please check your details.');
+  //       }
+  //     })
+  //     .catch(() => {
+  //       Alert.alert('Error', 'Something went wrong!');
+  //     })
+  //     .finally(() => {
+  //       setLoader(false);
+  //     });
+  // };
 
-  const url = `${BASE_URL}auth/`;
+  const handleLogin = async () => {
+    if (!validateInput(email, password)) {
+      return;
+    }
+    const proceedWithLogin = await checkLoginAttempts(email);
+    if (!proceedWithLogin) return;
 
-  // Encode password
-  const encodedPassword = encode(password);
-  const encodedCredentials = encode(`${email}:${encodedPassword}`);
+    const rateLimitPassed = await checkRateLimit(email);
+    if (!rateLimitPassed) return;
 
-  console.log("Original Password:", password);
-  console.log("Encoded Credentials:", encodedCredentials);
+    const url = `${BASE_URL}auth/`;
 
-  // Set headers
-  const myHeaders = new Headers();
-  myHeaders.append("Authorization", `Basic ${encodedCredentials}`);
-  myHeaders.append("Content-Type", "application/json");
+    // Encode password
+    const encodedPassword = encode(password);
+    const encodedCredentials = encode(`${email}:${encodedPassword}`);
 
-  // Request body
-  const raw = JSON.stringify({
-    username: email,
-    password: password, // Send the original password
-  });
+    // Set headers
+    const myHeaders = new Headers();
+    myHeaders.append('Authorization', `Basic ${encodedCredentials}`);
+    myHeaders.append('Content-Type', 'application/json');
 
-  // Request options
-  const requestOptions = {
-    method: "POST",
-    headers: myHeaders,
-    body: raw,
-    redirect: "follow",
+    // Request options
+    const requestOptions = {
+      method: 'POST',
+      headers: myHeaders,
+      redirect: 'follow',
+    };
+
+    setLoader(true);
+
+    // API call
+    fetch(url, requestOptions)
+      .then(response => response.json())
+      .then(async res => {
+        if (res?.message === 'OK') {
+          // Modify the login log message before saving
+          const successData = {
+            email: email,
+            ip_address: res?.ip_address || 'Unknown IP',
+            status: 'LOGIN_SUCCESS',
+            message: 'User logged in successfully.', // Replacing "OK" with descriptive message
+            timestamp: new Date().toISOString(),
+          };
+
+          // Save login logs to AsyncStorage
+          await AsyncStorage.setItem(
+            'loginStatus',
+            JSON.stringify(successData),
+          );
+
+          // Log login attempt
+          await logLoginAttempt(email, successData.status, successData.message);
+
+          // Store response and navigate
+          storeObjByKey('loginResponse', res.data);
+          dispatch(checkuserToken());
+          // navigation.navigate('DashBoard');
+        } else if (res.status === 'error') {
+          // Modify the failure message before saving
+          const failureData = {
+            email: email,
+            ip_address: res?.ip_address || 'Unknown IP',
+            status: 'LOGIN_FAILURE',
+            message: 'Invalid Username or password', // Descriptive failure message
+            timestamp: new Date().toISOString(),
+          };
+
+          // Save failure logs to AsyncStorage
+          await AsyncStorage.setItem(
+            'loginStatus',
+            JSON.stringify(failureData),
+          );
+
+          // Log login attempt
+          await logLoginAttempt(email, failureData.status, failureData.message);
+
+          Alert.alert('Invalid Credentials', 'Please check your details.');
+        }
+      })
+      .catch(async error => {
+        console.error('API Error:', error);
+
+        // Save error response
+        const errorData = {
+          status: 'ERROR',
+          message: error.message || 'Something went wrong!',
+          timestamp: new Date().toISOString(),
+        };
+        await AsyncStorage.setItem('loginStatus', JSON.stringify(errorData));
+
+        Alert.alert('Error', 'Something went wrong!');
+      })
+      .finally(() => {
+        setLoader(false);
+      });
   };
-
-  setLoader(true);
-
-  // API call
-  fetch(url, requestOptions)
-    .then(response => response.json())
-    .then(async res => {
-      console.log('API Response:', res);
-      
-      if (res?.message === "OK") {
-        console.log("LOGIN_SUCCESS");
-        console.log("User logged in successfully.");
-      
-        // Modify the login log message before saving
-        const successData = {
-          email: email,
-          ip_address: res?.ip_address || "Unknown IP",
-          status: "LOGIN_SUCCESS",
-          message: "User logged in successfully.", // Replacing "OK" with descriptive message
-          timestamp: new Date().toISOString(),
-        };
-      
-        // Save login logs to AsyncStorage
-        await AsyncStorage.setItem("loginStatus", JSON.stringify(successData));
-      
-        // Log login attempt
-        await logLoginAttempt(email, successData.status,successData.message );
-      
-        // Store response and navigate
-        storeObjByKey('loginResponse', res.data);
-        dispatch(checkuserToken());
-        // navigation.navigate('DashBoard');
-      }
-      
-      else if (res.status==='error')
-      {
-        console.log("LOGIN_FAILURE");
-        console.log("User login failed.");
-      
-        // Modify the failure message before saving
-        const failureData = {
-          email: email,
-          ip_address: res?.ip_address || "Unknown IP",
-          status: "LOGIN_FAILURE",
-          message: "Invalid Username or password", // Descriptive failure message
-          timestamp: new Date().toISOString(),
-        };
-      
-        // Save failure logs to AsyncStorage
-        await AsyncStorage.setItem("loginStatus", JSON.stringify(failureData));
-      
-        // Log login attempt
-        await logLoginAttempt(email, failureData.status,failureData.message);
-      
-        Alert.alert('Invalid Credentials', 'Please check your details.');
-      }
-      
-    })
-    .catch(async (error) => {
-      console.error("API Error:", error);
-
-      // Save error response
-      const errorData = {
-        status: "ERROR",
-        message: error.message || "Something went wrong!",
-        timestamp: new Date().toISOString(),
-      };
-      await AsyncStorage.setItem("loginStatus", JSON.stringify(errorData));
-
-      Alert.alert('Error', 'Something went wrong!');
-    })
-    .finally(() => {
-      setLoader(false);
-    });
-};
-
 
   // === Modal & Navigation Handling ===
   useEffect(() => {
@@ -350,7 +334,8 @@ const handleLogin = async () => {
     const loginData = JSON.parse(await AsyncStorage.getItem('loginResponse'));
     if (loginData?.passwordSetDate) {
       const passwordAge =
-        (new Date() - new Date(loginData.passwordSetDate)) / (1000 * 60 * 60 * 24);
+        (new Date() - new Date(loginData.passwordSetDate)) /
+        (1000 * 60 * 60 * 24);
       if (passwordAge > 90) {
         Alert.alert(
           'Password Expired',
@@ -477,11 +462,9 @@ const handleLogin = async () => {
                   onChangeText={text => setPassword(text)}
                 />
                 <TouchableOpacity
-                  onPress={() =>
-                    
-                    handleLogin()
+                  onPress={
+                    () => handleLogin()
                     // clearAll()
-                  
                   }
                   style={{
                     width: WIDTH * 0.9,
@@ -501,13 +484,14 @@ const handleLogin = async () => {
                   </Text>
                 </TouchableOpacity>
 
-<View style={{
-  marginTop:50
-}}>
-<Text style={{
-  color:'grey'
-}}>Version - 1.1</Text>
-</View>
+                <Text
+                  style={{
+                    marginTop: 10,
+                    fontSize: RFValue(12),
+                    color: BRAND,
+                  }}>
+                  version: 1.0
+                </Text>
               </View>
             </ScrollView>
           </ImageBackground>
