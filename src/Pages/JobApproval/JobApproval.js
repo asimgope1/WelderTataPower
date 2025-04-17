@@ -97,6 +97,12 @@ const JobApproval = ({navigation}) => {
       const [items, setItems] = useState([]);
       const [shutdownID, setShutdownID] = useState(null);
 
+
+
+         const [openShutdown, setOpenShutdown] = useState(false);
+        const [valueShutdown, setValueShutdown] = useState(null);
+        const [itemsShutdown, setItemsShutdown] = useState([]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -229,45 +235,59 @@ const JobApproval = ({navigation}) => {
   };
 
 
-  const GetShutdown = () => {
-    const url = `${BAS_URL}welding/api/v1/all-shutdown-details/`;
-
-    GETNETWORK(url, true)
-      .then(response => {
-        if (response.status === 'success') {
-          console.log('Shutdown Data:', response.data);
-
-          // ✅ Format shutdowns data
-          const formattedData = response.data.shutdowns.map(item => ({
-            label: item.shutdown_name,
-            value: item.shutdown_id,
-          }));
-
-          // ✅ Include current_shutdown in dropdown items
-          if (response.data.current_shutdown) {
-            const currentShutdown = {
-              label: response.data.current_shutdown.shutdown_name,
-              value: response.data.current_shutdown.shutdown_id,
-            };
-
-            // ✅ Add to the list if it's not already included
-            if (!formattedData.some(item => item.value === currentShutdown.value)) {
-              formattedData.unshift(currentShutdown);
-            }
-
-            // ✅ Set current shutdown as default value
-            setValue(currentShutdown.value);
-          }
-
-          setItems(formattedData);
-        } else {
-          console.log('Error:', response.message);
-        }
-      })
-      .catch(error => {
-        console.error('Fetch Error:', error);
-      });
-  };
+   const GetShutdown = async () => {
+     const url = `${BAS_URL}welding/api/v1/all-shutdown-details/`;
+   
+     try {
+       const response = await GETNETWORK(url, true);
+   
+       if (response.status === 'success') {
+         const formattedData = response.data.shutdowns.map(item => ({
+           label: item.shutdown_name,
+           value: item.shutdown_id,
+         }));
+   
+         setItemsShutdown(formattedData); 
+   
+         const currentShutdownData = response.data.current_shutdown;
+   
+         let defaultShutdownID = null;
+   
+         if (currentShutdownData && currentShutdownData.shutdown_id != null) {
+           const currentShutdown = {
+             label: currentShutdownData.shutdown_name,
+             value: currentShutdownData.shutdown_id,
+           };
+   
+           // Add to top if not present
+           if (!formattedData.some(item => item.value === currentShutdown.value)) {
+             formattedData.unshift(currentShutdown);
+             setItemsShutdown(formattedData); // 👈 Refresh items again
+           }
+   
+           defaultShutdownID = currentShutdown.value;
+   
+         } else if (formattedData.length > 0) {
+           defaultShutdownID = formattedData[0].value;
+         }
+   
+         // ✅ Set value in state only if not already selected
+         if (!valueShutdown && defaultShutdownID != null) {
+           setShutdownID(defaultShutdownID);
+           setValueShutdown(defaultShutdownID);
+           await AsyncStorage.setItem('selectedShutdown', defaultShutdownID);
+           await GetDashboard(defaultShutdownID);
+         }
+   
+       } else {
+         console.log('Error:', response.message);
+       }
+   
+     } catch (error) {
+       console.error('Fetch Error:', error);
+     }
+   };
+  
   
   const handleCancelAll = async () => {
     if (selectedJobs.length > 0) {
@@ -448,6 +468,7 @@ const JobApproval = ({navigation}) => {
 
       const GetShutdowndata=async()=>{
         const url = `${BAS_URL}welding/jobmaster/joblist/?shutdown_id=${shutdownID}`;
+        console.log('callling++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++',shutdownID)
         try {
           const response = await GETNETWORK(url, true); // Make API call
     
@@ -702,13 +723,39 @@ const JobApproval = ({navigation}) => {
               onMenuPress={() => navigation.toggleDrawer()}
               title="Job-Approval"
             />
+            <View style={{
+              marginTop:10,
+              marginRight:30
+            }}>
+                   <TouchableOpacity
+                    onPress={() => {
+                      setLoading(true); 
+                  setTimeout(async () => {
+                    await GetShutdown(); // 🔁 Refresh the dropdown items and set first value
+await GetShutdowndata()
+                    setLoading(false); // Hide loader after timeout
+                    // Call your refresh logic
+                  }, 1000); // 2 seconds delay (you can change it)
+                }}
+                    style={{
+                      // position:'absolute',
+                      left:'75%',
+                      // top:100,
+                      width:100,
+                      padding: 10,
+                      backgroundColor: '#007BFF',
+                      borderRadius: 5,
+                    }}>
+                    <Text style={{ color: '#fff', fontWeight: 'bold',textAlign:'center' }}>Refresh</Text>
+                  </TouchableOpacity>
+            </View>
              <DropDownPicker
-  open={open}
-  value={value}
-  items={items}
-  setOpen={setOpen}
-  setValue={setValue}
-  setItems={setItems}
+  open={openShutdown}
+  value={valueShutdown}
+  items={itemsShutdown}
+  setOpen={setOpenShutdown}
+  setValue={setValueShutdown}
+  setItems={setItemsShutdown}
   placeholder=""
   style={styles.dropdown}
   dropDownContainerStyle={styles.dropdownContainer}
@@ -748,7 +795,6 @@ const JobApproval = ({navigation}) => {
                       <TouchableOpacity
                         style={styles.selectButton}
                         onPress={() => handleFilter('select')}>
-                        {' '}
                         <Icon
                           name={'filter-alt'}
                           type="material"

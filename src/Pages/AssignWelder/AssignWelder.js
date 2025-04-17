@@ -24,7 +24,9 @@ import DropDownPicker from 'react-native-dropdown-picker'; // Import DropDownPic
 import {useFocusEffect} from '@react-navigation/native';
 import {styles} from '../TPI/TPI';
 
+
 import {CheckBox, Icon} from 'react-native-elements';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AssignWelder = ({navigation}) => {
   // State to store the welder list
@@ -40,11 +42,22 @@ const AssignWelder = ({navigation}) => {
   const [refreshing, setRefreshing] = useState(false); // Refresh state to manage data refreshing
   const refresh = async () => {
     setRefreshing(true);
-    fetchWelderList();
-    fetchAvailableWelders(); // Fetch available welders to assign
+    console.log('Refreshing...');
+  
+    try {
+      await fetchWelderList();
+      await fetchAvailableWelders();
+      await GetShutdown(); // This will internally trigger GetDashboard
+      await fetchData()
+  
+      console.log('Refresh complete.');
+    } catch (err) {
+      console.error('Refresh error:', err);
+    }
+  
     setRefreshing(false);
   };
-
+  
   const [filterCriteria, setFilterCriteria] = useState({});
   const [data, setData] = useState([]);
   const [filtermodalVisible, setfilterModalVisible] = useState(false); // State for modal visibility
@@ -142,70 +155,76 @@ const AssignWelder = ({navigation}) => {
       // }, []);
       
  
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const url = `${BAS_URL}welding/api/v1/query/filters/`;
-        const response = await GETNETWORK(url, true); // Use GETNETWORK instead of fetch
+ // 🔹 Function moved outside useEffect
+const fetchDropdownData = async () => {
+  try {
+    const url = `${BAS_URL}welding/api/v1/query/filters/`;
+    const response = await GETNETWORK(url, true);
 
-        if (response.status === 'success') {
-          // Update state with API data
-          setUnitItems(
-            response.data.unit.map(([id, label]) => ({label, value: id})),
-          );
-          setComponentItems(
-            response.data.components.map(component => ({
-              label: component,
-              value: component,
-            })),
-          );
-          setAreaItems(
-            response.data.areas.map(area => ({label: area, value: area})),
-          );
-          setHangerItems(
-            response.data.hangers.map(hanger => ({
-              label: hanger,
-              value: hanger,
-            })),
-          );
-          setCoilItems(
-            response.data.coil_number.map(coil => ({label: coil, value: coil})),
-          );
-          setPanelItems(
-            response.data.panel_number.map(panel => ({
-              label: panel,
-              value: panel,
-            })),
-          );
-          setRowItems(
-            response.data.row_number.map(row => ({label: row, value: row})),
-          );
-          setTubeItems(
-            response.data.tube_number.map(tube => ({label: tube, value: tube})),
-          );
-          setJointItems(
-            response.data.joint_number.map(joint => ({
-              label: joint,
-              value: joint,
-            })),
-          );
-        } else {
-          console.log('Error fetching data:', response.message);
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
+    if (response.status === 'success') {
+      // Populate all dropdowns
+      setUnitItems(
+        response.data.unit.map(([id, label]) => ({ label, value: id }))
+      );
+      setComponentItems(
+        response.data.components.map(component => ({
+          label: component,
+          value: component,
+        }))
+      );
+      setAreaItems(
+        response.data.areas.map(area => ({ label: area, value: area }))
+      );
+      setHangerItems(
+        response.data.hangers.map(hanger => ({
+          label: hanger,
+          value: hanger,
+        }))
+      );
+      setCoilItems(
+        response.data.coil_number.map(coil => ({ label: coil, value: coil }))
+      );
+      setPanelItems(
+        response.data.panel_number.map(panel => ({
+          label: panel,
+          value: panel,
+        }))
+      );
+      setRowItems(
+        response.data.row_number.map(row => ({ label: row, value: row }))
+      );
+      setTubeItems(
+        response.data.tube_number.map(tube => ({ label: tube, value: tube }))
+      );
+      setJointItems(
+        response.data.joint_number.map(joint => ({
+          label: joint,
+          value: joint,
+        }))
+      );
+    } else {
+      console.log('Error fetching data:', response.message);
+    }
+  } catch (error) {
+    console.error('Error fetching data:', error);
+  }
+};
 
+useEffect(() => {
+  GetShutdown();
+  fetchDropdownData();
+}, []);
+
+
+useEffect(() => {
+  if (shutdownID) {
     fetchData();
-  }, []);
-
-
-    useEffect(() => {
-          // Fetch defect types and job statuses when the modal is mounted
-          fetchData()
-          GetShutdown()
-        }, [shutdownID]);
+  }
+}, [shutdownID]);
+useEffect(() => {
+  fetchWelderList();
+  fetchAvailableWelders(); // Fetch available welders to assign
+}, [navigation]);
 
         const GetShutdown = async () => {
           const url = `${BAS_URL}welding/api/v1/all-shutdown-details/`;
@@ -219,8 +238,7 @@ const AssignWelder = ({navigation}) => {
                 value: item.shutdown_id,
               }));
         
-              setItemsShutdown(formattedData); // 👈 Update dropdown items
-        
+              setItemsShutdown(formattedData); 
               const currentShutdownData = response.data.current_shutdown;
         
               let defaultShutdownID = null;
@@ -261,64 +279,137 @@ const AssignWelder = ({navigation}) => {
         };
         
 
-  const fetchData = async (params = {}) => {
-    setLoading(true);
+  // Add this function to save the job list data to AsyncStorage
+const saveJobListData = async (data) => {
+  try {
+    await AsyncStorage.setItem('savedJobList', JSON.stringify(data));
+  } catch (error) {
+    console.error('Error saving job list data:', error);
+  }
+};
+
+// Update your fetchData function to save data when successful
+const fetchData = async (params = {}) => {
+  if (!shutdownID) {
+    console.log('No shutdown ID available, checking for cached data');
     
-
-    // Base URL
-    const url = `${BAS_URL}welding/jobmaster/joblist/?shutdown_id=${shutdownID}`;
-
-    // Check if there are any query params in the `params` object
-    const queryString = Object.keys(params)?.length
-      ? `?${new URLSearchParams(params).toString()}`
-      : ''; // Construct query string
-
-    // Final URL with or without query parameters
-    const finalUrl = `${url}${queryString}`;
-
-    console.log('Final URL:', finalUrl); // Debug: Check constructed URL
-
-    // Fetch data using GETNETWORK with the constructed URL
-    GETNETWORK(finalUrl, true)
-      .then(response => {
-        if (response.status === 'success') {
-          setWelderList(response.data);
-          console.log('joblist', response);
-
-          // Reset selected filters after data is fetched
-          // setSelectedUnit(null);
-          // setSelectedComponent(null);
-          // setSelectedArea(null);
-          // setSelectedHanger(null);
-          // setSelectedCoil(null);
-          // setSelectedPanel(null);
-          // setSelectedRow(null);
-          // setSelectedTube(null);
-          // setSelectedJoint(null);
-          // setSelectedWelder(null);
-          setModalVisible(false);
-          setLoading(false);
-        } else {
-          // Reset selected filters in case of error
-          setLoading(false);
-          setSelectedUnit(null);
-          setSelectedComponent(null);
-          setSelectedArea(null);
-          setSelectedHanger(null);
-          setSelectedCoil(null);
-          setSelectedPanel(null);
-          setSelectedRow(null);
-          setSelectedTube(null);
-          setSelectedJoint(null);
-          setSelectedWelder(null);
-          console.log('Error:', response.message);
-        }
-      })
-      .catch(error => {
+    // Try to load cached data if no shutdownID
+    try {
+      const cachedData = await AsyncStorage.getItem('savedJobList');
+      if (cachedData) {
+        const parsedData = JSON.parse(cachedData);
+        setWelderList(parsedData);
         setLoading(false);
-        console.error('Fetch Error:', error);
-      });
-  };
+        return;
+      }
+    } catch (error) {
+      console.error('Error loading cached data:', error);
+    }
+    
+    setLoading(false);
+    return;
+  }
+  
+  setLoading(true);
+  
+  try {
+    // Create base URL with the shutdown_id parameter
+    const baseUrl = `${BAS_URL}welding/jobmaster/joblist/`;
+    
+    // Combine all parameters including shutdown_id
+    const allParams = { 
+      shutdown_id: shutdownID,
+      ...params 
+    };
+    
+    // Create the URL with all parameters
+    const queryString = new URLSearchParams(allParams).toString();
+    const finalUrl = `${baseUrl}?${queryString}`;
+    
+    console.log('Final URL:', finalUrl);
+    
+    const response = await GETNETWORK(finalUrl, true);
+    
+    if (response.status === 'success') {
+      setWelderList(response.data);
+      console.log('joblist', response);
+      
+      // Save the job list data to AsyncStorage for future use
+      await saveJobListData(response.data);
+      
+      setModalVisible(false);
+    } else {
+      console.log('Error:', response.message);
+      // Reset selected filters in case of error
+      setSelectedUnit(null);
+      setSelectedComponent(null);
+      setSelectedArea(null);
+      setSelectedHanger(null);
+      setSelectedCoil(null);
+      setSelectedPanel(null);
+      setSelectedRow(null);
+      setSelectedTube(null);
+      setSelectedJoint(null);
+      setSelectedWelder(null);
+    }
+  } catch (error) {
+    console.error('Fetch Error:', error);
+    
+    // If there's an error, try to load cached data
+    try {
+      const cachedData = await AsyncStorage.getItem('savedJobList');
+      if (cachedData) {
+        const parsedData = JSON.parse(cachedData);
+        setWelderList(parsedData);
+      }
+    } catch (cacheError) {
+      console.error('Error loading cached data:', cacheError);
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
+// Modify your useFocusEffect to load data more intelligently
+useFocusEffect(
+  useCallback(() => {
+    const loadData = async () => {
+      // First try to load from cache for immediate display
+      try {
+        const cachedData = await AsyncStorage.getItem('savedJobList');
+        if (cachedData) {
+          const parsedData = JSON.parse(cachedData);
+          setWelderList(parsedData);
+        }
+      } catch (error) {
+        console.error('Error loading cached job list:', error);
+      }
+      
+      // Then check if we have a shutdownID
+      const storedShutdownID = await AsyncStorage.getItem('selectedShutdown');
+      
+      if (storedShutdownID && (!shutdownID || shutdownID !== storedShutdownID)) {
+        setShutdownID(storedShutdownID);
+        setValueShutdown(storedShutdownID);
+      }
+      
+      // Only do fresh fetches if we have an ID
+      if (shutdownID || storedShutdownID) {
+        // Set a small delay to ensure UI is responsive with cached data first
+        setTimeout(() => {
+          fetchData();
+          fetchAvailableWelders();
+        }, 1000);
+      }
+    };
+    
+    loadData();
+    
+    return () => {
+      // Any cleanup if needed
+    };
+  }, [])  // Remove shutdownID dependency to prevent double-fetching
+);
 
   const handleFilter = type => {
     if (type === 'select') {
@@ -344,9 +435,10 @@ const AssignWelder = ({navigation}) => {
 
   useFocusEffect(
     useCallback(() => {
+      fetchDropdownData();
       fetchWelderList();
-      fetchAvailableWelders(); // Fetch available welders to assign
-      GetShutdown()
+      fetchAvailableWelders();
+
 
       // Return a cleanup function if needed
       return () => {
@@ -356,10 +448,7 @@ const AssignWelder = ({navigation}) => {
   );
   
 
-  useEffect(() => {
-    fetchWelderList();
-    fetchAvailableWelders(); // Fetch available welders to assign
-  }, [navigation]);
+
 
   // Function to fetch welder list using GETNETWORK
   const fetchWelderList = async () => {
@@ -409,104 +498,64 @@ const AssignWelder = ({navigation}) => {
   // Function to render each item in the FlatList
   const renderWelderItem = ({item}) => (
     <View
-      style={{
-        backgroundColor: '#f9f9f9',
-        borderRadius: 8,
-        padding: 10,
-        alignSelf: 'center',
-        marginVertical: 8,
-        marginHorizontal: 10,
-        borderLeftWidth: 4,
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 2},
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-        elevation: 2,
-        borderLeftColor: 'orange',
-      }}
-      // onPress={() => {
-      //     setSelectedJob(item.sl);
-      //     setModalVisible(true);
-      // }} // Show modal on tap
-    >
-      {/* Checkbox */}
+    style={{
+      backgroundColor: '#f9f9f9',
+      borderRadius: 8,
+      padding: 10,
+      alignSelf: 'center',
+      marginVertical: 8,
+      marginHorizontal: 10,
+      borderLeftWidth: 4,
+      shadowColor: '#000',
+      shadowOffset: {width: 0, height: 2},
+      shadowOpacity: 0.2,
+      shadowRadius: 2,
+      elevation: 2,
+      borderLeftColor: 'orange',
+      width: '95%',
 
-      <View
-        style={{flexDirection: 'row', alignItems: 'center', marginBottom: 10}}>
-        {/* Checkbox */}
-        <CheckBox
-          style={{padding: 5}}
-          checked={selectedJobs?.includes(item.sl)} // Check if the job is selected
-          onPress={() => toggleJobSelection(item.sl)} // Toggle individual selection
-        />
-        <View>
-          <Text style={{fontSize: 16, fontWeight: 'bold', color: '#333'}}>
-            Job Number: {item.job_number}
-          </Text>
-          <Text
-            style={{
-              fontSize: 16,
-              fontWeight: 'bold',
-              color: '#333',
-              marginBottom: 4,
-            }}>
-            Component Name: {item.component_name}
-          </Text>
-          <Text
-            style={{
-              fontSize: 16,
-              fontWeight: 'bold',
-              color: '#333',
-              marginBottom: 4,
-            }}>
-            Unit Number: {item.unit_number}
-          </Text>
-          <Text
-            style={{
-              fontSize: 16,
-              fontWeight: 'bold',
-              color: '#333',
-              marginBottom: 4,
-            }}>
-            Joint Number: {item.joint_number}
-          </Text>
-          <Text
-            style={{
-              fontSize: 16,
-              fontWeight: 'bold',
-              color: '#333',
-              marginBottom: 4,
-            }}>
-            Job Description Number: {item.job_desc_number}
-          </Text>
-          <Text
-            style={{
-              fontSize: 16,
-              fontWeight: 'bold',
-              color: '#333',
-              marginBottom: 4,
-            }}>
-            Job Offer Date: {item.job_offer_date}
-          </Text>
-
-          <TouchableOpacity
-            onPress={() => {
-              setSelectedJob(item.sl);
-              fetchWelderList();
-              setModalVisible(true);
-            }}
-            style={{
-              backgroundColor: 'green',
-              paddingVertical: 10,
-              paddingHorizontal: 25,
-              borderRadius: 5,
-              marginTop: 10,
-            }}>
-            <Text style={styless.buttonText}>Assign Welder</Text>
-          </TouchableOpacity>
-        </View>
+    }}>
+    
+    <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+      
+      {/* Checkbox on far left */}
+      <CheckBox
+        style={{ marginRight: 10, marginTop: 5 }}
+        checked={selectedJobs?.includes(item.jobsl)}
+        onPress={() => toggleJobSelection(item.jobsl)}
+      />
+  
+      {/* Content section on the right */}
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#333' }}>
+          Job Number: {item.job_number}
+        </Text>
+        <Text style={styless.textStyle}>Component Name: {item.component_name}</Text>
+        <Text style={styless.textStyle}>Unit Number: {item.unit_number}</Text>
+        <Text style={styless.textStyle}>Joint Number: {item.joint_number}</Text>
+        <Text style={styless.textStyle}>Job Description Number: {item.job_desc_number}</Text>
+        <Text style={styless.textStyle}>Job Offer Date: {item.job_offer_date}</Text>
+  
+        <TouchableOpacity
+          onPress={() => {
+            setSelectedJob(item.sl);
+            fetchWelderList();
+            setModalVisible(true);
+          }}
+          style={{
+            backgroundColor: 'green',
+            paddingVertical: 10,
+            paddingHorizontal: 25,
+            borderRadius: 5,
+            marginTop: 10,
+            alignSelf: 'flex-start',
+          }}>
+          <Text style={styless.buttonText}>Assign Welder</Text>
+        </TouchableOpacity>
       </View>
     </View>
+  </View>
+  
   );
 
   // Function to render when the list is empty
@@ -727,21 +776,21 @@ const AssignWelder = ({navigation}) => {
     if (selectAll) {
       setSelectedJobs([]); // Unselect all
     } else {
-      setSelectedJobs(data.map(item => item.sl)); // Select all jobs based on 'sl'
+      setSelectedJobs(welderList.map(item => item.jobsl)); // Select all
     }
-    setSelectAll(!selectAll); // Toggle Select All state
+    setSelectAll(!selectAll);
   };
+  
 
   // Function to toggle individual job selection
-  const toggleJobSelection = jobSl => {
-    console.log('jobsl', jobSl);
-    console.log('selectedJobs', selectedJobs);
-    if (selectedJobs?.includes(jobSl)) {
-      setSelectedJobs(selectedJobs.filter(id => id !== jobSl)); // Deselect the job
+  const toggleJobSelection = jobsl => {
+    if (selectedJobs.includes(jobsl)) {
+      setSelectedJobs(selectedJobs.filter(id => id !== jobsl));
     } else {
-      setSelectedJobs([...selectedJobs, jobSl]); // Select the job
+      setSelectedJobs([...selectedJobs, jobsl]);
     }
   };
+  
 
   return (
     <Fragment>
@@ -765,6 +814,31 @@ const AssignWelder = ({navigation}) => {
               }}
               title="Assign-Welder"
             />
+            <View style={{
+                                      marginTop:10,
+                                      marginRight:30
+                                    }}>
+                                           <TouchableOpacity
+                                            onPress={() => {
+                                              setLoading(true); 
+                                          setTimeout(async () => {
+                                            await GetShutdown(); 
+                                            setLoading(false); // Hide loader after timeout
+                                            // Call your refresh logic
+                                          }, 1000); // 2 seconds delay (you can change it)
+                                        }}
+                                            style={{
+                                              // position:'absolute',
+                                              left:'40%',
+                                              // top:100,
+                                              width:100,
+                                              padding: 10,
+                                              backgroundColor: '#007BFF',
+                                              borderRadius: 5,
+                                            }}>
+                                            <Text style={{ color: '#fff', fontWeight: 'bold',textAlign:'center' }}>Refresh</Text>
+                                          </TouchableOpacity>
+                                    </View>
 
 <DropDownPicker
   open={openShutdown}
@@ -926,7 +1000,7 @@ const AssignWelder = ({navigation}) => {
                       data={welderList}
                       renderItem={renderWelderItem}
                       keyExtractor={(item, index) => index.toString()}
-                      contentContainerStyle={{paddingBottom: 20}}
+                      contentContainerStyle={{paddingBottom: 100}}
                       ListEmptyComponent={renderEmptyComponent}
                     />
                   </View>
@@ -1319,4 +1393,10 @@ const styless = StyleSheet.create({
     color: '#fff',
     fontSize: 10,
   },
+  textStyle:{
+    fontSize: 16,
+  fontWeight: 'bold',
+  color: '#333',
+  marginBottom: 4,
+  }
 });

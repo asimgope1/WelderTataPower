@@ -178,6 +178,9 @@ const RTReport = ({navigation}) => {
   const [items, setItems] = useState([]);
   const [shutdownID, setShutdownID] = useState(null);
   const [canSubmit, setCanSubmit] = useState(false);
+    const [openShutdown, setOpenShutdown] = useState(false);
+  const [valueShutdown, setValueShutdown] = useState(null);
+  const [itemsShutdown, setItemsShutdown] = useState([]);
 
   const handleCheckBoxPress = () => {
     setIsChecked(!isChecked);
@@ -544,48 +547,59 @@ const RTReport = ({navigation}) => {
       });
   };
 
-  const GetShutdown = () => {
+  const GetShutdown = async () => {
     const url = `${BAS_URL}welding/api/v1/all-shutdown-details/`;
-
-    GETNETWORK(url, true)
-      .then(response => {
-        if (response.status === 'success') {
-          console.log('Shutdown Data:', response.data);
-
-          //  Format shutdowns data
-          const formattedData = response.data.shutdowns.map(item => ({
-            label: item.shutdown_name,
-            value: item.shutdown_id,
-          }));
-
-          //  Include current_shutdown in dropdown items
-          if (response.data.current_shutdown) {
-            const currentShutdown = {
-              label: response.data.current_shutdown.shutdown_name,
-              value: response.data.current_shutdown.shutdown_id,
-            };
-
-            //  Add to the list if it's not already included
-            if (
-              !formattedData.some(item => item.value === currentShutdown.value)
-            ) {
-              formattedData.unshift(currentShutdown);
-            }
-
-            //  Set current shutdown as default value
-            setValue(currentShutdown.value);
+  
+    try {
+      const response = await GETNETWORK(url, true);
+  
+      if (response.status === 'success') {
+        const formattedData = response.data.shutdowns.map(item => ({
+          label: item.shutdown_name,
+          value: item.shutdown_id,
+        }));
+  
+        setItemsShutdown(formattedData); 
+  
+        const currentShutdownData = response.data.current_shutdown;
+  
+        let defaultShutdownID = null;
+  
+        if (currentShutdownData && currentShutdownData.shutdown_id != null) {
+          const currentShutdown = {
+            label: currentShutdownData.shutdown_name,
+            value: currentShutdownData.shutdown_id,
+          };
+  
+          // Add to top if not present
+          if (!formattedData.some(item => item.value === currentShutdown.value)) {
+            formattedData.unshift(currentShutdown);
+            setItemsShutdown(formattedData); // 👈 Refresh items again
           }
-
-          setItems(formattedData);
-        } else {
-          console.log('Error:', response.message);
+  
+          defaultShutdownID = currentShutdown.value;
+  
+        } else if (formattedData.length > 0) {
+          defaultShutdownID = formattedData[0].value;
         }
-      })
-      .catch(error => {
-        console.error('Fetch Error:', error);
-      });
+  
+        // ✅ Set value in state only if not already selected
+        if (!valueShutdown && defaultShutdownID != null) {
+          setShutdownID(defaultShutdownID);
+          setValueShutdown(defaultShutdownID);
+          await AsyncStorage.setItem('selectedShutdown', defaultShutdownID);
+          await GetDashboard(defaultShutdownID);
+        }
+  
+      } else {
+        console.log('Error:', response.message);
+      }
+  
+    } catch (error) {
+      console.error('Fetch Error:', error);
+    }
   };
-
+  
   useFocusEffect(
     useCallback(() => {
       fetchData();
@@ -890,7 +904,7 @@ const RTReport = ({navigation}) => {
           <Text style={{fontWeight: 'bold'}}>RT-Number & Date :</Text>{' '}
           {item.report_no} : {item.report_date}
         </Text>
-
+{/* 
         <TouchableOpacity
           onPress={() => {
             setSelectedJob(item.sl);
@@ -904,7 +918,7 @@ const RTReport = ({navigation}) => {
             marginTop: 10,
           }}>
           <Text style={styles.buttonText}>Submit</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
     );
   };
@@ -930,51 +944,60 @@ const RTReport = ({navigation}) => {
               }}
               title="RT-Report"
             />
-            <DropDownPicker
-              open={open}
-              value={value}
-              items={items}
-              setOpen={setOpen}
-              setValue={setValue}
-              setItems={setItems}
-              placeholder=""
-              style={styles.dropdown}
-              dropDownContainerStyle={styles.dropdownContainer}
-              textStyle={styles.text}
-              listItemLabelStyle={styles.listItem}
-              placeholderStyle={styles.placeholder}
-              onChangeValue={selectedValue => {
-                const selectedShutdown = items.find(
-                  item => item.value === selectedValue,
-                );
-                console.log('Selected Shutdown:', selectedValue);
-                // fetchData(selectedShutdown?.value)
-                setShutdownID(selectedValue);
-              }}
-              // onChangeValue={selectedValue => {
-              //   const selectedShutdown = items.find(
-              //     item => item.value === selectedValue,
-              //   );
-              //   console.log('Selected Shutdown:', selectedShutdown?.value);
+            <View style={{
+                                      marginTop:10,
+                                      marginRight:30
+                                    }}>
+                                           <TouchableOpacity
+                                            onPress={() => {
+                                              setLoading(true); 
+                                          setTimeout(async () => {
+                                            await GetShutdown(); 
+                                            setLoading(false); // Hide loader after timeout
+                                            // Call your refresh logic
+                                          }, 1000); // 2 seconds delay (you can change it)
+                                        }}
+                                            style={{
+                                              // position:'absolute',
+                                              left:'75%',
+                                              // top:100,
+                                              width:100,
+                                              padding: 10,
+                                              backgroundColor: '#007BFF',
+                                              borderRadius: 5,
+                                            }}>
+                                            <Text style={{ color: '#fff', fontWeight: 'bold',textAlign:'center' }}>Refresh</Text>
+                                          </TouchableOpacity>
+                                    </View>
+         <DropDownPicker
+  open={openShutdown}
+  value={valueShutdown}
+  items={itemsShutdown}
+  setOpen={setOpenShutdown}
+  setValue={setValueShutdown}
+  setItems={setItemsShutdown}
+  placeholder="Select Shutdown"
+  style={styles.dropdown}
+  dropDownContainerStyle={styles.dropdownContainer}
+  textStyle={styles.text}
+  listItemLabelStyle={styles.listItem}
+  placeholderStyle={styles.placeholder}
+  onChangeValue={selectedValue => {
+    const selectedShutdown = itemsShutdown.find(item => item.value === selectedValue);
+    console.log('Selected Shutdown:', selectedValue);
+    setShutdownID(selectedValue);
 
-              //   setShutdownID(selectedShutdown?.value);
-              //   setValue(selectedShutdown?.value);
+    // Optional: fetch dashboard or other data
+    // if (selectedValue) {
+    //   GetDashboard(selectedValue);
+    //   console.log('.................', selectedValue);
+    // }
+  }}
+  onOpen={() => {
+    GetShutdown();
+  }}
+/>
 
-              //   //  Fetch new dashboard data based on selected shutdown
-              //   if (selectedShutdown?.value) {
-              //     GetDashboard(selectedShutdown.value);
-              //     //console the GetDashboard selectedShutdown.value
-              //     console.log('.................', selectedShutdown.value);
-
-              //   }
-              // }}
-              // onChangeValue={handleChangeShutdown} --------------------
-              // modalAnimationType="fade"
-              onOpen={() => {
-                // setValue(null);
-                GetShutdown();
-              }}
-            />
 
             {loading ? (
               // <ActivityIndicator size="large" color={BRAND} />
@@ -1077,10 +1100,15 @@ const RTReport = ({navigation}) => {
                           marginBottom: 10,
                           alignItems: 'center',
                         }}
-                        onPress={() => {
-                          SetApprovemodalVisible(true);
+                      onPress={async () => {
+    SetApprovemodalVisible(true);
 
-                        }}>
+    // Call both APIs
+    await GetDefectStatus();
+    await GetReportNumber();
+  }}
+                        
+                        >
                         {selectAll == true ? (
                           <Icon
                             name={'done'}

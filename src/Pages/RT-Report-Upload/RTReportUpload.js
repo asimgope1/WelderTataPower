@@ -73,6 +73,8 @@ const RTReportUpload = ({navigation}) => {
               height: 300, // Desired crop height
               cropping: true, // Enable cropping
               mediaType: 'photo', // Ensure it's a photo
+              freeStyleCropEnabled: true, // Allow manual control
+
             });
   
             console.log('Cropped Image:', croppedImage);
@@ -102,6 +104,8 @@ const RTReportUpload = ({navigation}) => {
         height: 300, // Desired cropped height
         cropping: true, // Enable cropping
         mediaType: 'photo', // Allows only images
+        freeStyleCropEnabled: true, // Allow manual control
+
       });
 
       console.log('Cropped Image:', pickResult);
@@ -273,6 +277,26 @@ const RTReportUpload = ({navigation}) => {
               }}
               title="RT-Report-Upload"
             />
+                 <TouchableOpacity
+      onPress={() => {
+        setLoading(true); 
+    setTimeout(() => {
+      onRefresh();
+      setLoading(false); // Hide loader after timeout
+      // Call your refresh logic
+    }, 1000); // 2 seconds delay (you can change it)
+  }}
+      style={{
+        position:'absolute',
+        right:10,
+        top:100,
+        
+        padding: 8,
+        backgroundColor: '#007BFF',
+        borderRadius: 5,
+      }}>
+      <Text style={{ color: '#fff', fontWeight: 'bold' }}>Refresh</Text>
+    </TouchableOpacity>
             <View
               style={{
                 flex: 1,
@@ -282,6 +306,7 @@ const RTReportUpload = ({navigation}) => {
                 alignItems: 'center',
               }}>
               <View style={styles.inputContainer}>
+         
                 <Text style={styles.inputLabel}>Report Number:</Text>
                 <TextInput
                   style={styles.textInput}
@@ -437,6 +462,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     width: WIDTH * 0.98,
     marginBottom: 15,
+    marginTop:20
   },
   inputLabel: {
     fontSize: 15,
@@ -580,6 +606,18 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginTop: 15,
     alignSelf: 'center',
+  },
+  refreshButton: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    padding: 8,
+    backgroundColor: '#007BFF',
+    borderRadius: 5,
+  },
+  refreshText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
   modalContainer: {
     flex: 1,

@@ -27,6 +27,7 @@ import {useFocusEffect} from '@react-navigation/native';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import {StackedBarChart} from 'react-native-chart-kit';
 const screenWidth = Dimensions.get('window').width;
+import {useWindowDimensions} from 'react-native';
 
 import {
   BOLD,
@@ -59,7 +60,31 @@ const DashBoard = ({navigation}) => {
   const [isTableModalVisible, setTableModalVisible] = useState(false);
   const [isComponentModalVisible, setComponentModalVisible] = useState(false);
   const [isUnitModalVisible, setUnitModalVisible] = useState(false);
+  const {width, height} = useWindowDimensions();
+  const isLandscape = width > height;
+  const cardWidth = width / 4 - 20; // 4 cards per row with padding
 
+  const handlePress = () => {
+    setIsLoading(true);
+    setTimeout(() => {
+      setIsLoading(false);
+      setTableModalVisible(true);
+    }, 1000); // 1 second delay
+  };
+  const handlePress2 = () => {
+    setIsLoading(true);
+    setTimeout(() => {
+      setIsLoading(false);
+      setComponentModalVisible(true);
+    }, 1000); // 1 second delay
+  };
+  const handlePress3 = () => {
+    setIsLoading(true);
+    setTimeout(() => {
+      setIsLoading(false);
+      setUnitModalVisible(true);
+    }, 1000); // 1 second delay
+  };
   const dispatch = useDispatch();
 
   // useFocusEffect(
@@ -158,6 +183,7 @@ const DashBoard = ({navigation}) => {
           setShutdownID(defaultShutdownID);
           setValue(defaultShutdownID);
           await AsyncStorage.setItem('selectedShutdown', defaultShutdownID);
+
           await GetDashboard(defaultShutdownID);
         }
       } else {
@@ -379,10 +405,14 @@ const DashBoard = ({navigation}) => {
     if (!dashboardData) return null;
 
     return (
-      <View style={styles.statsContainer}>
+      <View
+        style={{
+          ...styles.statsContainer,
+          width: isLandscape ? width : WIDTH,
+        }}>
         <FlatList
-          data={dashboardData.status_count} // Use status_count here
-          numColumns={4} // Set to 4 columns for grid layout
+          data={dashboardData.status_count}
+          numColumns={4} // Always 4 columns to match card width
           keyExtractor={(item, index) => index.toString()}
           renderItem={({item}) => (
             <TouchableOpacity
@@ -390,19 +420,19 @@ const DashBoard = ({navigation}) => {
                 setSelectedItem(item);
                 setIsModalVisible(true);
                 fetchJobStatusDetails(item.name);
-                // console.log('itemname updated', item.name);
               }}>
               <View
                 style={{
                   ...styles.statsCard,
-                  borderTopColor: getRandomColor(), // Apply random borderTopColor
-                  borderTopWidth: 8, // Add width to the border
+                  width: cardWidth,
+                  height: isLandscape ? height * 0.18 : HEIGHT * 0.1,
+                  borderTopColor: getRandomColor(),
+                  borderTopWidth: 8,
                 }}>
                 <Text
-                  style={{...styles.statsName}}
-                  numberOfLines={2} // Limit to 1 line
-                  ellipsizeMode="tail" // Add ellipsis at the tail if text overflows
-                >
+                  style={styles.statsName}
+                  numberOfLines={2}
+                  ellipsizeMode="tail">
                   {item.name}
                 </Text>
                 <Text style={styles.statsFigure}>{item.count}</Text>
@@ -607,213 +637,197 @@ const DashBoard = ({navigation}) => {
   const renderwelderCountTable = () => {
     if (!dashboardData || !dashboardData.welder_count) return null;
 
-    const labels = dashboardData.welder_count.map(item =>
-      item.Name.length > 4 ? item.Name.slice(0, 4) + '...' : item.Name,
-    );
-
-    const legend = ['Accepted', 'Retake', 'Repair'];
-
-    const data = dashboardData.welder_count.map(item => {
-      const values = [item.Accepted, item.Retake, item.Repair];
-      console.log('Welder Data:', values); // ✅ Clean array output
-      return values;
+    const labels = dashboardData.welder_count.map(item => item.welder_id);
+    const data = dashboardData.welder_count.map(item => [
+      parseFloat(item.Failure_Rate),
+    ]);
+    const barColors = dashboardData.welder_count.map(item => {
+      const rate = parseFloat(item.Failure_Rate);
+      return rate > 10 ? 'red' : 'skyblue';
     });
 
     const chartData = {
       labels,
-      legend,
+      legend: ['Failure Rate %'],
       data,
-      barColors: ['#00A389', '#FFB951', '#FF5252'],
+      barColors,
     };
 
+    const barHeight = 200;
+    const baseChartWidth = chartData.labels.length * 60;
+    const fixedPortraitWidth = WIDTH - 40;
+
+    const chartWidth = isLandscape
+      ? Math.max(WIDTH, baseChartWidth + 10)
+      : Math.max(fixedPortraitWidth, baseChartWidth);
+
+    // Custom left offsets for each index (tweak as needed)
+    const customOffsets = [
+      70, 130, 170, 225, 290, 345, 390, 435, 490, 545, 610,
+    ];
+
     return (
-      <>
-        {/* Header with button */}
+      <View
+        style={{
+          backgroundColor: '#ECF7F9',
+          borderRadius: 12,
+          elevation: 5,
+          shadowColor: '#000',
+          shadowOffset: {width: 0, height: 2},
+          shadowOpacity: 0.2,
+          shadowRadius: 4,
+          padding: 5,
+          marginHorizontal: 10,
+          marginBottom: 15,
+          height: 330,
+
+          width: isLandscape ? WIDTH * 1.8 : WIDTH * 0.95,
+        }}>
+        {/* Header */}
         <View
           style={{
             flexDirection: 'row',
-            justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: 10,
+            justifyContent: 'space-between',
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            marginVertical: 15,
+            backgroundColor: '#f8f9fa',
+            borderRadius: 12,
+            elevation: 4,
+            shadowColor: '#000',
+            shadowOffset: {width: 0, height: 2},
+            shadowOpacity: 0.1,
+            shadowRadius: 3,
+            width: WIDTH * 0.9,
+            alignSelf: isLandscape ? 'center' : 'auto',
           }}>
-          <Text style={{fontWeight: 'bold', fontSize: 18}}>
-            Welder Count Overview
+          <Text style={{fontWeight: 'bold', fontSize: 19, color: '#1e3a8a'}}>
+            Welder Failure Rate (%)
           </Text>
-
-          <View
+          <TouchableOpacity
+            onPress={handlePress}
             style={{
-              marginLeft: WIDTH * 0.15,
+              backgroundColor: '#2563eb',
+              paddingVertical: 5,
+              paddingHorizontal: 10,
+              borderRadius: 5,
             }}>
-            <TouchableOpacity
-              onPress={() => setTableModalVisible(true)}
+            <Text
               style={{
-                backgroundColor: '#007bff',
-                paddingVertical: 6,
-                paddingHorizontal: 12,
-                borderRadius: 5,
+                color: '#fff',
+                fontSize: 12,
+                fontWeight: '600',
               }}>
-              <Text style={{color: '#fff', fontWeight: 'bold'}}>
-                View Table
-              </Text>
-            </TouchableOpacity>
-          </View>
+              View Table
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Custom Legend */}
-        <View
-          style={{flexDirection: 'row', marginBottom: 10, flexWrap: 'wrap'}}>
-          {chartData.legend.map((label, index) => (
-            <View
-              key={index}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                marginRight: 15,
-                marginBottom: 5,
-              }}>
-              <View
-                style={{
-                  width: 12,
-                  height: 12,
-                  backgroundColor: chartData.barColors[index],
-                  marginRight: 5,
-                  borderRadius: 2,
-                }}
-              />
-              <Text style={{fontSize: 12}}>{label}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* Chart */}
-        {/* Chart with overlayed values */}
+        {/* Chart with overlay */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{paddingBottom: 10}}>
+          contentContainerStyle={{
+            paddingBottom: 10,
+            minWidth: fixedPortraitWidth,
+          }}>
           <View style={{position: 'relative'}}>
-            {/* Overlayed Segment Values with Color Matching */}
+            {/* Dot Label Overlay */}
             <View
               style={{
                 position: 'absolute',
-
                 top: 0,
-                left: 20,
-                flexDirection: 'row',
+                left: 0,
+                width: chartWidth,
+                height: barHeight,
                 zIndex: 1,
               }}>
-              {chartData.data.map((dataArr, i) => {
-                const barHeight = 300;
-                const barMaxValue = Math.max(
-                  ...chartData.data.map(arr => arr.reduce((a, b) => a + b, 0)),
-                );
-                const barScale = barHeight / barMaxValue;
+              {/* {chartData.data.map((bar, barIndex) => {
+                let cumulativeHeight = 0;
+                const totalValue = bar.reduce((sum, val) => sum + val, 0);
 
-                const totalHeight = dataArr.reduce(
-                  (sum, val) => sum + val * barScale,
-                  0,
-                );
+                return bar.map((segmentValue, segmentIndex) => {
+                  const barSegmentHeight =
+                    (segmentValue / totalValue) * barHeight;
+                  const yOffset =
+                    barHeight - cumulativeHeight - barSegmentHeight;
 
-                const entries = dataArr
-                  .map((val, idx) => ({
-                    value: val,
-                    color: chartData.barColors[idx],
-                  }))
-                  .filter(entry => entry.value !== 0);
+                  const value = segmentValue.toFixed(2); // ✅ Your requested format
+                  const barLeftOffset =
+                    customOffsets[barIndex] ?? barIndex * 60 + 50;
 
-                return (
-                  <View
-                    key={i}
-                    style={{
-                      width: 90,
-                      alignItems: 'center',
-                      justifyContent: 'flex-end',
-                      height: barHeight,
-                    }}>
+                  cumulativeHeight += barSegmentHeight;
+
+                  return (
                     <View
+                      key={`${barIndex}-${segmentIndex}`}
                       style={{
                         position: 'absolute',
-                        bottom: Math.min(totalHeight + 8, barHeight - 30),
-                        backgroundColor: '#ffffffee',
-                        padding: 4,
-                        borderRadius: 6,
-                        flexDirection: 'row',
-                        flexWrap: 'wrap',
+                        left: barLeftOffset + 15,
+                        top: yOffset + 10,
+                        width: 40,
+                        height: barSegmentHeight,
                         justifyContent: 'center',
+                        alignItems: 'center',
+                        transform: [{rotate: '-90deg'}],
                       }}>
-                      {entries.map((entry, idx) => (
-                        <View
-                          key={idx}
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            marginRight: 6,
-                          }}>
-                          <View
-                            style={{
-                              width: 8,
-                              height: 8,
-                              backgroundColor: entry.color,
-                              borderRadius: 4,
-                              marginRight: 3,
-                            }}
-                          />
-                          <Text
-                            style={{
-                              fontSize: 10,
-                              fontWeight: '600',
-                              color: '#000',
-                            }}>
-                            {entry.value}
-                          </Text>
-                        </View>
-                      ))}
+                      <Text
+                        style={{
+                          fontSize: 9,
+                          marginTop: 10,
+                          // color: '#fff',
+                          fontWeight: 'bold',
+                        }}>
+                        {value}
+                      </Text>
                     </View>
-                  </View>
-                );
-              })}
+                  );
+                });
+              })} */}
             </View>
 
-            {/* Stacked Bar Chart */}
+            {/* Chart */}
             <StackedBarChart
               data={chartData}
-              width={chartData.labels.length * 90}
-              height={HEIGHT * 0.45}
-              yAxisLabel=""
-              yAxisSuffix=""
+              width={chartWidth}
+              height={barHeight}
+              yAxisSuffix="%"
+              fromZero
+              // hideLegend
+              withVerticalLabels
+              segments={5}
               chartConfig={{
-                backgroundGradientFrom: '#ffffff',
-                backgroundGradientTo: '#ffffff',
+                backgroundGradientFrom: '#ECF7F9',
+                backgroundGradientTo: '#ECF7F9',
                 color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                barPercentage: 0.4,
+                labelColor: (opacity = 1) => `rgba(30, 64, 175, ${opacity})`,
                 decimalPlaces: 0,
-                formatYLabel: yValue => `${parseInt(yValue, 10)}`,
-                propsForVerticalLabels: {
+                barPercentage: 1,
+                propsForLabels: {
                   fontSize: 10,
-                  fontWeight: '600',
-                  fill: '#222222',
-                  textAnchor: 'middle',
-                  dx: 10,
+                  fontWeight: '900',
+                  color: BLACK,
+                  dy: 3,
+                  dx: 4,
                 },
                 propsForHorizontalLabels: {
                   fontSize: 11,
                   fontWeight: '500',
-                  dy: 10,
+
+                  // dy: 10,
                 },
-                propsForLabels: {
-                  fontSize: 5,
+                propsForVerticalLabels: {
+                  fontSize: 10,
                   fontWeight: '600',
-                  rotation: 0,
-                  originY: 35,
-                  originX: 10,
-                  textAnchor: 'end',
                 },
+                // verticalLabelRotation: isLandscape ? 0 : 45,
+
                 propsForBackgroundLines: {
-                  stroke: 'blue',
+                  stroke: 'transparent',
                 },
                 fillShadowGradientOpacity: 1,
-                yAxisInterval: 1,
+                yAxisInterval: 10,
                 xAxisHeight: 60,
                 yAxisWidth: 60,
               }}
@@ -821,21 +835,9 @@ const DashBoard = ({navigation}) => {
                 marginVertical: 10,
                 borderRadius: 8,
                 paddingRight: 35,
-                paddingLeft: 10, // ← Should match overlay
-                // paddingBottom: 45,
-                paddingTop: 40, // ← Should match overlay
+                paddingLeft: 20,
+                paddingTop: 30,
               }}
-              withHorizontalLabels={true}
-              withCustomBarColorFromData={true}
-              flatColor={true}
-              fromZero={true}
-              hideLegend={true}
-              segments={6}
-              horizontalLabelRotation={0}
-              verticalLabelRotation={0}
-              withInnerLines={true}
-              withOuterLines={true}
-              withScrollableDot={false}
             />
           </View>
         </ScrollView>
@@ -878,58 +880,78 @@ const DashBoard = ({navigation}) => {
 
               {/* Table */}
               <ScrollView horizontal style={styles.tableContainer}>
-                <View style={styles.table}>
-                  <View style={[styles.tableRow, styles.headerRow]}>
-                    {[
-                      'Welder ID',
-                      'Name',
-                      'Total',
-                      'Accepted',
-                      'Repair',
-                      'Retake',
-                      'Failure Rate',
-                    ].map((header, index) => (
-                      <View
-                        key={index}
-                        style={[styles.tableCell, styles.headerCell]}>
-                        <Text style={styles.headerText}>{header}</Text>
-                      </View>
-                    ))}
-                  </View>
-
-                  {dashboardData.welder_count.map((item, index) => (
-                    <View key={index} style={styles.tableRow}>
-                      <View style={styles.tableCell}>
-                        <Text style={styles.cellText}>{item.welder_id}</Text>
-                      </View>
-                      <View style={styles.tableCell}>
-                        <Text style={styles.cellText}>{item.Name}</Text>
-                      </View>
-                      <View style={styles.tableCell}>
-                        <Text style={styles.cellText}>{item.Total}</Text>
-                      </View>
-                      <View style={styles.tableCell}>
-                        <Text style={styles.cellText}>{item.Accepted}</Text>
-                      </View>
-                      <View style={styles.tableCell}>
-                        <Text style={styles.cellText}>{item.Repair}</Text>
-                      </View>
-                      <View style={styles.tableCell}>
-                        <Text style={styles.cellText}>{item.Retake}</Text>
-                      </View>
-                      <View style={styles.tableCell}>
-                        <Text style={styles.cellText}>
-                          {item.Failure_Rate}%
-                        </Text>
-                      </View>
+                <ScrollView>
+                  <View style={styles.table}>
+                    <View style={[styles.tableRow, styles.headerRow]}>
+                      {[
+                        'Welder ID',
+                        'Name',
+                        'Total',
+                        'Accepted',
+                        'Repair',
+                        'Retake',
+                        'Failure Rate',
+                      ].map((header, index) => (
+                        <View
+                          key={index}
+                          style={[styles.tableCell, styles.headerCell]}>
+                          <Text style={styles.headerText}>{header}</Text>
+                        </View>
+                      ))}
                     </View>
-                  ))}
-                </View>
+
+                    {dashboardData.welder_count.map((item, index) => {
+                      const isHighFailure = parseFloat(item.Failure_Rate) > 10;
+
+                      return (
+                        <View
+                          key={index}
+                          style={[
+                            styles.tableRow,
+                            isHighFailure && {backgroundColor: '#ffe5e5'},
+                          ]}>
+                          <View style={styles.tableCell}>
+                            <Text style={styles.cellText}>
+                              {item.welder_id}
+                            </Text>
+                          </View>
+                          <View style={styles.tableCell}>
+                            <Text style={styles.cellText}>{item.Name}</Text>
+                          </View>
+                          <View style={styles.tableCell}>
+                            <Text style={styles.cellText}>{item.Total}</Text>
+                          </View>
+                          <View style={styles.tableCell}>
+                            <Text style={styles.cellText}>{item.Accepted}</Text>
+                          </View>
+                          <View style={styles.tableCell}>
+                            <Text style={styles.cellText}>{item.Repair}</Text>
+                          </View>
+                          <View style={styles.tableCell}>
+                            <Text style={styles.cellText}>{item.Retake}</Text>
+                          </View>
+                          <View style={styles.tableCell}>
+                            <Text
+                              style={[
+                                styles.cellText,
+                                isHighFailure && {
+                                  color: 'red',
+                                  fontWeight: 'bold',
+                                },
+                              ]}>
+                              {item.Failure_Rate}%
+                            </Text>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </ScrollView>
               </ScrollView>
             </View>
           </View>
         </Modal>
-      </>
+      </View>
     );
   };
 
@@ -937,16 +959,18 @@ const DashBoard = ({navigation}) => {
     if (!dashboardData || !dashboardData.component_count) return null;
 
     const visibleData = dashboardData.component_count;
-
     const labels = visibleData.map(item => {
       const name = item.pressure_part_component_name;
-      return name.length > 6
-        ? name.slice(0, 3) + '\n' + name.slice(3, 6) + '...'
-        : name.slice(0, 3) + '\n' + name.slice(3, 6);
+
+      if (isLandscape && name.length > 8) {
+        const mid = Math.floor(name.length / 2);
+        return `${name.slice(0, mid)}\n${name.slice(mid)}`;
+      }
+
+      return name.length > 8 ? name.slice(0, 5) + '...' : name;
     });
 
     const legend = ['Accepted', 'Retake', 'Repair'];
-
     const data = visibleData.map(item => [
       item.Accepted,
       item.Retake,
@@ -957,70 +981,100 @@ const DashBoard = ({navigation}) => {
       labels,
       legend,
       data,
-      barColors: ['#00A389', '#FFB951', '#FF5252'],
+      barColors: ['skyblue', '#FFB951', '#FF5252'],
     };
 
-    const barHeight = 300;
+    const barHeight = 210;
+    const barWidth = 60;
+    const chartWidth = isLandscape
+      ? WIDTH * 3
+      : barWidth * chartData.labels.length;
     const barMaxValue = Math.max(
       ...data.map(arr => arr.reduce((a, b) => a + b, 0)),
     );
     const barScale = barHeight / barMaxValue;
 
+    const customOffsetsPortrait = [
+      45, 105, 160, 215, 270, 325, 380, 435, 490, 545, 600, 670, 730,
+    ];
+    const customOffsetsLandscape = [
+      60, 130, 200, 290, 350, 430, 520, 600, 680, 750, 840, 890, 980,
+    ];
+
+    const getBarLeftOffset = index => {
+      const offsetList = isLandscape
+        ? customOffsetsLandscape
+        : customOffsetsPortrait;
+      let left = offsetList[index] ?? index * barWidth + 45;
+
+      // Apply shift ONLY in portrait for last two
+      if (!isLandscape && index >= chartData.data.length - 2) {
+        left -= 30;
+      }
+
+      return left;
+    };
+
     return (
-      <>
-        {/* Header */}
+      <View
+        style={{
+          backgroundColor: '#ECF7F9',
+          borderRadius: 12,
+          elevation: 5,
+          shadowColor: '#000',
+          shadowOffset: {width: 0, height: 2},
+          shadowOpacity: 0.2,
+          shadowRadius: 4,
+          padding: 5,
+          marginHorizontal: 10,
+          marginBottom: 15,
+          height: 340,
+          width: isLandscape ? WIDTH * 1.8 : WIDTH * 0.95,
+        }}>
         <View
           style={{
             flexDirection: 'row',
-            justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: 10,
+            justifyContent: 'space-between',
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            marginVertical: 15,
+            backgroundColor: '#f8f9fa',
+            borderRadius: 12,
+            elevation: 4,
+            shadowColor: '#000',
+            shadowOffset: {width: 0, height: 2},
+            shadowOpacity: 0.1,
+            shadowRadius: 3,
+            width: WIDTH * 0.9,
+            alignSelf: isLandscape ? 'center' : 'auto',
           }}>
-          <Text style={{fontWeight: 'bold', fontSize: 18}}>
+          <Text
+            style={{
+              fontWeight: 'bold',
+              fontSize: 17,
+              color: '#1e3a8a',
+            }}>
             Component Count Overview
           </Text>
-          <View
-            style={{
-              marginLeft: WIDTH * 0.07,
-            }}>
-            <TouchableOpacity
-              onPress={() => setComponentModalVisible(true)}
-              style={{
-                backgroundColor: '#007bff',
-                paddingVertical: 6,
-                paddingHorizontal: 12,
-                borderRadius: 5,
-              }}>
-              <Text style={{color: '#fff', fontWeight: 'bold'}}>
-                View Table
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
 
-        {/* Custom Legend */}
-        <View
-          style={{flexDirection: 'row', marginBottom: 10, flexWrap: 'wrap'}}>
-          {legend.map((label, index) => (
-            <View
-              key={index}
+          <TouchableOpacity
+            onPress={handlePress2}
+            style={{
+              backgroundColor: '#2563eb',
+              paddingVertical: 4,
+              paddingHorizontal: 5,
+              borderRadius: 8,
+            }}>
+            <Text
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                marginRight: 15,
+                color: '#fff',
+                fontSize: 12,
+                fontWeight: '600',
               }}>
-              <View
-                style={{
-                  width: 12,
-                  height: 12,
-                  backgroundColor: chartData.barColors[index],
-                  marginRight: 5,
-                  borderRadius: 2,
-                }}
-              />
-              <Text style={{fontSize: 12}}>{label}</Text>
-            </View>
-          ))}
+              View Table
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Chart */}
@@ -1028,8 +1082,370 @@ const DashBoard = ({navigation}) => {
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{paddingBottom: 10}}>
+          <View style={{position: 'relative', width: chartWidth}}>
+            {/* Overlay Dots with Values */}
+            <View
+              style={{
+                position: 'absolute',
+                top: 30,
+                left: 0,
+                flexDirection: 'row',
+                zIndex: 1,
+              }}>
+              {/* {chartData.data.map((dataArr, i) => {
+                const left = getBarLeftOffset(i);
+                const totalHeight = dataArr.reduce(
+                  (sum, val) => sum + val * barScale,
+                  0,
+                );
+                const entries = dataArr
+                  .map((val, idx) => ({
+                    value: val,
+                    color: chartData.barColors[idx],
+                  }))
+                  .filter(entry => entry.value !== 0);
+
+                return (
+                  <View
+                    key={i}
+                    style={{
+                      width: barWidth + 15,
+                      alignItems: 'center',
+                      justifyContent: 'flex-end',
+                      height: barHeight,
+                      position: 'absolute',
+                      left,
+                    }}>
+                    <View
+                      style={{
+                        position: 'absolute',
+                        bottom: Math.min(totalHeight + 8, barHeight - 30),
+                        backgroundColor: '#ffffffee',
+                        padding: 3,
+                        borderRadius: 6,
+                        flexDirection: 'row',
+                        flexWrap: 'wrap',
+                        justifyContent: 'center',
+                      }}>
+                      {entries.map((entry, idx) => (
+                        <View
+                          key={idx}
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            marginRight: isLandscape
+                              ? 7 + idx * 3
+                              : 4 + idx * 2,
+                            marginBottom: 2,
+                          }}>
+                          <View
+                            style={{
+                              width: 8,
+                              height: 8,
+                              backgroundColor: entry.color,
+                              borderRadius: 4,
+                              marginRight: 3,
+                            }}
+                          />
+                          <Text
+                            style={{
+                              fontSize: 10,
+                              fontWeight: '600',
+                              color: '#000',
+                            }}>
+                            {entry.value}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                );
+              })} */}
+            </View>
+
+            {/* Chart */}
+            <StackedBarChart
+              data={chartData}
+              width={chartWidth}
+              height={barHeight}
+              chartConfig={{
+                backgroundGradientFrom: '#ECF7F9',
+                backgroundGradientTo: '#ECF7F9',
+                color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                barPercentage: 0.4,
+                decimalPlaces: 0,
+                propsForLabels: {
+                  fontSize: 10,
+                  fontWeight: '900',
+                  color: BLACK,
+                  dy: 1,
+                  dx: -4,
+                },
+                propsForHorizontalLabels: {
+                  fontSize: 11,
+                  fontWeight: '500',
+                  dy: 10,
+                },
+                propsForVerticalLabels: {
+                  fontSize: 8,
+                  fontWeight: '600',
+                },
+                verticalLabelRotation: isLandscape ? 0 : 45,
+                propsForBackgroundLines: {
+                  stroke: 'transparent',
+                },
+                yAxisInterval: 1,
+                xAxisHeight: 60,
+                yAxisWidth: 60,
+              }}
+              withHorizontalLabels={true}
+              withVerticalLabels={true}
+              fromZero={true}
+              // hideLegend={true}
+              segments={6}
+              style={{
+                borderRadius: 8,
+                paddingLeft: 10,
+                paddingRight: 10,
+                paddingTop: 40,
+              }}
+            />
+          </View>
+        </ScrollView>
+
+        {/* Modal Table */}
+        <Modal
+          visible={isComponentModalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setComponentModalVisible(false)}>
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: 'rgba(0,0,0,0.5)',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}>
+            <View
+              style={{
+                backgroundColor: '#fff',
+                padding: 20,
+                borderRadius: 10,
+                maxHeight: '85%',
+                width: '95%',
+              }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  marginBottom: 10,
+                }}>
+                <Text style={{fontWeight: 'bold', fontSize: 18}}>
+                  Component Count Table
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setComponentModalVisible(false)}>
+                  <Text style={{fontSize: 18, color: 'red'}}>Close</Text>
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView>
+                <ScrollView
+                  horizontal
+                  contentContainerStyle={styles.tableContainer}>
+                  <View style={styles.table}>
+                    <View style={[styles.tableRow, styles.headerRow]}>
+                      {[
+                        'Component Name',
+                        'Total',
+                        'Accepted',
+                        'Repair',
+                        'Retake',
+                        'Failure Rate',
+                      ].map((header, index) => (
+                        <View
+                          key={index}
+                          style={[styles.tableCell, styles.headerCell]}>
+                          <Text style={styles.headerText}>{header}</Text>
+                        </View>
+                      ))}
+                    </View>
+
+                    {visibleData.map((item, index) => (
+                      <View key={index} style={styles.tableRow}>
+                        <View style={styles.tableCell}>
+                          <Text style={styles.cellText}>
+                            {item.pressure_part_component_name}
+                          </Text>
+                        </View>
+                        <View style={styles.tableCell}>
+                          <Text style={styles.cellText}>{item.Total}</Text>
+                        </View>
+                        <View style={styles.tableCell}>
+                          <Text style={styles.cellText}>{item.Accepted}</Text>
+                        </View>
+                        <View style={styles.tableCell}>
+                          <Text style={styles.cellText}>{item.Repair}</Text>
+                        </View>
+                        <View style={styles.tableCell}>
+                          <Text style={styles.cellText}>{item.Retake}</Text>
+                        </View>
+                        <View
+                          style={[
+                            styles.tableCell,
+                            parseFloat(item.Failure_Rate) > 10 && {
+                              backgroundColor: '#ffcccc',
+                            },
+                          ]}>
+                          <Text
+                            style={[
+                              styles.cellText,
+                              parseFloat(item.Failure_Rate) > 10 && {
+                                color: 'red',
+                                fontWeight: 'bold',
+                              },
+                            ]}>
+                            {item.Failure_Rate}%
+                          </Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                </ScrollView>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    );
+  };
+
+  const renderunitCount = () => {
+    if (!dashboardData || !dashboardData.unit_count) return null;
+
+    const unitData = dashboardData.unit_count;
+
+    const labels = unitData.map(item => {
+      const name = item.unit_no;
+
+      if (isLandscape && name.length > 8) {
+        // Try to split on space or hyphen if possible
+        const splitIndex =
+          name.indexOf(' ') > 0
+            ? name.indexOf(' ')
+            : name.indexOf('-') > 0
+            ? name.indexOf('-')
+            : Math.floor(name.length / 2);
+
+        const firstLine = name.slice(0, splitIndex);
+        const secondLine = name.slice(splitIndex);
+        return `${firstLine}\n${secondLine}`;
+      }
+
+      return name.length > 8 ? name.slice(0, 5) + '...' : name;
+    });
+
+    const legend = ['Accepted', 'Repair', 'Retake'];
+
+    const data = unitData.map(item => [
+      item.accepted_count,
+      item.repair_count,
+      item.retake_count,
+    ]);
+
+    const chartData = {
+      labels,
+      legend,
+      data,
+      barColors: ['skyblue', '#FFB951', '#FF5252'],
+    };
+
+    const barHeight = 210;
+    // const barMaxValue = Math.max(...data.map(arr => arr.reduce((a, b) => a + b, 0)));
+    const barScale = barHeight / barMaxValue;
+    const barWidth = 80;
+
+    const chartWidth = Math.max(
+      WIDTH * 0.96,
+      barWidth * chartData.labels.length,
+    );
+
+    const barMaxValue = Math.max(
+      ...data.map(arr => arr.reduce((a, b) => a + b, 0)),
+    );
+
+    return (
+      <View
+        style={{
+          backgroundColor: '#ECF7F9',
+          borderRadius: 12,
+          elevation: 5, // Android shadow
+          shadowColor: '#000', // iOS shadow
+          shadowOffset: {width: 0, height: 2},
+          shadowOpacity: 0.2,
+          shadowRadius: 4,
+          // padding: 5,
+          marginHorizontal: 10,
+          marginBottom: 15,
+          height: 340,
+          width: isLandscape ? WIDTH * 1.8 : WIDTH * 0.95, // ✅ Wider in portrait
+        }}>
+        {/* Header */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            marginVertical: 15,
+            marginHorizontal: 10,
+            backgroundColor: '#f8f9fa',
+            borderRadius: 12,
+            elevation: 4,
+            shadowColor: '#000',
+            shadowOffset: {width: 0, height: 2},
+            shadowOpacity: 0.1,
+            shadowRadius: 3,
+            width: WIDTH * 0.9,
+            alignSelf: isLandscape ? 'center' : 'auto',
+          }}>
+          <Text
+            style={{
+              fontWeight: 'bold',
+              fontSize: 20,
+              color: '#1e3a8a',
+            }}>
+            Unit Count Overview
+          </Text>
+
+          <TouchableOpacity
+            onPress={handlePress3}
+            style={{
+              backgroundColor: '#2563eb',
+              paddingVertical: 5,
+              paddingHorizontal: 10,
+              borderRadius: 8,
+            }}>
+            <Text
+              style={{
+                color: '#fff',
+                fontSize: 12,
+                fontWeight: '600',
+              }}>
+              View Table
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Chart with Overlayed Values */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{paddingBottom: 10}}>
           <View style={{position: 'relative'}}>
-            {/* Overlayed values */}
+            {/* Overlay Values */}
             <View
               style={{
                 position: 'absolute',
@@ -1043,7 +1459,6 @@ const DashBoard = ({navigation}) => {
                   (sum, val) => sum + val * barScale,
                   0,
                 );
-
                 const entries = dataArr
                   .map((val, idx) => ({
                     value: val,
@@ -1078,6 +1493,7 @@ const DashBoard = ({navigation}) => {
                             flexDirection: 'row',
                             alignItems: 'center',
                             marginRight: 6,
+                            marginBottom: 2,
                           }}>
                           <View
                             style={{
@@ -1104,34 +1520,36 @@ const DashBoard = ({navigation}) => {
               })}
             </View>
 
-            {/* Stacked Chart */}
+            {/* Stacked Bar Chart */}
             <StackedBarChart
               data={chartData}
-              width={chartData.labels.length * 90}
+              width={chartWidth}
               height={barHeight}
+              fromZero={true}
+              hideLegend={true}
+              withVerticalLabels={true}
+              withHorizontalLabels={true}
+              segments={6}
               chartConfig={{
-                backgroundGradientFrom: '#ffffff',
-                backgroundGradientTo: '#ffffff',
+                backgroundGradientFrom: '#ECF7F9',
+                backgroundGradientTo: '#ECF7F9',
                 color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                barPercentage: 0.4,
+                labelColor: (opacity = 1) => `rgba(30, 64, 175, ${opacity})`,
                 decimalPlaces: 0,
-                formatYLabel: yValue => `${parseInt(yValue, 10)}`,
-                propsForVerticalLabels: {
-                  fontSize: 10,
-                  fontWeight: '600',
-                  fill: '#222222',
-                  textAnchor: 'middle',
-                  dx: 10,
-                },
+                barPercentage: 0.4,
                 propsForHorizontalLabels: {
                   fontSize: 11,
                   fontWeight: '500',
                   dy: 10,
                 },
-                propsForBackgroundLines: {
-                  stroke: 'blue',
+                propsForVerticalLabels: {
+                  fontSize: 8,
+                  fontWeight: '600',
                 },
+                propsForBackgroundLines: {
+                  stroke: 'transparent',
+                },
+                fillShadowGradientOpacity: 1,
                 yAxisInterval: 1,
                 xAxisHeight: 60,
                 yAxisWidth: 60,
@@ -1143,327 +1561,6 @@ const DashBoard = ({navigation}) => {
                 paddingLeft: 10,
                 paddingTop: 40,
               }}
-              withHorizontalLabels={true}
-              withCustomBarColorFromData={true}
-              flatColor={true}
-              fromZero={true}
-              hideLegend={true}
-              segments={6}
-              horizontalLabelRotation={0}
-              verticalLabelRotation={0}
-              withInnerLines={true}
-              withOuterLines={true}
-            />
-          </View>
-        </ScrollView>
-
-        {/* Table Modal */}
-        <Modal
-          visible={isComponentModalVisible}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setComponentModalVisible(false)}>
-          <View
-            style={{
-              flex: 1,
-              backgroundColor: 'rgba(0,0,0,0.5)',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-            <View
-              style={{
-                backgroundColor: '#fff',
-                padding: 20,
-                borderRadius: 10,
-                maxHeight: '85%',
-                width: '95%',
-              }}>
-              {/* Modal Header */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  marginBottom: 10,
-                }}>
-                <Text style={{fontWeight: 'bold', fontSize: 18}}>
-                  Component Count Table
-                </Text>
-                <TouchableOpacity
-                  onPress={() => setComponentModalVisible(false)}>
-                  <Text style={{fontSize: 18, color: 'red'}}>Close</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Table */}
-              <ScrollView
-                horizontal
-                contentContainerStyle={styles.tableContainer}>
-                <View style={styles.table}>
-                  <View style={[styles.tableRow, styles.headerRow]}>
-                    {[
-                      'Component Name',
-                      'Total',
-                      'Accepted',
-                      'Repair',
-                      'Retake',
-                      'Failure Rate',
-                    ].map((header, index) => (
-                      <View
-                        key={index}
-                        style={[styles.tableCell, styles.headerCell]}>
-                        <Text style={styles.headerText}>{header}</Text>
-                      </View>
-                    ))}
-                  </View>
-
-                  {visibleData.map((item, index) => (
-                    <View key={index} style={styles.tableRow}>
-                      <View style={styles.tableCell}>
-                        <Text style={styles.cellText}>
-                          {item.pressure_part_component_name}
-                        </Text>
-                      </View>
-                      <View style={styles.tableCell}>
-                        <Text style={styles.cellText}>{item.Total}</Text>
-                      </View>
-                      <View style={styles.tableCell}>
-                        <Text style={styles.cellText}>{item.Accepted}</Text>
-                      </View>
-                      <View style={styles.tableCell}>
-                        <Text style={styles.cellText}>{item.Repair}</Text>
-                      </View>
-                      <View style={styles.tableCell}>
-                        <Text style={styles.cellText}>{item.Retake}</Text>
-                      </View>
-                      <View style={styles.tableCell}>
-                        <Text style={styles.cellText}>
-                          {item.Failure_Rate}%
-                        </Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
-          </View>
-        </Modal>
-      </>
-    );
-  };
-
-  const renderunitCount = () => {
-    if (!dashboardData || !dashboardData.unit_count) return null;
-
-    const unitData = dashboardData.unit_count;
-
-    const labels = unitData.map(item =>
-      item.unit_no.length > 6
-        ? item.unit_no.slice(0, 3) + '\n' + item.unit_no.slice(3, 6) + '...'
-        : item.unit_no.slice(0, 3) + '\n' + item.unit_no.slice(3),
-    );
-
-    const legend = ['Accepted', 'Repair', 'Retake'];
-
-    const data = unitData.map(item => [
-      item.accepted_count,
-      item.repair_count,
-      item.retake_count,
-    ]);
-
-    const chartData = {
-      labels,
-      legend,
-      data,
-      barColors: ['#00A389', '#FFB951', '#FF5252'],
-    };
-
-    const barHeight = 300;
-    const barMaxValue = Math.max(
-      ...data.map(arr => arr.reduce((a, b) => a + b, 0)),
-    );
-    const barScale = barHeight / barMaxValue;
-
-    return (
-      <>
-        {/* Header */}
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 10,
-          }}>
-          <Text style={{fontWeight: 'bold', fontSize: 18}}>
-            Unit Count Overview
-          </Text>
-          <View
-            style={{
-              marginLeft: WIDTH * 0.22,
-            }}>
-            <TouchableOpacity
-              onPress={() => setUnitModalVisible(true)}
-              style={{
-                backgroundColor: '#007bff',
-                paddingVertical: 6,
-                paddingHorizontal: 12,
-                borderRadius: 5,
-              }}>
-              <Text style={{color: '#fff', fontWeight: 'bold'}}>
-                View Table
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Custom Legend */}
-        <View style={{flexDirection: 'row', marginBottom: 10}}>
-          {legend.map((label, index) => (
-            <View
-              key={index}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                marginRight: 15,
-              }}>
-              <View
-                style={{
-                  width: 12,
-                  height: 12,
-                  backgroundColor: chartData.barColors[index],
-                  marginRight: 5,
-                  borderRadius: 2,
-                }}
-              />
-              <Text style={{fontSize: 12}}>{label}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* Chart with Overlayed Values */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={{position: 'relative'}}>
-            {/* Overlay values */}
-            <View
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 20,
-                flexDirection: 'row',
-                zIndex: 1,
-              }}>
-              {chartData.data.map((dataArr, i) => {
-                const totalHeight = dataArr.reduce(
-                  (sum, val) => sum + val * barScale,
-                  0,
-                );
-                const entries = dataArr
-                  .map((val, idx) => ({
-                    value: val,
-                    color: chartData.barColors[idx],
-                  }))
-                  .filter(entry => entry.value !== 0);
-
-                return (
-                  <View
-                    key={i}
-                    style={{
-                      width: 90,
-                      alignItems: 'center',
-                      height: barHeight,
-                    }}>
-                    <View
-                      style={{
-                        position: 'absolute',
-                        bottom: Math.min(totalHeight + 8, barHeight - 30),
-                        backgroundColor: '#ffffffee',
-                        padding: 4,
-                        borderRadius: 6,
-                        flexDirection: 'row',
-                        flexWrap: 'wrap',
-                        justifyContent: 'center',
-                      }}>
-                      {entries.map((entry, idx) => (
-                        <View
-                          key={idx}
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            marginRight: 6,
-                          }}>
-                          <View
-                            style={{
-                              width: 8,
-                              height: 8,
-                              backgroundColor: entry.color,
-                              borderRadius: 4,
-                              marginRight: 3,
-                            }}
-                          />
-                          <Text
-                            style={{
-                              fontSize: 10,
-                              fontWeight: '600',
-                              color: '#000',
-                            }}>
-                            {entry.value}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-
-            {/* Chart */}
-            <StackedBarChart
-              data={chartData}
-              width={chartData.labels.length * 120}
-              height={barHeight}
-              chartConfig={{
-                backgroundGradientFrom: '#ffffff',
-                backgroundGradientTo: '#ffffff',
-                color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                barPercentage: 0.4,
-                decimalPlaces: 0,
-                formatYLabel: yValue => `${parseInt(yValue, 10)}`,
-                propsForVerticalLabels: {
-                  fontSize: 10,
-                  fontWeight: '600',
-                  fill: '#222222',
-                  textAnchor: 'middle',
-                  dx: 10,
-                },
-                propsForHorizontalLabels: {
-                  fontSize: 11,
-                  fontWeight: '500',
-                  dy: 10,
-                },
-                propsForBackgroundLines: {
-                  stroke: 'blue',
-                },
-                yAxisInterval: 1,
-                xAxisHeight: 60,
-                yAxisWidth: 60,
-              }}
-              style={{
-                marginVertical: 10,
-                borderRadius: 8,
-                paddingRight: 35,
-                paddingLeft: 10,
-                paddingTop: 40,
-              }}
-              withHorizontalLabels={true}
-              withCustomBarColorFromData={true}
-              flatColor={true}
-              fromZero={true}
-              hideLegend={true}
-              segments={6}
-              horizontalLabelRotation={0}
-              verticalLabelRotation={0}
-              withInnerLines={true}
-              withOuterLines={true}
             />
           </View>
         </ScrollView>
@@ -1503,54 +1600,60 @@ const DashBoard = ({navigation}) => {
                 </TouchableOpacity>
               </View>
 
-              {/* Table */}
-              <ScrollView
-                horizontal
-                contentContainerStyle={styles.tableContainer}>
-                <View style={styles.table}>
-                  <View style={[styles.tableRow, styles.headerRow]}>
-                    {[
-                      'Unit No',
-                      'Total Jobs',
-                      'Accepted',
-                      'Repair',
-                      'Retake',
-                    ].map((header, index) => (
-                      <View
-                        key={index}
-                        style={[styles.tableCell, styles.headerCell]}>
-                        <Text style={styles.headerText}>{header}</Text>
+              <ScrollView>
+                {/* Table */}
+                <ScrollView
+                  horizontal
+                  contentContainerStyle={styles.tableContainer}>
+                  <View style={styles.table}>
+                    <View style={[styles.tableRow, styles.headerRow]}>
+                      {[
+                        'Unit No',
+                        'Total Jobs',
+                        'Accepted',
+                        'Repair',
+                        'Retake',
+                      ].map((header, index) => (
+                        <View
+                          key={index}
+                          style={[styles.tableCell, styles.headerCell]}>
+                          <Text style={styles.headerText}>{header}</Text>
+                        </View>
+                      ))}
+                    </View>
+
+                    {unitData.map((item, index) => (
+                      <View key={index} style={styles.tableRow}>
+                        <View style={styles.tableCell}>
+                          <Text style={styles.cellText}>{item.unit_no}</Text>
+                        </View>
+                        <View style={styles.tableCell}>
+                          <Text style={styles.cellText}>{item.total_jobs}</Text>
+                        </View>
+                        <View style={styles.tableCell}>
+                          <Text style={styles.cellText}>
+                            {item.accepted_count}
+                          </Text>
+                        </View>
+                        <View style={styles.tableCell}>
+                          <Text style={styles.cellText}>
+                            {item.repair_count}
+                          </Text>
+                        </View>
+                        <View style={styles.tableCell}>
+                          <Text style={styles.cellText}>
+                            {item.retake_count}
+                          </Text>
+                        </View>
                       </View>
                     ))}
                   </View>
-
-                  {unitData.map((item, index) => (
-                    <View key={index} style={styles.tableRow}>
-                      <View style={styles.tableCell}>
-                        <Text style={styles.cellText}>{item.unit_no}</Text>
-                      </View>
-                      <View style={styles.tableCell}>
-                        <Text style={styles.cellText}>{item.total_jobs}</Text>
-                      </View>
-                      <View style={styles.tableCell}>
-                        <Text style={styles.cellText}>
-                          {item.accepted_count}
-                        </Text>
-                      </View>
-                      <View style={styles.tableCell}>
-                        <Text style={styles.cellText}>{item.repair_count}</Text>
-                      </View>
-                      <View style={styles.tableCell}>
-                        <Text style={styles.cellText}>{item.retake_count}</Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
+                </ScrollView>
               </ScrollView>
             </View>
           </View>
         </Modal>
-      </>
+      </View>
     );
   };
 
@@ -1572,23 +1675,28 @@ const DashBoard = ({navigation}) => {
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={refresh} />
             }>
-            <View style={{flex: 1, width: WIDTH, backgroundColor: WHITE}}>
+            <View
+              style={{
+                flex: 1,
+                width: width, // auto-resize width
+                minHeight: height, // auto-adjust height for landscape
+                backgroundColor: WHITE,
+              }}>
               <LinearGradient
                 colors={[BRAND, WHITE]}
                 start={{x: 0.7, y: 0}}
                 end={{x: 0.3, y: 1.8}}
                 style={{
                   width: '100%',
-                  height: HEIGHT * 0.3,
+                  height: isLandscape ? HEIGHT * 0.35 : HEIGHT * 0.3, // adjusted height
                   alignItems: 'center',
                   zIndex: 5,
                   borderBottomLeftRadius: 20,
                   borderBottomRightRadius: 20,
-                  // paddingBottom: 50,
                 }}>
                 <View
                   style={{
-                    width: '100%',
+                    width: isLandscape ? width : WIDTH,
                     height: '25%',
                     padding: 10,
                     flexDirection: 'row',
@@ -1752,11 +1860,11 @@ const DashBoard = ({navigation}) => {
 
               {renderStatsCards()}
 
-              <View style={styles.chartContainer}>
+              <View style={[styles.chartContainer, {width: width}]}>
                 <View
                   style={{
-                    height: HEIGHT * 0.05,
-                    width: WIDTH,
+                    height: isLandscape ? height * 0.08 : HEIGHT * 0.05,
+                    width: width,
                     backgroundColor: BRAND,
                     alignSelf: 'center',
                     alignItems: 'center',
@@ -1767,10 +1875,9 @@ const DashBoard = ({navigation}) => {
                     Job Status Overview
                   </Text>
                 </View>
+
                 {renderwelderCountTable()}
-
                 {rendercomponentCount()}
-
                 {renderunitCount()}
               </View>
             </View>
@@ -1913,13 +2020,12 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
-    justifyContent: 'space-around',
     // marginVertical: 20,
     // marginRight: 20,
   },
   statsCard: {
     backgroundColor: WHITE,
-    height: HEIGHT * 0.1,
+    // height: HEIGHT * 0.1,
     borderWidth: 1,
 
     borderRadius: 10,
@@ -1954,10 +2060,10 @@ const styles = StyleSheet.create({
   },
   chartContainer: {
     marginTop: 20,
-    width: WIDTH,
     alignItems: 'center',
     paddingHorizontal: 15,
   },
+
   loaderContainer: {
     flex: 1,
     justifyContent: 'center',
