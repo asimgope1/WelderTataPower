@@ -22,6 +22,7 @@
     "@shopify/react-native-skia": "^1.12.4",
     "@wuba/react-native-echarts": "^2.0.3",
     "base-64": "^1.0.0",
+    "jsencrypt": "^3.3.2",
     "react": "18.3.1",
     "react-native": "0.76.5",
     "react-native-calendars": "^1.1304.1-snapshot.1101",

@@ -20,7 +20,7 @@ import {HEIGHT, MyStatusBar, WIDTH} from '../../constants/config';
 import {appStyles} from '../../styles/AppStyles';
 import {RFValue} from 'react-native-responsive-fontsize';
 import {useFocusEffect} from '@react-navigation/native';
-import {BASE_URL} from '../../constants/url';
+import {BAS_URL, BASE_URL} from '../../constants/url';
 import {clearAll, storeObjByKey} from '../../utils/Storage';
 import {checkuserToken} from '../../redux/actions/auth';
 import {useDispatch} from 'react-redux';
@@ -30,9 +30,9 @@ import {BG, LOGO, TATA} from '../../constants/imagepath';
 import {Switch, TextInput} from 'react-native-paper';
 import LinearGradient from 'react-native-linear-gradient';
 import Alertmodal from '../../components/Alertmodal/Alertmodal';
-import Exitmodal from '../../components/Exitmodal';
 import DeviceInfo, {getIpAddress} from 'react-native-device-info';
 import {encode} from 'base-64';
+import JSEncrypt from 'jsencrypt';
 
 // === Constants ===
 const MAX_ATTEMPTS = 5;
@@ -46,9 +46,9 @@ const Login = ({navigation, route}) => {
   const [password, setPassword] = useState('');
   const [alertMsg, setAlertMsg] = useState('');
   const [alertModal, setAlertModal] = useState(false);
-  const [exitModal, setExitModal] = useState(false);
   const [isSwitchOn, setIsSwitchOn] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [publicKey, setPublicKey] = useState(null);
   const dispatch = useDispatch();
 
   // === Modal Toggle ===
@@ -212,100 +212,92 @@ const Login = ({navigation, route}) => {
   // };
 
   const handleLogin = async () => {
-    if (!validateInput(email, password)) {
-      return;
-    }
+    if (!validateInput(email, password)) return;
+
     const proceedWithLogin = await checkLoginAttempts(email);
     if (!proceedWithLogin) return;
 
     const rateLimitPassed = await checkRateLimit(email);
     if (!rateLimitPassed) return;
 
-    const url = `${BASE_URL}auth/`;
-
-    // Encode password
-    const encodedPassword = encode(password);
-    const encodedCredentials = encode(`${email}:${encodedPassword}`);
-
-    // Set headers
-    const myHeaders = new Headers();
-    myHeaders.append('Authorization', `Basic ${encodedCredentials}`);
-    myHeaders.append('Content-Type', 'application/json');
-
-    // Request options
-    const requestOptions = {
-      method: 'POST',
-      headers: myHeaders,
-      redirect: 'follow',
-    };
-
     setLoader(true);
 
-    // API call
-    fetch(url, requestOptions)
-      .then(response => response.json())
-      .then(async res => {
-        if (res?.message === 'OK') {
-          // Modify the login log message before saving
-          const successData = {
-            email: email,
-            ip_address: res?.ip_address || 'Unknown IP',
-            status: 'LOGIN_SUCCESS',
-            message: 'User logged in successfully.', // Replacing "OK" with descriptive message
-            timestamp: new Date().toISOString(),
-          };
+    try {
+      // Step 1: Fetch public key from server
+      const publicKeyResponse = await fetch(
+        `${BAS_URL}welding/get-public-key/`,
+      );
+      const publicKeyData = await publicKeyResponse.json();
+      const publicKey = publicKeyData?.public_key;
 
-          // Save login logs to AsyncStorage
-          await AsyncStorage.setItem(
-            'loginStatus',
-            JSON.stringify(successData),
-          );
+      if (!publicKey) {
+        throw new Error('Public key retrieval failed.');
+      }
 
-          // Log login attempt
-          await logLoginAttempt(email, successData.status, successData.message);
+      // Step 2: Encrypt email and password using public key
+      const encryptor = new JSEncrypt();
+      encryptor.setPublicKey(publicKey);
 
-          // Store response and navigate
-          storeObjByKey('loginResponse', res.data);
-          dispatch(checkuserToken());
-          // navigation.navigate('DashBoard');
-        } else if (res.status === 'error') {
-          // Modify the failure message before saving
-          const failureData = {
-            email: email,
-            ip_address: res?.ip_address || 'Unknown IP',
-            status: 'LOGIN_FAILURE',
-            message: 'Invalid Username or password', // Descriptive failure message
-            timestamp: new Date().toISOString(),
-          };
+      const encryptedEmail = encryptor.encrypt(email);
+      const encryptedPassword = encryptor.encrypt(password);
 
-          // Save failure logs to AsyncStorage
-          await AsyncStorage.setItem(
-            'loginStatus',
-            JSON.stringify(failureData),
-          );
+      if (!encryptedEmail || !encryptedPassword) {
+        throw new Error('Encryption failed. Please try again.');
+      }
 
-          // Log login attempt
-          await logLoginAttempt(email, failureData.status, failureData.message);
+      // Step 3: Send encrypted credentials to backend
+      const response = await fetch(`${BASE_URL}auth/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          encrypted_email: encryptedEmail,
+          encrypted_password: encryptedPassword,
+        }),
+      });
 
-          Alert.alert('Invalid Credentials', 'Please check your details.');
-        }
-      })
-      .catch(async error => {
-        console.error('API Error:', error);
+      const res = await response.json();
 
-        // Save error response
-        const errorData = {
-          status: 'ERROR',
-          message: error.message || 'Something went wrong!',
+      if (res?.message === 'OK') {
+        const successData = {
+          email: email,
+          ip_address: res?.ip_address || 'Unknown IP',
+          status: 'LOGIN_SUCCESS',
+          message: 'User logged in successfully.',
           timestamp: new Date().toISOString(),
         };
-        await AsyncStorage.setItem('loginStatus', JSON.stringify(errorData));
 
-        Alert.alert('Error', 'Something went wrong!');
-      })
-      .finally(() => {
-        setLoader(false);
-      });
+        await AsyncStorage.setItem('loginStatus', JSON.stringify(successData));
+        await logLoginAttempt(email, successData.status, successData.message);
+
+        storeObjByKey('loginResponse', res.data);
+        dispatch(checkuserToken());
+        // navigation.navigate('DashBoard'); // Uncomment if navigation is in scope
+      } else {
+        const failureData = {
+          email: email,
+          ip_address: res?.ip_address || 'Unknown IP',
+          status: 'LOGIN_FAILURE',
+          message: 'Invalid Username or password',
+          timestamp: new Date().toISOString(),
+        };
+
+        await AsyncStorage.setItem('loginStatus', JSON.stringify(failureData));
+        await logLoginAttempt(email, failureData.status, failureData.message);
+        Alert.alert('Invalid Credentials', 'Please check your details.');
+      }
+    } catch (error) {
+      const errorData = {
+        status: 'ERROR',
+        message: error.message || 'Something went wrong!',
+        timestamp: new Date().toISOString(),
+      };
+      await AsyncStorage.setItem('loginStatus', JSON.stringify(errorData));
+      Alert.alert('Error', error.message || 'Something went wrong!');
+    } finally {
+      setLoader(false);
+    }
   };
 
   // === Modal & Navigation Handling ===
@@ -319,13 +311,15 @@ const Login = ({navigation, route}) => {
 
   useFocusEffect(() => {
     const backAction = () => {
-      setExitModal(true);
+      BackHandler.exitApp(); // This will close the app
       return true;
     };
+
     const backHandler = BackHandler.addEventListener(
       'hardwareBackPress',
       backAction,
     );
+
     return () => backHandler.remove();
   });
 
@@ -507,14 +501,6 @@ const Login = ({navigation, route}) => {
           visible={alertModal}
           message={alertMsg}
           onClose={() => setAlertModal(false)}
-        />
-      )}
-      {exitModal && (
-        <Exitmodal
-          visible={exitModal}
-          message="Are you sure you want to exit?"
-          onClose={() => setExitModal(false)}
-          onConfirm={() => BackHandler.exitApp()}
         />
       )}
     </Fragment>
