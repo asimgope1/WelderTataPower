@@ -363,15 +363,20 @@ const DashBoard = ({navigation}) => {
     setRefreshing(false);
   };
   const WelderState = async (Id, Status) => {
-    console.log('i am here', Id, Status);
+    console.log('🔧 WelderState called with:', Id, Status);
 
     const allowedStatuses = ['Accepted', 'Repair', 'Retake'];
-    if (!allowedStatuses.includes(Status)) {
+
+    let url = `${BAS_URL}welding/api/v1/welder-stat-details/?welder_id=${Id}&shutdown_id=${shutdownID}`;
+
+    if (allowedStatuses.includes(Status)) {
+      url += `&job_status=${Status}`;
+    } else if (Status === 'Welder ID') {
+      // Just keep the URL without job_status
+    } else {
       console.log('❌ API not called for header:', Status);
       return;
     }
-
-    const url = `${BAS_URL}welding/api/v1/welder-stat-details/?welder_id=${Id}&shutdown_id=${shutdownID}&job_status=${Status}`;
 
     console.log('📡 Calling API with GETNETWORK:', url);
 
@@ -380,6 +385,58 @@ const DashBoard = ({navigation}) => {
       console.log('✅ API Result:', result);
     } catch (error) {
       console.error('❌ API Error:', error);
+    }
+  };
+
+  const UnitState = async (unitNumber, Status) => {
+    console.log('🔧 UnitState called with:', unitNumber, Status);
+
+    const allowedStatuses = ['Accepted', 'Repair', 'Retake'];
+
+    let url = `${BAS_URL}welding/api/v1/unit-stat-details/?unit_number=${unitNumber}&shutdown_id=${shutdownID}`;
+
+    if (allowedStatuses.includes(Status)) {
+      url += `&job_status=${Status}`;
+    } else if (Status === 'Unit Number') {
+      // Placeholder status — skip adding job_status
+    } else {
+      console.log('❌ API not called for header:', Status);
+      return;
+    }
+
+    console.log('📡 Calling API with GETNETWORK:', url);
+
+    try {
+      const result = await GETNETWORK(url, true);
+      console.log('✅ API Result:', result);
+    } catch (error) {
+      console.error('❌ API Error:', error);
+    }
+  };
+
+  const ComponentState = async (componentName, Status) => {
+    console.log('📞 ComponentState:', componentName, Status);
+
+    let url = `${BAS_URL}welding/api/v1/component-stat-details/?component_name=${encodeURIComponent(
+      componentName,
+    )}&shutdown_id=${shutdownID}`;
+
+    const allowedStatuses = ['Accepted', 'Repair', 'Retake'];
+
+    if (allowedStatuses.includes(Status)) {
+      url += `&job_status=${Status}`;
+    } else if (Status !== 'Component Name') {
+      console.log('❌ Invalid status, skipping API call:', Status);
+      return;
+    }
+
+    console.log('📡 Calling API:', url);
+
+    try {
+      const result = await GETNETWORK(url, true);
+      console.log('✅ Component API Result:', result);
+    } catch (error) {
+      console.error('❌ Component API Error:', error);
     }
   };
 
@@ -897,8 +954,8 @@ const DashBoard = ({navigation}) => {
               style={[
                 styles.modalBox,
                 {
-                  height: isLandscape ? '80%' : '47%',
-                  width: isLandscape ? '90%' : '90%',
+                  height: isLandscape ? '90%' : '47%',
+                  width: isLandscape ? '95%' : '90%',
                 },
               ]}>
               <Text style={styles.modalTitle}>Welder Count Table</Text>
@@ -1226,7 +1283,14 @@ const DashBoard = ({navigation}) => {
           transparent
           onRequestClose={() => setTableModalVisibleComponent(false)}>
           <View style={styles.modalContainer}>
-            <View style={[styles.modalBox, {height: '47%', width: '90%'}]}>
+            <View
+              style={[
+                styles.modalBox,
+                {
+                  height: isLandscape ? '90%' : '47%',
+                  width: isLandscape ? '95%' : '90%',
+                },
+              ]}>
               <Text style={styles.modalTitle}>Component Count Table</Text>
               <ScrollView horizontal>
                 <View style={styles.table}>
@@ -1257,31 +1321,62 @@ const DashBoard = ({navigation}) => {
                   <ScrollView style={{maxHeight: 400}}>
                     {dashboardData.component_count.map((item, index) => {
                       const isFailureRateHigh =
-                        parseFloat(item.Failure_Rate) > 10; // Check if failure rate > 10%
+                        parseFloat(item.Failure_Rate) > 10;
+
+                      const handleComponentPress = status => {
+                        const componentName = item.pressure_part_component_name;
+                        ComponentState(componentName, status);
+                      };
+
                       return (
                         <View
                           key={index}
                           style={[
                             styles.tableRow,
-                            isFailureRateHigh && {backgroundColor: '#f8d7da'}, // Light red background if failure rate > 10%
+                            isFailureRateHigh && {backgroundColor: '#f8d7da'},
                           ]}>
-                          <View style={[styles.tableCell, styles.leftColumn]}>
+                          {/* Component Name */}
+                          <TouchableOpacity
+                            style={[styles.tableCell, styles.leftColumn]}
+                            onPress={() =>
+                              handleComponentPress('Component Name')
+                            }>
                             <Text style={styles.cellText}>
                               {item.pressure_part_component_name}
                             </Text>
-                          </View>
-                          <View style={styles.tableCell}>
+                          </TouchableOpacity>
+
+                          {/* Total */}
+                          <TouchableOpacity
+                            style={styles.tableCell}
+                            onPress={() =>
+                              handleComponentPress('Component Name')
+                            }>
                             <Text style={styles.cellText}>{item.Total}</Text>
-                          </View>
-                          <View style={styles.tableCell}>
+                          </TouchableOpacity>
+
+                          {/* Accepted */}
+                          <TouchableOpacity
+                            style={styles.tableCell}
+                            onPress={() => handleComponentPress('Accepted')}>
                             <Text style={styles.cellText}>{item.Accepted}</Text>
-                          </View>
-                          <View style={styles.tableCell}>
+                          </TouchableOpacity>
+
+                          {/* Repair */}
+                          <TouchableOpacity
+                            style={styles.tableCell}
+                            onPress={() => handleComponentPress('Repair')}>
                             <Text style={styles.cellText}>{item.Repair}</Text>
-                          </View>
-                          <View style={styles.tableCell}>
+                          </TouchableOpacity>
+
+                          {/* Retake */}
+                          <TouchableOpacity
+                            style={styles.tableCell}
+                            onPress={() => handleComponentPress('Retake')}>
                             <Text style={styles.cellText}>{item.Retake}</Text>
-                          </View>
+                          </TouchableOpacity>
+
+                          {/* Failure Rate - not calling API */}
                           <View style={styles.tableCell}>
                             <Text style={styles.cellText}>
                               {item.Failure_Rate}%
@@ -1549,7 +1644,14 @@ const DashBoard = ({navigation}) => {
           transparent={true}
           onRequestClose={() => setTableModalVisible(false)}>
           <View style={styles.modalContainer}>
-            <View style={[styles.modalBox, {height: '35%', width: '90%'}]}>
+            <View
+              style={[
+                styles.modalBox,
+                {
+                  height: isLandscape ? '90%' : '47%',
+                  width: isLandscape ? '95%' : '90%',
+                },
+              ]}>
               <Text style={styles.modalTitle}>Unit Count Table</Text>
               <ScrollView horizontal>
                 <View style={styles.table}>
@@ -1571,23 +1673,42 @@ const DashBoard = ({navigation}) => {
 
                   {unitData.map((item, index) => (
                     <View key={index} style={styles.tableRow}>
-                      <View style={styles.tableCell}>
+                      {/* Unit No - general fetch without status */}
+                      <TouchableOpacity
+                        style={styles.tableCell}
+                        onPress={() => UnitState(item.unit_no, 'Unit Number')}>
                         <Text style={styles.cellText}>{item.unit_no}</Text>
-                      </View>
-                      <View style={styles.tableCell}>
+                      </TouchableOpacity>
+
+                      {/* Total Jobs - can also call general fetch */}
+                      <TouchableOpacity
+                        style={styles.tableCell}
+                        onPress={() => UnitState(item.unit_no, 'Unit Number')}>
                         <Text style={styles.cellText}>{item.total_jobs}</Text>
-                      </View>
-                      <View style={styles.tableCell}>
+                      </TouchableOpacity>
+
+                      {/* Accepted */}
+                      <TouchableOpacity
+                        style={styles.tableCell}
+                        onPress={() => UnitState(item.unit_no, 'Accepted')}>
                         <Text style={styles.cellText}>
                           {item.accepted_count}
                         </Text>
-                      </View>
-                      <View style={styles.tableCell}>
+                      </TouchableOpacity>
+
+                      {/* Repair */}
+                      <TouchableOpacity
+                        style={styles.tableCell}
+                        onPress={() => UnitState(item.unit_no, 'Repair')}>
                         <Text style={styles.cellText}>{item.repair_count}</Text>
-                      </View>
-                      <View style={styles.tableCell}>
+                      </TouchableOpacity>
+
+                      {/* Retake */}
+                      <TouchableOpacity
+                        style={styles.tableCell}
+                        onPress={() => UnitState(item.unit_no, 'Retake')}>
                         <Text style={styles.cellText}>{item.retake_count}</Text>
-                      </View>
+                      </TouchableOpacity>
                     </View>
                   ))}
                 </View>
