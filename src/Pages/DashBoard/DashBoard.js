@@ -28,8 +28,7 @@ import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import {StackedBarChart} from 'react-native-chart-kit';
 const screenWidth = Dimensions.get('window').width;
 import {useWindowDimensions} from 'react-native';
-import { BarChart } from 'react-native-gifted-charts';
-
+import {BarChart} from 'react-native-gifted-charts';
 
 import {
   BOLD,
@@ -46,7 +45,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useDispatch} from 'react-redux';
 import {checkuserToken} from '../../redux/actions/auth';
 import DropDownPicker from 'react-native-dropdown-picker';
-import { Pressable } from 'react-native';
+import {Pressable} from 'react-native';
 
 const DashBoard = ({navigation}) => {
   const [JobList, SetJobList] = useState([]);
@@ -66,22 +65,23 @@ const DashBoard = ({navigation}) => {
   const isLandscape = width > height;
   const cardWidth = width / 4 - 20; // 4 cards per row with padding
   const [modalVisibleComponent, setModalVisibleComponent] = useState(false);
-const [selectedDataComponent, setSelectedDataComponent] = useState({});
-const [tableModalVisibleComponent, setTableModalVisibleComponent] = useState(false); // new
-const [selectedDataWelder, setSelectedDataWelder] = useState({});
+  const [selectedDataComponent, setSelectedDataComponent] = useState({});
+  const [tableModalVisibleComponent, setTableModalVisibleComponent] =
+    useState(false); // new
+  const [selectedDataWelder, setSelectedDataWelder] = useState({});
 
-const [modalVisibleWelder, setModalVisibleWelder] = useState(false);
-const [tableModalVisibleWelder, setTableModalVisibleWelder] = useState(false);
+  const [modalVisibleWelder, setModalVisibleWelder] = useState(false);
+  const [tableModalVisibleWelder, setTableModalVisibleWelder] = useState(false);
 
-const [isUnitModalVisible, setUnitModalVisible] = useState(false); // Modal for tapped bar
-const [selectedUnitData, setSelectedUnitData] = useState({}); // Data for the tapped unit
-const [modalVisibleXAxisWelder, setModalVisibleXAxisWelder] = useState(false);
-const [selectedXAxisWelder, setSelectedXAxisWelder] = useState(null);
-const [modalVisibleXAxisComponent, setModalVisibleXAxisComponent] = useState(false);
- const [selectedXAxisComponent, setSelectedXAxisComponent] = useState(null);
+  const [isUnitModalVisible, setUnitModalVisible] = useState(false); // Modal for tapped bar
+  const [selectedUnitData, setSelectedUnitData] = useState({}); // Data for the tapped unit
+  const [modalVisibleXAxisWelder, setModalVisibleXAxisWelder] = useState(false);
+  const [selectedXAxisWelder, setSelectedXAxisWelder] = useState(null);
+  const [modalVisibleXAxisComponent, setModalVisibleXAxisComponent] =
+    useState(false);
+  const [selectedXAxisComponent, setSelectedXAxisComponent] = useState(null);
   const [modalVisibleXAxisUnit, setModalVisibleXAxisUnit] = useState(false);
   const [selectedXAxisUnit, setSelectedXAxisUnit] = useState(null);
-  
 
   const handlePress = () => {
     setIsLoading(true);
@@ -362,6 +362,26 @@ const [modalVisibleXAxisComponent, setModalVisibleXAxisComponent] = useState(fal
     await GetJobList();
     setRefreshing(false);
   };
+  const WelderState = async (Id, Status) => {
+    console.log('i am here', Id, Status);
+
+    const allowedStatuses = ['Accepted', 'Repair', 'Retake'];
+    if (!allowedStatuses.includes(Status)) {
+      console.log('❌ API not called for header:', Status);
+      return;
+    }
+
+    const url = `${BAS_URL}welding/api/v1/welder-stat-details/?welder_id=${Id}&shutdown_id=${shutdownID}&job_status=${Status}`;
+
+    console.log('📡 Calling API with GETNETWORK:', url);
+
+    try {
+      const result = await GETNETWORK(url, true);
+      console.log('✅ API Result:', result);
+    } catch (error) {
+      console.error('❌ API Error:', error);
+    }
+  };
 
   const getRandomColor = () => {
     const randomColor = Math.floor(Math.random() * 16777215).toString(16);
@@ -393,7 +413,7 @@ const [modalVisibleXAxisComponent, setModalVisibleXAxisComponent] = useState(fal
     };
 
     try {
-      console.log('getting shutdownId=================',shutdownID)
+      console.log('getting shutdownId=================', shutdownID);
       const response = await fetch(
         `${BAS_URL}welding/api/v1/job-status-details/?job_status=${name}&shutdown_id=${shutdownID}`,
         requestOptions,
@@ -656,13 +676,12 @@ const [modalVisibleXAxisComponent, setModalVisibleXAxisComponent] = useState(fal
 
   const renderwelderCountTable = () => {
     if (!dashboardData || !dashboardData.welder_count) return null;
-  
-  
+
     const openModal = (welderId, type, value) => {
-      setSelectedDataWelder({ welderId, type, value });
+      setSelectedDataWelder({welderId, type, value});
       setModalVisibleWelder(true);
     };
-  
+
     const stackData = dashboardData.welder_count.map(item => ({
       label: item.welder_id,
       stacks: [
@@ -684,62 +703,74 @@ const [modalVisibleXAxisComponent, setModalVisibleXAxisComponent] = useState(fal
         {
           value: parseFloat(item.Failure_Rate),
           color: '#f44336',
-          onPress: () => openModal(item.welder_id, 'Failure Rate', `${item.Failure_Rate}%`),
+          onPress: () =>
+            openModal(item.welder_id, 'Failure Rate', `${item.Failure_Rate}%`),
         },
       ],
     }));
-  
-    const getRoundedMaxValue = (data) => {
+
+    const getRoundedMaxValue = data => {
       const rawMax = Math.max(
-        ...data.map(item =>
-          item.Accepted + item.Repair + item.Retake + parseFloat(item.Failure_Rate)
-        )
+        ...data.map(
+          item =>
+            item.Accepted +
+            item.Repair +
+            item.Retake +
+            parseFloat(item.Failure_Rate),
+        ),
       );
       return Math.ceil(rawMax / 10) * 10;
     };
-  
+
     const dynamicMaxValue = getRoundedMaxValue(dashboardData.welder_count);
-  
+
     return (
-      <View style={{
-        backgroundColor: '#ECF7F9',
-        borderRadius: 12,
-        elevation: 5,
-        marginHorizontal: 10,
-        marginBottom: 15,
-        height: 340,
-        width: isLandscape ? WIDTH * 1.8 : WIDTH * 0.95,
-      }}>
-        <View style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingHorizontal: 16,
-          paddingVertical: 10,
-          marginVertical: 15,
-          backgroundColor: '#f8f9fa',
+      <View
+        style={{
+          backgroundColor: '#ECF7F9',
           borderRadius: 12,
-          elevation: 4,
-          width: WIDTH * 0.9,
-          alignSelf: 'center',
+          elevation: 5,
+          marginHorizontal: 10,
+          marginBottom: 15,
+          height: 340,
+          width: isLandscape ? WIDTH * 1.8 : WIDTH * 0.95,
         }}>
-          <Text style={{
-            fontWeight: 'bold',
-            fontSize: 20,
-            color: '#1e3a8a',
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            marginVertical: 15,
+            backgroundColor: '#f8f9fa',
+            borderRadius: 12,
+            elevation: 4,
+            width: WIDTH * 0.9,
+            alignSelf: 'center',
           }}>
+          <Text
+            style={{
+              fontWeight: 'bold',
+              fontSize: 20,
+              color: '#1e3a8a',
+            }}>
             Welder Failure Rate (%)
           </Text>
-          <Pressable onPress={() => setTableModalVisibleWelder(true)} style={{
-            backgroundColor: '#2563eb',
-            paddingVertical: 5,
-            paddingHorizontal: 10,
-            borderRadius: 8,
-          }}>
-            <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>View Table</Text>
+          <Pressable
+            onPress={() => setTableModalVisibleWelder(true)}
+            style={{
+              backgroundColor: '#2563eb',
+              paddingVertical: 5,
+              paddingHorizontal: 10,
+              borderRadius: 8,
+            }}>
+            <Text style={{color: '#fff', fontSize: 12, fontWeight: '600'}}>
+              View Table
+            </Text>
           </Pressable>
         </View>
-  
+
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View>
             <BarChart
@@ -749,15 +780,15 @@ const [modalVisibleXAxisComponent, setModalVisibleXAxisComponent] = useState(fal
               noOfSections={6}
               maxValue={dynamicMaxValue}
               // barBorderRadius={6}
-              xAxisLabelTextStyle={{ fontSize: 10 }}
-              yAxisTextStyle={{ fontSize: 10 }}
+              xAxisLabelTextStyle={{fontSize: 10}}
+              yAxisTextStyle={{fontSize: 10}}
               // showGradient
               isAnimated
               animationDuration={800}
               lineBehindBars={false}
               dashWidth={0}
             />
-  
+
             {/* Touchable X-axis Labels */}
             <View
               style={{
@@ -765,8 +796,7 @@ const [modalVisibleXAxisComponent, setModalVisibleXAxisComponent] = useState(fal
                 bottom: 15,
                 left: 55,
                 flexDirection: 'row',
-              }}
-            >
+              }}>
               {stackData.map((item, index) => (
                 <TouchableOpacity
                   key={index}
@@ -786,120 +816,191 @@ const [modalVisibleXAxisComponent, setModalVisibleXAxisComponent] = useState(fal
             </View>
           </View>
         </ScrollView>
-  
+
         {/* Bar Tap Modal */}
         <Modal
           animationType="slide"
           transparent
           visible={modalVisibleWelder}
-          onRequestClose={() => setModalVisibleWelder(false)}
-        >
+          onRequestClose={() => setModalVisibleWelder(false)}>
           <View style={styles.modalContainer}>
             <View style={styles.modalBox}>
               <Text style={styles.modalTitle}>Welder Info</Text>
               <Text style={styles.modalText}>
-                <Text style={{ fontWeight: 'bold' }}>Welder ID:</Text> {selectedDataWelder.welderId}
+                <Text style={{fontWeight: 'bold'}}>Welder ID:</Text>{' '}
+                {selectedDataWelder.welderId}
               </Text>
               <Text style={styles.modalText}>
-                <Text style={{ fontWeight: 'bold' }}>Type:</Text> {selectedDataWelder.type}
+                <Text style={{fontWeight: 'bold'}}>Type:</Text>{' '}
+                {selectedDataWelder.type}
               </Text>
               <Text style={styles.modalText}>
-                <Text style={{ fontWeight: 'bold' }}>Value:</Text> {selectedDataWelder.value}
+                <Text style={{fontWeight: 'bold'}}>Value:</Text>{' '}
+                {selectedDataWelder.value}
               </Text>
-              <Pressable style={styles.closeButton} onPress={() => setModalVisibleWelder(false)}>
-                <Text style={{ color: 'white', fontWeight: 'bold' }}>Close</Text>
+              <Pressable
+                style={styles.closeButton}
+                onPress={() => setModalVisibleWelder(false)}>
+                <Text style={{color: 'white', fontWeight: 'bold'}}>Close</Text>
               </Pressable>
             </View>
           </View>
         </Modal>
-  
+
         {/* X-Axis Label Tap Modal */}
         <Modal
           animationType="slide"
           transparent
           visible={modalVisibleXAxisWelder}
-          onRequestClose={() => setModalVisibleXAxisWelder(false)}
-        >
+          onRequestClose={() => setModalVisibleXAxisWelder(false)}>
           <View style={styles.modalContainer}>
             <View style={styles.modalBox}>
               <Text style={styles.modalTitle}>Welder Summary</Text>
               <Text style={styles.modalText}>
-                <Text style={{ fontWeight: 'bold' }}>Welder ID:</Text> {selectedXAxisWelder?.label}
+                <Text style={{fontWeight: 'bold'}}>Welder ID:</Text>{' '}
+                {selectedXAxisWelder?.label}
               </Text>
-  
+
               {selectedXAxisWelder?.stacks?.map((stackItem, idx) => {
-                const typeLabel = ['Accepted', 'Repair', 'Retake', 'Failure Rate'][idx];
+                const typeLabel = [
+                  'Accepted',
+                  'Repair',
+                  'Retake',
+                  'Failure Rate',
+                ][idx];
                 return (
                   <Text key={idx} style={styles.modalText}>
-                    <Text style={{ fontWeight: 'bold' }}>{typeLabel}:</Text> {stackItem.value}
+                    <Text style={{fontWeight: 'bold'}}>{typeLabel}:</Text>{' '}
+                    {stackItem.value}
                   </Text>
                 );
               })}
-  
-              <Pressable style={styles.closeButton} onPress={() => setModalVisibleXAxisWelder(false)}>
-                <Text style={{ color: 'white', fontWeight: 'bold' }}>Close</Text>
+
+              <Pressable
+                style={styles.closeButton}
+                onPress={() => setModalVisibleXAxisWelder(false)}>
+                <Text style={{color: 'white', fontWeight: 'bold'}}>Close</Text>
               </Pressable>
             </View>
           </View>
         </Modal>
-  
+
+        {/* Table Modal */}
         {/* Table Modal */}
         <Modal
           visible={tableModalVisibleWelder}
           animationType="fade"
           transparent
-          onRequestClose={() => setTableModalVisibleWelder(false)}
-        >
+          onRequestClose={() => setTableModalVisibleWelder(false)}>
           <View style={styles.modalContainer}>
-            <View style={[styles.modalBox, { height: '47%', width: '90%' }]}>
+            <View
+              style={[
+                styles.modalBox,
+                {
+                  height: isLandscape ? '80%' : '47%',
+                  width: isLandscape ? '90%' : '90%',
+                },
+              ]}>
               <Text style={styles.modalTitle}>Welder Count Table</Text>
-  
+
               <ScrollView horizontal>
                 <View style={styles.table}>
+                  {/* Table Headers */}
                   <View style={[styles.tableRow, styles.headerRow]}>
-                    {['Welder ID', 'Name', 'Total', 'Accepted', 'Repair', 'Retake', 'Failure Rate'].map((header, index) => (
-                      <View key={index} style={[styles.tableCell, styles.headerCell]}>
+                    {[
+                      'Welder ID',
+                      'Name',
+                      'Total',
+                      'Accepted',
+                      'Repair',
+                      'Retake',
+                      'Failure Rate',
+                    ].map((header, index) => (
+                      <View
+                        key={index}
+                        style={[styles.tableCell, styles.headerCell]}>
                         <Text style={styles.headerText}>{header}</Text>
                       </View>
                     ))}
                   </View>
-  
-                  <ScrollView style={{ maxHeight: 400 }}>
-                    {dashboardData.welder_count.map((item, index) => {
-                      const isFailureRateHigh = parseFloat(item.Failure_Rate) > 10;
+
+                  {/* Table Rows */}
+                  <ScrollView style={{maxHeight: 400}}>
+                    {dashboardData.welder_count.map((item, rowIndex) => {
+                      const isFailureRateHigh =
+                        parseFloat(item.Failure_Rate) > 10;
+
+                      const rowData = [
+                        item.welder_id,
+                        item.Name,
+                        item.Total,
+                        item.Accepted,
+                        item.Repair,
+                        item.Retake,
+                        `${item.Failure_Rate}%`,
+                      ];
+
+                      const headers = [
+                        'Welder ID',
+                        'Name',
+                        'Total',
+                        'Accepted',
+                        'Repair',
+                        'Retake',
+                        'Failure Rate',
+                      ];
+
                       return (
                         <View
-                          key={index}
+                          key={rowIndex}
                           style={[
                             styles.tableRow,
-                            isFailureRateHigh && { backgroundColor: '#f8d7da' },
-                          ]}
-                        >
-                          {[ 
-                            item.welder_id,
-                            item.Name,
-                            item.Total,
-                            item.Accepted,
-                            item.Repair,
-                            item.Retake,
-                            `${item.Failure_Rate}%`,
-                          ].map((value, index) => (
-                            <View key={index} style={styles.tableCell}>
-                              <Text>{value}</Text>
-                            </View>
-                          ))}
+                            isFailureRateHigh && {backgroundColor: '#f8d7da'},
+                          ]}>
+                          {rowData.map((value, cellIndex) => {
+                            const header = headers[cellIndex];
+                            const isPressableHeader = [
+                              'Welder ID',
+                              'Accepted',
+                              'Repair',
+                              'Retake',
+                            ].includes(header);
+
+                            return (
+                              <View key={cellIndex} style={styles.tableCell}>
+                                {isPressableHeader ? (
+                                  <Pressable
+                                    onPress={() => {
+                                      console.log(
+                                        `🟩 Welder ID: ${item.welder_id}, Header: ${header}, Value: ${value}`,
+                                      );
+                                      let a = item.welder_id;
+                                      let b = header;
+                                      WelderState(a, b);
+                                    }}
+                                    // android_ripple={{color: '#ccc'}}
+                                    style={({pressed}) => ({
+                                      opacity: pressed ? 0.6 : 1,
+                                    })}>
+                                    <Text>{value}</Text>
+                                  </Pressable>
+                                ) : (
+                                  <Text>{value}</Text>
+                                )}
+                              </View>
+                            );
+                          })}
                         </View>
                       );
                     })}
                   </ScrollView>
                 </View>
               </ScrollView>
-  
-              <Pressable 
-                style={styles.closeButton} 
-                onPress={() => setTableModalVisibleWelder(false)}
-              >
-                <Text style={{ color: 'white', fontWeight: 'bold' }}>Close</Text>
+
+              <Pressable
+                style={styles.closeButton}
+                onPress={() => setTableModalVisibleWelder(false)}>
+                <Text style={{color: 'white', fontWeight: 'bold'}}>Close</Text>
               </Pressable>
             </View>
           </View>
@@ -907,172 +1008,174 @@ const [modalVisibleXAxisComponent, setModalVisibleXAxisComponent] = useState(fal
       </View>
     );
   };
-  
-  
-  
-  
 
-const rendercomponentCount = () => {
-  if (!dashboardData || !dashboardData.component_count) return null;
+  const rendercomponentCount = () => {
+    if (!dashboardData || !dashboardData.component_count) return null;
 
-  const openModal = (component, type, value) => {
-    setSelectedDataComponent({ component, type, value });
-    setModalVisibleComponent(true);
-  };
+    const openModal = (component, type, value) => {
+      setSelectedDataComponent({component, type, value});
+      setModalVisibleComponent(true);
+    };
 
+    // Calculate dynamic max Y value
+    const getMaxYValue = () => {
+      let max = 0;
+      dashboardData.component_count.forEach(item => {
+        const sum =
+          item.Accepted +
+          item.Repair +
+          item.Retake +
+          parseFloat(item.Failure_Rate);
+        if (sum > max) max = sum;
+      });
+      return Math.ceil(max / 10) * 10; // Round up to nearest multiple of 10 for cleaner Y-axis
+    };
 
-  // Calculate dynamic max Y value
-  const getMaxYValue = () => {
-    let max = 0;
-    dashboardData.component_count.forEach(item => {
-      const sum = item.Accepted + item.Repair + item.Retake + parseFloat(item.Failure_Rate);
-      if (sum > max) max = sum;
-    });
-    return Math.ceil(max / 10) * 10; // Round up to nearest multiple of 10 for cleaner Y-axis
-  };
+    const maxValue = getMaxYValue();
 
-  const maxValue = getMaxYValue();
+    const stackData = dashboardData.component_count.map(item => ({
+      label: item.pressure_part_component_name,
+      stacks: [
+        {
+          value: item.Accepted,
+          color: '#4caf50',
+          onPress: () =>
+            openModal(
+              item.pressure_part_component_name,
+              'Accepted',
+              item.Accepted,
+            ),
+        },
+        {
+          value: item.Repair,
+          color: '#ff9800',
+          onPress: () =>
+            openModal(item.pressure_part_component_name, 'Repair', item.Repair),
+        },
+        {
+          value: item.Retake,
+          color: '#2196f3',
+          onPress: () =>
+            openModal(item.pressure_part_component_name, 'Retake', item.Retake),
+        },
+        {
+          value: parseFloat(item.Failure_Rate),
+          color: '#f44336',
+          onPress: () =>
+            openModal(
+              item.pressure_part_component_name,
+              'Failure Rate',
+              `${item.Failure_Rate}%`,
+            ),
+        },
+      ],
+    }));
 
-  const stackData = dashboardData.component_count.map(item => ({
-    label: item.pressure_part_component_name,
-    stacks: [
-      {
-        value: item.Accepted,
-        color: '#4caf50',
-        onPress: () => openModal(item.pressure_part_component_name, 'Accepted', item.Accepted),
-      },
-      {
-        value: item.Repair,
-        color: '#ff9800',
-        onPress: () => openModal(item.pressure_part_component_name, 'Repair', item.Repair),
-      },
-      {
-        value: item.Retake,
-        color: '#2196f3',
-        onPress: () => openModal(item.pressure_part_component_name, 'Retake', item.Retake),
-      },
-      {
-        value: parseFloat(item.Failure_Rate),
-        color: '#f44336',
-        onPress: () => openModal(item.pressure_part_component_name, 'Failure Rate', `${item.Failure_Rate}%`),
-      },
-    ],
-  }));
-
-  return (
-    <View style={{
-
-      backgroundColor: '#ECF7F9',
-      borderRadius: 12,
-      elevation: 5, // Android shadow
-      shadowColor: '#000', // iOS shadow
-      shadowOffset: {width: 0, height: 2},
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
-      // padding: 5,
-      marginHorizontal: 10,
-      marginBottom: 15,
-      height: 340,
-      width: isLandscape ? WIDTH * 1.8 : WIDTH * 0.95    }}>
-     
-
-     <View
-  style={{
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    marginVertical: 15,
-    marginHorizontal: 10,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    width: WIDTH * 0.9,
-    alignSelf: isLandscape ? 'center' : 'auto',
-  }}
->
-  <Text
-    style={{
-      fontWeight: 'bold',
-      fontSize: 20,
-      color: '#1e3a8a',
-    }}
-  >
-    Component Count 
-  </Text>
-
-  <Pressable
-    onPress={() => setTableModalVisibleComponent(true)}
-    style={{
-      backgroundColor: '#2563eb',
-      paddingVertical: 5,
-      paddingHorizontal: 10,
-      borderRadius: 8,
-    }}
-  >
-    <Text
-      style={{
-        color: '#fff',
-        fontSize: 12,
-        fontWeight: '600',
-      }}
-    >
-      View Table
-    </Text>
-  </Pressable>
-</View>
-
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <BarChart
-          stackData={stackData}
-          barWidth={40}
-          spacing={30}
-          noOfSections={6}
-          maxValue={maxValue}
-          // barBorderRadius={6}
-          xAxisLabelTextStyle={{ fontSize: 10 }}
-          yAxisTextStyle={{ fontSize: 10 }}
-          // showGradient
-          isAnimated
-          animationDuration={800}
-          lineBehindBars={false}
-         dashWidth={0}
-          
-        />
+    return (
+      <View
+        style={{
+          backgroundColor: '#ECF7F9',
+          borderRadius: 12,
+          elevation: 5, // Android shadow
+          shadowColor: '#000', // iOS shadow
+          shadowOffset: {width: 0, height: 2},
+          shadowOpacity: 0.2,
+          shadowRadius: 4,
+          // padding: 5,
+          marginHorizontal: 10,
+          marginBottom: 15,
+          height: 340,
+          width: isLandscape ? WIDTH * 1.8 : WIDTH * 0.95,
+        }}>
         <View
-  style={{
-    position: 'absolute',
-    bottom: 15,
-    left: 50,
-    flexDirection: 'row',
-  }}
->
-  {stackData.map((item, index) => (
-    <TouchableOpacity
-      key={index}
-      onPress={() => {
-        setSelectedXAxisComponent(item);
-        setModalVisibleXAxisComponent(true);
-      }}
-      style={{
-        width: 55,
-        alignItems: 'center',
-        marginRight: 20,
-        height: 35,
-        backgroundColor: 'transparent',
-      }}
-    />
-  ))}
-</View>
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            marginVertical: 15,
+            marginHorizontal: 10,
+            backgroundColor: '#f8f9fa',
+            borderRadius: 12,
+            elevation: 4,
+            shadowColor: '#000',
+            shadowOffset: {width: 0, height: 2},
+            shadowOpacity: 0.1,
+            shadowRadius: 3,
+            width: WIDTH * 0.9,
+            alignSelf: isLandscape ? 'center' : 'auto',
+          }}>
+          <Text
+            style={{
+              fontWeight: 'bold',
+              fontSize: 20,
+              color: '#1e3a8a',
+            }}>
+            Component Count
+          </Text>
 
-      </ScrollView>
-{/* 
+          <Pressable
+            onPress={() => setTableModalVisibleComponent(true)}
+            style={{
+              backgroundColor: '#2563eb',
+              paddingVertical: 5,
+              paddingHorizontal: 10,
+              borderRadius: 8,
+            }}>
+            <Text
+              style={{
+                color: '#fff',
+                fontSize: 12,
+                fontWeight: '600',
+              }}>
+              View Table
+            </Text>
+          </Pressable>
+        </View>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <BarChart
+            stackData={stackData}
+            barWidth={40}
+            spacing={30}
+            noOfSections={6}
+            maxValue={maxValue}
+            // barBorderRadius={6}
+            xAxisLabelTextStyle={{fontSize: 10}}
+            yAxisTextStyle={{fontSize: 10}}
+            // showGradient
+            isAnimated
+            animationDuration={800}
+            lineBehindBars={false}
+            dashWidth={0}
+          />
+          <View
+            style={{
+              position: 'absolute',
+              bottom: 15,
+              left: 50,
+              flexDirection: 'row',
+            }}>
+            {stackData.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                onPress={() => {
+                  setSelectedXAxisComponent(item);
+                  setModalVisibleXAxisComponent(true);
+                }}
+                style={{
+                  width: 55,
+                  alignItems: 'center',
+                  marginRight: 20,
+                  height: 35,
+                  backgroundColor: 'transparent',
+                }}
+              />
+            ))}
+          </View>
+        </ScrollView>
+        {/* 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 10 }}>
         {[
           { label: 'Accepted', color: '#4caf50' },
@@ -1087,382 +1190,419 @@ const rendercomponentCount = () => {
         ))}
       </View> */}
 
-      {/* ✅ Fixed the wrong modal visibility state */}
-      <Modal
-        animationType="slide"
-        transparent
-        visible={modalVisibleComponent}
-        onRequestClose={() => setModalVisibleComponent(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Component Info</Text>
-            <Text style={styles.modalText}>
-              <Text style={{ fontWeight: 'bold' }}>Component:</Text> {selectedDataComponent.component}
-            </Text>
-            <Text style={styles.modalText}>
-              <Text style={{ fontWeight: 'bold' }}>Type:</Text> {selectedDataComponent.type}
-            </Text>
-            <Text style={styles.modalText}>
-              <Text style={{ fontWeight: 'bold' }}>Value:</Text> {selectedDataComponent.value}
-            </Text>
-            <Pressable style={styles.closeButton} onPress={() => setModalVisibleComponent(false)}>
-              <Text style={{ color: 'white', fontWeight: 'bold' }}>Close</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal
-  visible={tableModalVisibleComponent}
-  animationType="fade"
-  transparent
-  onRequestClose={() => setTableModalVisibleComponent(false)}
->
-  <View style={styles.modalContainer}>
-    <View style={[styles.modalBox, { height: '47%', width: '90%' }]}>
-      <Text style={styles.modalTitle}>Component Count Table</Text>
-      <ScrollView horizontal>
-        <View style={styles.table}>
-          <View style={[styles.tableRow, styles.headerRow]}>
-            <View style={[styles.tableCell, styles.headerCell, styles.leftColumn]}>
-              <Text style={styles.headerText}>Component Name</Text>
-            </View>
-            {['Total', 'Accepted', 'Repair', 'Retake', 'Failure Rate'].map((header, index) => (
-              <View key={index} style={[styles.tableCell, styles.headerCell]}>
-                <Text style={styles.headerText}>{header}</Text>
-              </View>
-            ))}
-          </View>
-
-          <ScrollView style={{ maxHeight: 400 }}>
-            {dashboardData.component_count.map((item, index) => {
-              const isFailureRateHigh = parseFloat(item.Failure_Rate) > 10; // Check if failure rate > 10%
-              return (
-                <View
-                  key={index}
-                  style={[
-                    styles.tableRow,
-                    isFailureRateHigh && { backgroundColor: '#f8d7da' }, // Light red background if failure rate > 10%
-                  ]}
-                >
-                  <View style={[styles.tableCell, styles.leftColumn]}>
-                    <Text style={styles.cellText}>{item.pressure_part_component_name}</Text>
-                  </View>
-                  <View style={styles.tableCell}>
-                    <Text style={styles.cellText}>{item.Total}</Text>
-                  </View>
-                  <View style={styles.tableCell}>
-                    <Text style={styles.cellText}>{item.Accepted}</Text>
-                  </View>
-                  <View style={styles.tableCell}>
-                    <Text style={styles.cellText}>{item.Repair}</Text>
-                  </View>
-                  <View style={styles.tableCell}>
-                    <Text style={styles.cellText}>{item.Retake}</Text>
-                  </View>
-                  <View style={styles.tableCell}>
-                    <Text style={styles.cellText}>{item.Failure_Rate}%</Text>
-                  </View>
-                </View>
-              );
-            })}
-          </ScrollView>
-        </View>
-      </ScrollView>
-      <Pressable
-        style={[styles.closeButton, { marginTop: 15 }]}
-        onPress={() => setTableModalVisibleComponent(false)}
-      >
-        <Text style={{ color: 'white', fontWeight: 'bold' }}>Close</Text>
-      </Pressable>
-    </View>
-  </View>
-</Modal>
-
-
-<Modal
-  animationType="slide"
-  transparent
-  visible={modalVisibleXAxisComponent}
-  onRequestClose={() => setModalVisibleXAxisComponent(false)}
->
-  <View style={styles.modalContainer}>
-    <View style={styles.modalBox}>
-      <Text style={styles.modalTitle}>Component Summary</Text>
-      <Text style={styles.modalText}>
-        <Text style={{ fontWeight: 'bold' }}>Component:</Text> {selectedXAxisComponent?.label}
-      </Text>
-
-      {selectedXAxisComponent?.stacks?.map((stackItem, idx) => {
-        const typeLabel = ['Accepted', 'Repair', 'Retake', 'Failure Rate'][idx];
-        return (
-          <Text key={idx} style={styles.modalText}>
-            <Text style={{ fontWeight: 'bold' }}>{typeLabel}:</Text> {stackItem.value}
-          </Text>
-        );
-      })}
-
-      <Pressable style={styles.closeButton} onPress={() => setModalVisibleXAxisComponent(false)}>
-        <Text style={{ color: 'white', fontWeight: 'bold' }}>Close</Text>
-      </Pressable>
-    </View>
-  </View>
-</Modal>
-
-
-    </View>
-  );
-};
-
-
-
-
-
-const renderunitCount = () => {
-  if (!dashboardData || !dashboardData.unit_count) return null;
-
-  const unitData = dashboardData.unit_count;
-
-  const openUnitModal = (unitNo, countType, countValue) => {
-    setSelectedUnitData({ unitNo, countType, countValue });
-    setUnitModalVisible(true);
-  };
-
-  const handleViewTable = () => {
-    setTableModalVisible(true);
-  };
-
-  const maxUnitCount = Math.max(
-    ...unitData.map(item =>
-      item.accepted_count + item.repair_count + item.retake_count
-    )
-  );
-  const dynamicMaxValue = Math.ceil(maxUnitCount * 1.1); // Add 10% buffer
-  
-
-  const stackData = unitData.map(item => ({
-    label: item.unit_no,
-    stacks: [
-      {
-        value: item.accepted_count,
-        color: '#4caf50',
-        onPress: () => openUnitModal(item.unit_no, 'Accepted', item.accepted_count),
-      },
-      {
-        value: item.repair_count,
-        color: '#ff9800',
-        onPress: () => openUnitModal(item.unit_no, 'Repair', item.repair_count),
-      },
-      {
-        value: item.retake_count,
-        color: '#2196f3',
-        onPress: () => openUnitModal(item.unit_no, 'Retake', item.retake_count),
-      },
-    ],
-  }));
-
-  return (
-    <View
-      style={{
-        backgroundColor: '#ECF7F9',
-        borderRadius: 12,
-        elevation: 5,
-        marginHorizontal: 10,
-        marginBottom: 15,
-        height: 340,
-        width: isLandscape ? WIDTH * 1.8 : WIDTH * 0.95,
-      }}>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingHorizontal: 16,
-          paddingVertical: 10,
-          marginVertical: 15,
-          backgroundColor: '#f8f9fa',
-          borderRadius: 12,
-          elevation: 4,
-          width: WIDTH * 0.9,
-          alignSelf: isLandscape ? 'center' : 'center',
-        }}>
-        <Text style={{ fontWeight: 'bold', fontSize: 20, color: '#1e3a8a' }}>
-          Unit Count Overview
-        </Text>
-
-        <TouchableOpacity
-          onPress={handleViewTable} 
-          style={{
-            backgroundColor: '#2563eb',
-            paddingVertical: 5,
-            paddingHorizontal: 10,
-            borderRadius: 8,
-          }}>
-          <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>
-            View Table
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <BarChart
-          stackData={stackData}
-          barWidth={40}
-          spacing={30}
-          noOfSections={6}
-          maxValue={dynamicMaxValue}
-          // barBorderRadius={6}
-          xAxisLabelTextStyle={{ fontSize: 10 }}
-          yAxisTextStyle={{ fontSize: 10 }}
-          // showGradient={false}
-          isAnimated
-          animationDuration={800}
-          lineBehindBars={false}
-          dashWidth={0}
-        />
-                 {/* Touchable X-axis Labels */}
-                 <View
-              style={{
-                position: 'absolute',
-                bottom: 15,
-                left: 60,
-                flexDirection: 'row',
-              }}
-            >
-              {stackData.map((item, index) => (
-                <TouchableOpacity
-                  key={index}
-                  onPress={() => {
-                    setSelectedXAxisUnit(item);
-                    setModalVisibleXAxisUnit(true);
-                  }}
-                  style={{
-                    width: 55,
-                    alignItems: 'center',
-                    marginRight: 25,
-                    height: 30,
-                    backgroundColor: 'transparent',
-                  }}
-                />
-              ))}
-            </View>
-      </ScrollView>
-
-      {/* Modal for Unit Count Data */}
-      <Modal
-        visible={isUnitModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setUnitModalVisible(false)}>
-        <View style={styles.modalContainer}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>
-              {`${selectedUnitData.unitNo} - ${selectedUnitData.countType}`}
-            </Text>
-            <Text style={styles.modalText}>
-              <Text style={{ fontWeight: 'bold' }}>Unit No:</Text> {selectedUnitData.unitNo}
-            </Text>
-            <Text style={styles.modalText}>
-              <Text style={{ fontWeight: 'bold' }}>Count Type:</Text> {selectedUnitData.countType}
-            </Text>
-            <Text style={styles.modalText}>
-              <Text style={{ fontWeight: 'bold' }}>Count Value:</Text> {selectedUnitData.countValue}
-            </Text>
-            <Pressable style={styles.closeButton} onPress={() => setUnitModalVisible(false)}>
-              <Text style={{ color: 'white', fontWeight: 'bold' }}>Close</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
-
-
-      <Modal
+        {/* ✅ Fixed the wrong modal visibility state */}
+        <Modal
           animationType="slide"
           transparent
-          visible={modalVisibleXAxisUnit}
-          onRequestClose={() => setModalVisibleXAxisUnit(false)}
-        >
+          visible={modalVisibleComponent}
+          onRequestClose={() => setModalVisibleComponent(false)}>
           <View style={styles.modalContainer}>
             <View style={styles.modalBox}>
-              <Text style={styles.modalTitle}>Unit Summary</Text>
+              <Text style={styles.modalTitle}>Component Info</Text>
               <Text style={styles.modalText}>
-                <Text style={{ fontWeight: 'bold' }}>Welder ID:</Text> {selectedXAxisUnit?.label}
+                <Text style={{fontWeight: 'bold'}}>Component:</Text>{' '}
+                {selectedDataComponent.component}
               </Text>
-  
-              {selectedXAxisUnit?.stacks?.map((stackItem, idx) => {
-                const typeLabel = ['Accepted', 'Repair', 'Retake', 'Failure Rate'][idx];
-                return (
-                  <Text key={idx} style={styles.modalText}>
-                    <Text style={{ fontWeight: 'bold' }}>{typeLabel}:</Text> {stackItem.value}
-                  </Text>
-                );
-              })}
-  
-              <Pressable style={styles.closeButton} onPress={() => setModalVisibleXAxisUnit(false)}>
-                <Text style={{ color: 'white', fontWeight: 'bold' }}>Close</Text>
+              <Text style={styles.modalText}>
+                <Text style={{fontWeight: 'bold'}}>Type:</Text>{' '}
+                {selectedDataComponent.type}
+              </Text>
+              <Text style={styles.modalText}>
+                <Text style={{fontWeight: 'bold'}}>Value:</Text>{' '}
+                {selectedDataComponent.value}
+              </Text>
+              <Pressable
+                style={styles.closeButton}
+                onPress={() => setModalVisibleComponent(false)}>
+                <Text style={{color: 'white', fontWeight: 'bold'}}>Close</Text>
               </Pressable>
             </View>
           </View>
         </Modal>
 
-      {/* Modal for Unit Count Table */}
- <Modal
-  visible={isTableModalVisible}
-  animationType="fade"
-  transparent={true}
-  onRequestClose={() => setTableModalVisible(false)}
->
-  <View style={styles.modalContainer}>
-    <View style={[styles.modalBox, { height: '35%', width: '90%' }]}>
-      <Text style={styles.modalTitle}>Unit Count Table</Text>
-      <ScrollView horizontal>
-        <View style={styles.table}>
-          <View style={[styles.tableRow, styles.headerRow]}>
-            {['Unit No', 'Total Jobs', 'Accepted', 'Repair', 'Retake'].map((header, index) => (
-              <View key={index} style={[styles.tableCell, styles.headerCell]}>
-                <Text style={styles.headerText}>{header}</Text>
-              </View>
+        <Modal
+          visible={tableModalVisibleComponent}
+          animationType="fade"
+          transparent
+          onRequestClose={() => setTableModalVisibleComponent(false)}>
+          <View style={styles.modalContainer}>
+            <View style={[styles.modalBox, {height: '47%', width: '90%'}]}>
+              <Text style={styles.modalTitle}>Component Count Table</Text>
+              <ScrollView horizontal>
+                <View style={styles.table}>
+                  <View style={[styles.tableRow, styles.headerRow]}>
+                    <View
+                      style={[
+                        styles.tableCell,
+                        styles.headerCell,
+                        styles.leftColumn,
+                      ]}>
+                      <Text style={styles.headerText}>Component Name</Text>
+                    </View>
+                    {[
+                      'Total',
+                      'Accepted',
+                      'Repair',
+                      'Retake',
+                      'Failure Rate',
+                    ].map((header, index) => (
+                      <View
+                        key={index}
+                        style={[styles.tableCell, styles.headerCell]}>
+                        <Text style={styles.headerText}>{header}</Text>
+                      </View>
+                    ))}
+                  </View>
+
+                  <ScrollView style={{maxHeight: 400}}>
+                    {dashboardData.component_count.map((item, index) => {
+                      const isFailureRateHigh =
+                        parseFloat(item.Failure_Rate) > 10; // Check if failure rate > 10%
+                      return (
+                        <View
+                          key={index}
+                          style={[
+                            styles.tableRow,
+                            isFailureRateHigh && {backgroundColor: '#f8d7da'}, // Light red background if failure rate > 10%
+                          ]}>
+                          <View style={[styles.tableCell, styles.leftColumn]}>
+                            <Text style={styles.cellText}>
+                              {item.pressure_part_component_name}
+                            </Text>
+                          </View>
+                          <View style={styles.tableCell}>
+                            <Text style={styles.cellText}>{item.Total}</Text>
+                          </View>
+                          <View style={styles.tableCell}>
+                            <Text style={styles.cellText}>{item.Accepted}</Text>
+                          </View>
+                          <View style={styles.tableCell}>
+                            <Text style={styles.cellText}>{item.Repair}</Text>
+                          </View>
+                          <View style={styles.tableCell}>
+                            <Text style={styles.cellText}>{item.Retake}</Text>
+                          </View>
+                          <View style={styles.tableCell}>
+                            <Text style={styles.cellText}>
+                              {item.Failure_Rate}%
+                            </Text>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              </ScrollView>
+              <Pressable
+                style={[styles.closeButton, {marginTop: 15}]}
+                onPress={() => setTableModalVisibleComponent(false)}>
+                <Text style={{color: 'white', fontWeight: 'bold'}}>Close</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+
+        <Modal
+          animationType="slide"
+          transparent
+          visible={modalVisibleXAxisComponent}
+          onRequestClose={() => setModalVisibleXAxisComponent(false)}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalBox}>
+              <Text style={styles.modalTitle}>Component Summary</Text>
+              <Text style={styles.modalText}>
+                <Text style={{fontWeight: 'bold'}}>Component:</Text>{' '}
+                {selectedXAxisComponent?.label}
+              </Text>
+
+              {selectedXAxisComponent?.stacks?.map((stackItem, idx) => {
+                const typeLabel = [
+                  'Accepted',
+                  'Repair',
+                  'Retake',
+                  'Failure Rate',
+                ][idx];
+                return (
+                  <Text key={idx} style={styles.modalText}>
+                    <Text style={{fontWeight: 'bold'}}>{typeLabel}:</Text>{' '}
+                    {stackItem.value}
+                  </Text>
+                );
+              })}
+
+              <Pressable
+                style={styles.closeButton}
+                onPress={() => setModalVisibleXAxisComponent(false)}>
+                <Text style={{color: 'white', fontWeight: 'bold'}}>Close</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    );
+  };
+
+  const renderunitCount = () => {
+    if (!dashboardData || !dashboardData.unit_count) return null;
+
+    const unitData = dashboardData.unit_count;
+
+    const openUnitModal = (unitNo, countType, countValue) => {
+      setSelectedUnitData({unitNo, countType, countValue});
+      setUnitModalVisible(true);
+    };
+
+    const handleViewTable = () => {
+      setTableModalVisible(true);
+    };
+
+    const maxUnitCount = Math.max(
+      ...unitData.map(
+        item => item.accepted_count + item.repair_count + item.retake_count,
+      ),
+    );
+    const dynamicMaxValue = Math.ceil(maxUnitCount * 1.1); // Add 10% buffer
+
+    const stackData = unitData.map(item => ({
+      label: item.unit_no,
+      stacks: [
+        {
+          value: item.accepted_count,
+          color: '#4caf50',
+          onPress: () =>
+            openUnitModal(item.unit_no, 'Accepted', item.accepted_count),
+        },
+        {
+          value: item.repair_count,
+          color: '#ff9800',
+          onPress: () =>
+            openUnitModal(item.unit_no, 'Repair', item.repair_count),
+        },
+        {
+          value: item.retake_count,
+          color: '#2196f3',
+          onPress: () =>
+            openUnitModal(item.unit_no, 'Retake', item.retake_count),
+        },
+      ],
+    }));
+
+    return (
+      <View
+        style={{
+          backgroundColor: '#ECF7F9',
+          borderRadius: 12,
+          elevation: 5,
+          marginHorizontal: 10,
+          marginBottom: 15,
+          height: 340,
+          width: isLandscape ? WIDTH * 1.8 : WIDTH * 0.95,
+        }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            marginVertical: 15,
+            backgroundColor: '#f8f9fa',
+            borderRadius: 12,
+            elevation: 4,
+            width: WIDTH * 0.9,
+            alignSelf: isLandscape ? 'center' : 'center',
+          }}>
+          <Text style={{fontWeight: 'bold', fontSize: 20, color: '#1e3a8a'}}>
+            Unit Count Overview
+          </Text>
+
+          <TouchableOpacity
+            onPress={handleViewTable}
+            style={{
+              backgroundColor: '#2563eb',
+              paddingVertical: 5,
+              paddingHorizontal: 10,
+              borderRadius: 8,
+            }}>
+            <Text style={{color: '#fff', fontSize: 12, fontWeight: '600'}}>
+              View Table
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <BarChart
+            stackData={stackData}
+            barWidth={40}
+            spacing={30}
+            noOfSections={6}
+            maxValue={dynamicMaxValue}
+            // barBorderRadius={6}
+            xAxisLabelTextStyle={{fontSize: 10}}
+            yAxisTextStyle={{fontSize: 10}}
+            // showGradient={false}
+            isAnimated
+            animationDuration={800}
+            lineBehindBars={false}
+            dashWidth={0}
+          />
+          {/* Touchable X-axis Labels */}
+          <View
+            style={{
+              position: 'absolute',
+              bottom: 15,
+              left: 60,
+              flexDirection: 'row',
+            }}>
+            {stackData.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                onPress={() => {
+                  setSelectedXAxisUnit(item);
+                  setModalVisibleXAxisUnit(true);
+                }}
+                style={{
+                  width: 55,
+                  alignItems: 'center',
+                  marginRight: 25,
+                  height: 30,
+                  backgroundColor: 'transparent',
+                }}
+              />
             ))}
           </View>
+        </ScrollView>
 
-          {unitData.map((item, index) => (
-            <View key={index} style={styles.tableRow}>
-              <View style={styles.tableCell}>
-                <Text style={styles.cellText}>{item.unit_no}</Text> 
-              </View>
-              <View style={styles.tableCell}>
-                <Text style={styles.cellText}>{item.total_jobs}</Text>
-              </View>
-              <View style={styles.tableCell}>
-                <Text style={styles.cellText}>{item.accepted_count}</Text>
-              </View>
-              <View style={styles.tableCell}>
-                <Text style={styles.cellText}>{item.repair_count}</Text>
-              </View>
-              <View style={styles.tableCell}>
-                <Text style={styles.cellText}>{item.retake_count}</Text>
-              </View>
+        {/* Modal for Unit Count Data */}
+        <Modal
+          visible={isUnitModalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setUnitModalVisible(false)}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalBox}>
+              <Text style={styles.modalTitle}>
+                {`${selectedUnitData.unitNo} - ${selectedUnitData.countType}`}
+              </Text>
+              <Text style={styles.modalText}>
+                <Text style={{fontWeight: 'bold'}}>Unit No:</Text>{' '}
+                {selectedUnitData.unitNo}
+              </Text>
+              <Text style={styles.modalText}>
+                <Text style={{fontWeight: 'bold'}}>Count Type:</Text>{' '}
+                {selectedUnitData.countType}
+              </Text>
+              <Text style={styles.modalText}>
+                <Text style={{fontWeight: 'bold'}}>Count Value:</Text>{' '}
+                {selectedUnitData.countValue}
+              </Text>
+              <Pressable
+                style={styles.closeButton}
+                onPress={() => setUnitModalVisible(false)}>
+                <Text style={{color: 'white', fontWeight: 'bold'}}>Close</Text>
+              </Pressable>
             </View>
-          ))}
-        </View>
-      </ScrollView>
-      <Pressable
-        style={[styles.closeButton, { marginTop: 15 }]}
-        onPress={() => setTableModalVisible(false)}
-      >
-        <Text style={{ color: 'white', fontWeight: 'bold' }}>Close</Text>
-      </Pressable>
-    </View>
-  </View>
-</Modal>
+          </View>
+        </Modal>
 
+        <Modal
+          animationType="slide"
+          transparent
+          visible={modalVisibleXAxisUnit}
+          onRequestClose={() => setModalVisibleXAxisUnit(false)}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalBox}>
+              <Text style={styles.modalTitle}>Unit Summary</Text>
+              <Text style={styles.modalText}>
+                <Text style={{fontWeight: 'bold'}}>Welder ID:</Text>{' '}
+                {selectedXAxisUnit?.label}
+              </Text>
 
-    </View>
-  );
-};
+              {selectedXAxisUnit?.stacks?.map((stackItem, idx) => {
+                const typeLabel = [
+                  'Accepted',
+                  'Repair',
+                  'Retake',
+                  'Failure Rate',
+                ][idx];
+                return (
+                  <Text key={idx} style={styles.modalText}>
+                    <Text style={{fontWeight: 'bold'}}>{typeLabel}:</Text>{' '}
+                    {stackItem.value}
+                  </Text>
+                );
+              })}
 
+              <Pressable
+                style={styles.closeButton}
+                onPress={() => setModalVisibleXAxisUnit(false)}>
+                <Text style={{color: 'white', fontWeight: 'bold'}}>Close</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
 
+        {/* Modal for Unit Count Table */}
+        <Modal
+          visible={isTableModalVisible}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={() => setTableModalVisible(false)}>
+          <View style={styles.modalContainer}>
+            <View style={[styles.modalBox, {height: '35%', width: '90%'}]}>
+              <Text style={styles.modalTitle}>Unit Count Table</Text>
+              <ScrollView horizontal>
+                <View style={styles.table}>
+                  <View style={[styles.tableRow, styles.headerRow]}>
+                    {[
+                      'Unit No',
+                      'Total Jobs',
+                      'Accepted',
+                      'Repair',
+                      'Retake',
+                    ].map((header, index) => (
+                      <View
+                        key={index}
+                        style={[styles.tableCell, styles.headerCell]}>
+                        <Text style={styles.headerText}>{header}</Text>
+                      </View>
+                    ))}
+                  </View>
+
+                  {unitData.map((item, index) => (
+                    <View key={index} style={styles.tableRow}>
+                      <View style={styles.tableCell}>
+                        <Text style={styles.cellText}>{item.unit_no}</Text>
+                      </View>
+                      <View style={styles.tableCell}>
+                        <Text style={styles.cellText}>{item.total_jobs}</Text>
+                      </View>
+                      <View style={styles.tableCell}>
+                        <Text style={styles.cellText}>
+                          {item.accepted_count}
+                        </Text>
+                      </View>
+                      <View style={styles.tableCell}>
+                        <Text style={styles.cellText}>{item.repair_count}</Text>
+                      </View>
+                      <View style={styles.tableCell}>
+                        <Text style={styles.cellText}>{item.retake_count}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
+              <Pressable
+                style={[styles.closeButton, {marginTop: 15}]}
+                onPress={() => setTableModalVisible(false)}>
+                <Text style={{color: 'white', fontWeight: 'bold'}}>Close</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    );
+  };
 
   return (
     <Fragment>
@@ -2143,7 +2283,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     alignItems: 'center',
   },
-  
 });
 
 export default DashBoard;
