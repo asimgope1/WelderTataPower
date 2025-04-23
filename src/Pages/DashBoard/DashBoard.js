@@ -83,6 +83,14 @@ const DashBoard = ({navigation}) => {
   const [modalVisibleXAxisUnit, setModalVisibleXAxisUnit] = useState(false);
   const [selectedXAxisUnit, setSelectedXAxisUnit] = useState(null);
 
+
+  const [welderDetailsModalVisible, setWelderDetailsModalVisible] = useState(false);
+  const [welderDetailsData, setWelderDetailsData] = useState([]);
+  const [welderDetailsHeader, setWelderDetailsHeader] = useState('');
+  const [welderName, setWelderName] = useState('');
+  
+
+
   const handlePress = () => {
     setIsLoading(true);
     setTimeout(() => {
@@ -363,25 +371,43 @@ const DashBoard = ({navigation}) => {
     setRefreshing(false);
   };
   const WelderState = async (Id, Status) => {
-    console.log('i am here', Id, Status);
-
+    console.log('🔧 WelderState called with:', Id, Status);
+    setIsLoading(true);
     const allowedStatuses = ['Accepted', 'Repair', 'Retake'];
-    if (!allowedStatuses.includes(Status)) {
+  
+    let url = `${BAS_URL}welding/api/v1/welder-stat-details/?welder_id=${Id}&shutdown_id=${shutdownID}`;
+  
+    if (allowedStatuses.includes(Status)) {
+      url += `&job_status=${Status}`;
+    } else if (Status === 'Welder ID') {
+      // Just keep the base URL without job_status
+    } else {
       console.log('❌ API not called for header:', Status);
+      setIsLoading(false);
       return;
     }
-
-    const url = `${BAS_URL}welding/api/v1/welder-stat-details/?welder_id=${Id}&shutdown_id=${shutdownID}&job_status=${Status}`;
-
+  
     console.log('📡 Calling API with GETNETWORK:', url);
-
+  
     try {
       const result = await GETNETWORK(url, true);
       console.log('✅ API Result:', result);
+  
+      // Set state here like you wanted
+      setWelderDetailsData(Array.isArray(result?.data) ? result.data : []);
+      setWelderDetailsHeader(Status);
+      setWelderName(Id);
+      setWelderDetailsModalVisible(true);
     } catch (error) {
       console.error('❌ API Error:', error);
     }
+    finally {
+      setIsLoading(false); // ✅ Always hide loader after API completes
+    }
   };
+  
+  
+
 
   const getRandomColor = () => {
     const randomColor = Math.floor(Math.random() * 16777215).toString(16);
@@ -681,7 +707,29 @@ const DashBoard = ({navigation}) => {
       setSelectedDataWelder({welderId, type, value});
       setModalVisibleWelder(true);
     };
-
+    const labelMap = {
+      welder_id: 'Welder ID',
+      job_status: 'Job Status',
+      weld_type: 'Weld Type',
+      component_name: 'Component Name',
+      unit_number: 'Unit No',
+      tube_id: 'Tube ID',
+      joint_id: 'Joint ID',
+      start_time: 'Start Time',
+      end_time: 'End Time',
+      status: 'Status',
+      job_offer_date:'Job Offer Date',
+      job_number:'Job Number',
+      tube_joints:'Tube Joints',
+      rt_report_date: "RT Report Date", 
+      rt_report_number: "RT Report Number", 
+      tube_joints: "Tube Joints",
+      unit_number: "Unit Number", 
+      welder_name: "Welder Name",
+      job_desc_number:"Job Desc Number",
+      paut_report_date: "Paut Report Date",
+      paut_report_number:'Paut Report Number'
+    };
     const stackData = dashboardData.welder_count.map(item => ({
       label: item.welder_id,
       stacks: [
@@ -1005,6 +1053,120 @@ const DashBoard = ({navigation}) => {
             </View>
           </View>
         </Modal>
+        <Modal
+  visible={welderDetailsModalVisible}
+  animationType="slide"
+  transparent
+  onRequestClose={() => setWelderDetailsModalVisible(false)}>
+  <View style={{
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  }}>
+    <View style={{
+      backgroundColor: 'white',
+      borderRadius: 12,
+      padding: 20,
+      height: '60%',
+      width: '95%',
+      elevation: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+    }}>
+      <Text style={{
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 15,
+        textAlign: 'center',
+        color: '#333',
+      }}>
+        Details for Welder: {welderName} ({welderDetailsHeader})
+      </Text>
+
+      <ScrollView style={{ marginVertical: 10 }}>
+  {welderDetailsData.length === 0 ? (
+    <Text style={{
+      textAlign: 'center',
+      marginTop: 20,
+      fontStyle: 'italic',
+      color: '#999',
+    }}>
+      No data available
+    </Text>
+  ) : (
+    welderDetailsData.map((item, index) => (
+      <View
+      key={index}
+      style={{
+        backgroundColor: '#ffffff',
+        borderRadius: 10,
+        padding: 10,
+        marginBottom: 15,
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      }}>
+      {Object.entries(item).map(([key, value], i) => (
+        <View
+          key={i}
+          style={{
+            flexDirection: 'row',
+            marginBottom: 8,
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+          <Text style={{
+            fontWeight: '600',
+            width: '48%', // Ensure the key takes 40% of the space
+            color: '#444',
+            flexShrink: 0, // Prevent shrinking of the key text
+           
+          }}>
+            {labelMap[key] || key}:
+          </Text>
+          <Text style={{
+            flex: 1, 
+            color: '#555',
+            
+          }}>
+            {String(value)}
+          </Text>
+        </View>
+      ))}
+    </View>
+    
+    ))
+  )}
+</ScrollView>
+
+
+      <Pressable
+        onPress={() => setWelderDetailsModalVisible(false)}
+        style={{
+          backgroundColor: '#007bff',
+          paddingVertical: 12,
+          alignItems: 'center',
+          borderRadius: 8,
+          marginTop: 10,
+        }}>
+        <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>
+          Close
+        </Text>
+      </Pressable>
+    </View>
+  </View>
+</Modal>
+
+
+
+
+
       </View>
     );
   };
@@ -2256,33 +2418,68 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)', // semi-transparent background
     justifyContent: 'center',
     alignItems: 'center',
   },
+  
   modalBox: {
-    width: '80%',
-    backgroundColor: 'white',
-    borderRadius: 10,
+    backgroundColor: '#fff',
+    borderRadius: 15,
     padding: 20,
-    elevation: 5,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
   },
+  
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    textAlign: 'center',
     marginBottom: 10,
+    color: '#333',
   },
-  modalText: {
-    fontSize: 16,
-    marginVertical: 4,
+  
+  card: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
-  closeButton: {
-    marginTop: 15,
-    backgroundColor: '#2196f3',
-    paddingVertical: 10,
-    borderRadius: 6,
+  
+  cardRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 8,
+    flexWrap: 'wrap',
   },
+  
+  cardLabel: {
+    fontWeight: 'bold',
+    color: '#444',
+    marginRight: 5,
+    minWidth: 110, // keeps labels aligned
+  },
+  
+  cardValue: {
+    color: '#000',
+    flexShrink: 1,
+  },
+  
+  closeButton: {
+    marginTop: 10,
+    backgroundColor: '#007bff',
+    paddingVertical: 10,
+    paddingHorizontal: 25,
+    borderRadius: 8,
+    alignSelf: 'center',
+  },
+  
+  
 });
 
 export default DashBoard;
