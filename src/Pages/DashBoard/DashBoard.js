@@ -88,6 +88,17 @@ const DashBoard = ({navigation}) => {
   const [welderDetailsData, setWelderDetailsData] = useState([]);
   const [welderDetailsHeader, setWelderDetailsHeader] = useState('');
   const [welderName, setWelderName] = useState('');
+
+  const [modalVisibleNew, setModalVisibleNew] = useState(false);
+  const [selectedComponentDetails, setSelectedComponentDetails] = useState(null);
+
+
+
+
+  const [modalVisibleNewUnit, setModalVisibleNewUnit] = useState(false);
+  const [selectedComponentDetailsUnit, setSelectedComponentDetailsUnit] = useState(null);
+  
+  
   
 
 
@@ -370,9 +381,11 @@ const DashBoard = ({navigation}) => {
     await GetJobList();
     setRefreshing(false);
   };
+
   const WelderState = async (Id, Status) => {
     console.log('🔧 WelderState called with:', Id, Status);
-    setIsLoading(true);
+    setIsLoading(true); // 🌀 Show loader before API call
+  
     const allowedStatuses = ['Accepted', 'Repair', 'Retake'];
   
     let url = `${BAS_URL}welding/api/v1/welder-stat-details/?welder_id=${Id}&shutdown_id=${shutdownID}`;
@@ -383,7 +396,7 @@ const DashBoard = ({navigation}) => {
       // Just keep the base URL without job_status
     } else {
       console.log('❌ API not called for header:', Status);
-      setIsLoading(false);
+      setIsLoading(true); // ❌ Hide loader if condition fails
       return;
     }
   
@@ -393,20 +406,100 @@ const DashBoard = ({navigation}) => {
       const result = await GETNETWORK(url, true);
       console.log('✅ API Result:', result);
   
-      // Set state here like you wanted
       setWelderDetailsData(Array.isArray(result?.data) ? result.data : []);
       setWelderDetailsHeader(Status);
       setWelderName(Id);
       setWelderDetailsModalVisible(true);
+      setIsLoading(false); // ❌ Hide loader if condition fails
+
     } catch (error) {
       console.error('❌ API Error:', error);
-    }
-    finally {
+    } finally {
       setIsLoading(false); // ✅ Always hide loader after API completes
     }
   };
   
+
+  const UnitState = async (unitNumber, Status) => {
+    console.log('🔧 UnitState called with:', unitNumber, Status);
+  setIsLoading(true)
+    const allowedStatuses = ['Accepted', 'Repair', 'Retake'];
   
+    let url = `${BAS_URL}welding/api/v1/unit-stat-details/?unit_number=${encodeURIComponent(unitNumber)}&shutdown_id=${shutdownID}`;
+  
+    if (allowedStatuses.includes(Status)) {
+      url += `&job_status=${Status}`;
+    } else if (Status === 'Unit Number') {
+      // Do nothing – skip adding job_status
+    } else {
+      console.log('❌ API not called for header:', Status);
+      return;
+    }
+  
+    console.log('📡 Calling API with GETNETWORK:', url);
+  
+    try {
+      const result = await GETNETWORK(url, true);
+      console.log('✅ API Result:', result);
+  
+      if (result && result.data && result.data.length > 0) {
+        setSelectedComponentDetailsUnit(result.data);  // Update the component detail list
+        setModalVisibleNewUnit(true);                 // Show the modal
+      } else {
+        console.log('❌ No unit data found.');
+        setIsLoading(false)
+
+      }
+    } catch (error) {
+      console.error('❌ API Error:', error);
+    } finally {
+      setIsLoading(false);  // ✅ Always stop loading after the call
+    }
+  };
+  
+
+
+
+  const ComponentState = async (componentName, Status) => {
+    console.log('📞 ComponentState:', componentName, Status);
+  setIsLoading(true);
+    let url = `${BAS_URL}welding/api/v1/component-stat-details/?component_name=${encodeURIComponent(
+      componentName,
+    )}&shutdown_id=${shutdownID}`;
+  
+    const allowedStatuses = ['Accepted', 'Repair', 'Retake'];
+  
+    if (allowedStatuses.includes(Status)) {
+      url += `&job_status=${Status}`;
+    } else if (Status !== 'Component Name') {
+      console.log('❌ Invalid status, skipping API call:', Status);
+      return;
+    }
+  
+    console.log('📡 Calling API:', url);
+  
+    try {
+      const result = await GETNETWORK(url, true);
+      console.log('✅ Component API Result:', result);
+  
+      // Assuming result.data contains the component details.
+      // Update state with the response data:
+      if (result && result.data && result.data.length > 0) {
+        setSelectedComponentDetails(result.data);  // Set the component details
+        setModalVisibleNew(true); 
+        setIsLoading(false) 
+      } else {
+        console.log('❌ No data found for the given component.');
+      }
+    } catch (error) {
+      console.error('❌ Component API Error:', error);
+    }
+    finally{
+      setIsLoading(false)
+    }
+  };
+  
+
 
 
   const getRandomColor = () => {
@@ -735,24 +828,33 @@ const DashBoard = ({navigation}) => {
       stacks: [
         {
           value: item.Accepted,
-          color: '#4caf50',
-          onPress: () => openModal(item.welder_id, 'Accepted', item.Accepted),
+          color: '#038c1c',
+          onPress: () =>
+            WelderState(item.welder_id,'Accepted')
+            // openModal(item.welder_id, 'Accepted', item.Accepted),
         },
         {
           value: item.Repair,
-          color: '#ff9800',
-          onPress: () => openModal(item.welder_id, 'Repair', item.Repair),
+          color: 'orange',
+          onPress: () => 
+            // openModal(item.welder_id, 'Repair', item.Repair),
+          WelderState(item.welder_id,'Repair')
+
         },
         {
           value: item.Retake,
-          color: '#2196f3',
-          onPress: () => openModal(item.welder_id, 'Retake', item.Retake),
+          color: '#faab02',
+          onPress: () => 
+            // openModal(item.welder_id, 'Retake', item.Retake),
+          WelderState(item.welder_id,'Retake')
+
         },
         {
           value: parseFloat(item.Failure_Rate),
           color: '#f44336',
           onPress: () =>
-            openModal(item.welder_id, 'Failure Rate', `${item.Failure_Rate}%`),
+          WelderState(item.welder_id,'Welder ID')
+            
         },
       ],
     }));
@@ -839,29 +941,37 @@ const DashBoard = ({navigation}) => {
 
             {/* Touchable X-axis Labels */}
             <View
-              style={{
-                position: 'absolute',
-                bottom: 15,
-                left: 55,
-                flexDirection: 'row',
-              }}>
-              {stackData.map((item, index) => (
-                <TouchableOpacity
-                  key={index}
-                  onPress={() => {
-                    setSelectedXAxisWelder(item);
-                    setModalVisibleXAxisWelder(true);
-                  }}
-                  style={{
-                    width: 40,
-                    alignItems: 'center',
-                    marginRight: 30,
-                    height: 30,
-                    backgroundColor: 'transparent',
-                  }}
-                />
-              ))}
-            </View>
+  style={{
+    position: 'absolute',
+    bottom: 15,
+    left: 55,
+    flexDirection: 'row',
+  }}>
+  {stackData.map((item, index) => (
+    <TouchableOpacity
+      key={index}
+      onPress={() => {
+        // Make sure item.welderId and item.status exist in your data
+        if (item.label) {
+          console.log('ite,',item)
+          WelderState(item.label,'Welder ID');
+        } else {
+          console.log('ite,',item)
+          console.log('❌ Missing welderId or status for item at index', index);
+        }
+      }}
+      style={{
+        width: 40,
+        alignItems: 'center',
+        marginRight: 30,
+        height: 30,
+        backgroundColor: 'transparent',
+      }}
+    />
+  ))}
+</View>
+
+
           </View>
         </ScrollView>
 
@@ -896,42 +1006,8 @@ const DashBoard = ({navigation}) => {
         </Modal>
 
         {/* X-Axis Label Tap Modal */}
-        <Modal
-          animationType="slide"
-          transparent
-          visible={modalVisibleXAxisWelder}
-          onRequestClose={() => setModalVisibleXAxisWelder(false)}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalBox}>
-              <Text style={styles.modalTitle}>Welder Summary</Text>
-              <Text style={styles.modalText}>
-                <Text style={{fontWeight: 'bold'}}>Welder ID:</Text>{' '}
-                {selectedXAxisWelder?.label}
-              </Text>
+     
 
-              {selectedXAxisWelder?.stacks?.map((stackItem, idx) => {
-                const typeLabel = [
-                  'Accepted',
-                  'Repair',
-                  'Retake',
-                  'Failure Rate',
-                ][idx];
-                return (
-                  <Text key={idx} style={styles.modalText}>
-                    <Text style={{fontWeight: 'bold'}}>{typeLabel}:</Text>{' '}
-                    {stackItem.value}
-                  </Text>
-                );
-              })}
-
-              <Pressable
-                style={styles.closeButton}
-                onPress={() => setModalVisibleXAxisWelder(false)}>
-                <Text style={{color: 'white', fontWeight: 'bold'}}>Close</Text>
-              </Pressable>
-            </View>
-          </View>
-        </Modal>
 
         {/* Table Modal */}
         {/* Table Modal */}
@@ -945,8 +1021,8 @@ const DashBoard = ({navigation}) => {
               style={[
                 styles.modalBox,
                 {
-                  height: isLandscape ? '80%' : '47%',
-                  width: isLandscape ? '90%' : '90%',
+                  height: isLandscape ? '90%' : '47%',
+                  width: isLandscape ? '95%' : '90%',
                 },
               ]}>
               <Text style={styles.modalTitle}>Welder Count Table</Text>
@@ -1053,11 +1129,14 @@ const DashBoard = ({navigation}) => {
             </View>
           </View>
         </Modal>
+
+        
         <Modal
   visible={welderDetailsModalVisible}
   animationType="slide"
   transparent
-  onRequestClose={() => setWelderDetailsModalVisible(false)}>
+  onRequestClose={() => setWelderDetailsModalVisible(false)}
+>
   <View style={{
     flex: 1,
     justifyContent: 'center',
@@ -1068,8 +1147,8 @@ const DashBoard = ({navigation}) => {
       backgroundColor: 'white',
       borderRadius: 12,
       padding: 20,
-      height: '60%',
-      width: '95%',
+      height: isLandscape ? '95%' : '60%',
+      width: isLandscape ? '90%' : '95%',
       elevation: 8,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
@@ -1085,21 +1164,23 @@ const DashBoard = ({navigation}) => {
       }}>
         Details for Welder: {welderName} ({welderDetailsHeader})
       </Text>
-
-      <ScrollView style={{ marginVertical: 10 }}>
-  {welderDetailsData.length === 0 ? (
-    <Text style={{
-      textAlign: 'center',
-      marginTop: 20,
-      fontStyle: 'italic',
-      color: '#999',
-    }}>
+      <FlatList
+  data={welderDetailsData}
+  keyExtractor={(item, index) => index.toString()}
+  contentContainerStyle={{ marginVertical: 10 }}
+  ListEmptyComponent={() => (
+    <Text
+      style={{
+        textAlign: 'center',
+        marginTop: 20,
+        fontStyle: 'italic',
+        color: '#999',
+      }}>
       No data available
     </Text>
-  ) : (
-    welderDetailsData.map((item, index) => (
-      <View
-      key={index}
+  )}
+  renderItem={({ item }) => (
+    <View
       style={{
         backgroundColor: '#ffffff',
         borderRadius: 10,
@@ -1121,29 +1202,27 @@ const DashBoard = ({navigation}) => {
             alignItems: 'center',
             justifyContent: 'space-between',
           }}>
-          <Text style={{
-            fontWeight: '600',
-            width: '48%', // Ensure the key takes 40% of the space
-            color: '#444',
-            flexShrink: 0, // Prevent shrinking of the key text
-           
-          }}>
+          <Text
+            style={{
+              fontWeight: '600',
+              width: '48%',
+              color: '#444',
+              flexShrink: 0,
+            }}>
             {labelMap[key] || key}:
           </Text>
-          <Text style={{
-            flex: 1, 
-            color: '#555',
-            
-          }}>
+          <Text
+            style={{
+              flex: 1,
+              color: '#555',
+            }}>
             {String(value)}
           </Text>
         </View>
       ))}
     </View>
-    
-    ))
   )}
-</ScrollView>
+/>
 
 
       <Pressable
@@ -1162,6 +1241,7 @@ const DashBoard = ({navigation}) => {
     </View>
   </View>
 </Modal>
+
 
 
 
@@ -1200,34 +1280,35 @@ const DashBoard = ({navigation}) => {
       stacks: [
         {
           value: item.Accepted,
-          color: '#4caf50',
+          color: '#038c1c',
           onPress: () =>
-            openModal(
-              item.pressure_part_component_name,
-              'Accepted',
-              item.Accepted,
-            ),
+            // openModal(
+            //   item.pressure_part_component_name,
+            //   'Accepted',
+            //   item.Accepted,
+            // ),
+            ComponentState(item.pressure_part_component_name,'Accepted',item.Accepted)
         },
         {
           value: item.Repair,
-          color: '#ff9800',
+          color: 'orange',
           onPress: () =>
-            openModal(item.pressure_part_component_name, 'Repair', item.Repair),
+           ComponentState(item.pressure_part_component_name, 'Repair', item.Repair),
         },
         {
           value: item.Retake,
-          color: '#2196f3',
+          color: '#faab02',
           onPress: () =>
-            openModal(item.pressure_part_component_name, 'Retake', item.Retake),
+            ComponentState(item.pressure_part_component_name, 'Retake', item.Retake),
         },
         {
           value: parseFloat(item.Failure_Rate),
           color: '#f44336',
           onPress: () =>
-            openModal(
+            ComponentState(
               item.pressure_part_component_name,
-              'Failure Rate',
-              `${item.Failure_Rate}%`,
+              'Component Name',
+              
             ),
         },
       ],
@@ -1323,8 +1404,13 @@ const DashBoard = ({navigation}) => {
               <TouchableOpacity
                 key={index}
                 onPress={() => {
-                  setSelectedXAxisComponent(item);
-                  setModalVisibleXAxisComponent(true);
+                  if (item.label) {
+                    console.log('ite,',item)
+                    ComponentState(item.label,'Component Name');
+                  } else {
+                    console.log('ite,',item)
+                    console.log('❌ Missing welderId or status for item at index', index);
+                  }
                 }}
                 style={{
                   width: 55,
@@ -1382,87 +1468,7 @@ const DashBoard = ({navigation}) => {
           </View>
         </Modal>
 
-        <Modal
-          visible={tableModalVisibleComponent}
-          animationType="fade"
-          transparent
-          onRequestClose={() => setTableModalVisibleComponent(false)}>
-          <View style={styles.modalContainer}>
-            <View style={[styles.modalBox, {height: '47%', width: '90%'}]}>
-              <Text style={styles.modalTitle}>Component Count Table</Text>
-              <ScrollView horizontal>
-                <View style={styles.table}>
-                  <View style={[styles.tableRow, styles.headerRow]}>
-                    <View
-                      style={[
-                        styles.tableCell,
-                        styles.headerCell,
-                        styles.leftColumn,
-                      ]}>
-                      <Text style={styles.headerText}>Component Name</Text>
-                    </View>
-                    {[
-                      'Total',
-                      'Accepted',
-                      'Repair',
-                      'Retake',
-                      'Failure Rate',
-                    ].map((header, index) => (
-                      <View
-                        key={index}
-                        style={[styles.tableCell, styles.headerCell]}>
-                        <Text style={styles.headerText}>{header}</Text>
-                      </View>
-                    ))}
-                  </View>
-
-                  <ScrollView style={{maxHeight: 400}}>
-                    {dashboardData.component_count.map((item, index) => {
-                      const isFailureRateHigh =
-                        parseFloat(item.Failure_Rate) > 10; // Check if failure rate > 10%
-                      return (
-                        <View
-                          key={index}
-                          style={[
-                            styles.tableRow,
-                            isFailureRateHigh && {backgroundColor: '#f8d7da'}, // Light red background if failure rate > 10%
-                          ]}>
-                          <View style={[styles.tableCell, styles.leftColumn]}>
-                            <Text style={styles.cellText}>
-                              {item.pressure_part_component_name}
-                            </Text>
-                          </View>
-                          <View style={styles.tableCell}>
-                            <Text style={styles.cellText}>{item.Total}</Text>
-                          </View>
-                          <View style={styles.tableCell}>
-                            <Text style={styles.cellText}>{item.Accepted}</Text>
-                          </View>
-                          <View style={styles.tableCell}>
-                            <Text style={styles.cellText}>{item.Repair}</Text>
-                          </View>
-                          <View style={styles.tableCell}>
-                            <Text style={styles.cellText}>{item.Retake}</Text>
-                          </View>
-                          <View style={styles.tableCell}>
-                            <Text style={styles.cellText}>
-                              {item.Failure_Rate}%
-                            </Text>
-                          </View>
-                        </View>
-                      );
-                    })}
-                  </ScrollView>
-                </View>
-              </ScrollView>
-              <Pressable
-                style={[styles.closeButton, {marginTop: 15}]}
-                onPress={() => setTableModalVisibleComponent(false)}>
-                <Text style={{color: 'white', fontWeight: 'bold'}}>Close</Text>
-              </Pressable>
-            </View>
-          </View>
-        </Modal>
+       
 
         <Modal
           animationType="slide"
@@ -1500,6 +1506,271 @@ const DashBoard = ({navigation}) => {
             </View>
           </View>
         </Modal>
+
+
+
+
+        <Modal
+          visible={tableModalVisibleComponent}
+          animationType="fade"
+          transparent
+          onRequestClose={() => setTableModalVisibleComponent(false)}>
+          <View style={styles.modalContainer}>
+            <View
+              style={[
+                styles.modalBox,
+                {
+                  height: isLandscape ? '90%' : '47%',
+                  width: isLandscape ? '95%' : '90%',
+                },
+              ]}>
+              <Text style={styles.modalTitle}>Component Count Table</Text>
+              <ScrollView horizontal>
+                <View style={styles.table}>
+                  <View style={[styles.tableRow, styles.headerRow]}>
+                    <View
+                      style={[
+                        styles.tableCell,
+                        styles.headerCell,
+                        styles.leftColumn,
+                      ]}>
+                      <Text style={styles.headerText}>Component Name</Text>
+                    </View>
+                    {[
+                      'Total',
+                      'Accepted',
+                      'Repair',
+                      'Retake',
+                      'Failure Rate',
+                    ].map((header, index) => (
+                      <View
+                        key={index}
+                        style={[styles.tableCell, styles.headerCell]}>
+                        <Text style={styles.headerText}>{header}</Text>
+                      </View>
+                    ))}
+                  </View>
+
+                  <ScrollView style={{maxHeight: 400}}>
+                    {dashboardData.component_count.map((item, index) => {
+                      const isFailureRateHigh =
+                        parseFloat(item.Failure_Rate) > 10;
+
+                      const handleComponentPress = status => {
+                        const componentName = item.pressure_part_component_name;
+                        ComponentState(componentName, status);
+                      };
+
+                      const handleComponentPressNewModal = (item) => {
+                        setSelectedComponentDetails(item); // Store the selected component details
+                        setModalVisibleNew(true); // Open the new modal
+                      };
+                      
+
+                      return (
+                        <View
+                          key={index}
+                          style={[
+                            styles.tableRow,
+                            isFailureRateHigh && {backgroundColor: '#f8d7da'},
+                          ]}>
+                          {/* Component Name */}
+                          <TouchableOpacity
+                            style={[styles.tableCell, styles.leftColumn]}
+                            onPress={() =>
+                              handleComponentPress('Component Name')
+                            }>
+                            <Text style={styles.cellText}>
+                              {item.pressure_part_component_name}
+                            </Text>
+                          </TouchableOpacity>
+
+                          {/* Total */}
+                          <TouchableOpacity
+                            style={styles.tableCell}
+                            onPress={() =>
+                              handleComponentPress('Component Name')
+                            }>
+                            <Text style={styles.cellText}>{item.Total}</Text>
+                          </TouchableOpacity>
+
+                          {/* Accepted */}
+                          <TouchableOpacity
+                            style={styles.tableCell}
+                            onPress={() => handleComponentPress('Accepted')}>
+                            <Text style={styles.cellText}>{item.Accepted}</Text>
+                          </TouchableOpacity>
+
+                          {/* Repair */}
+                          <TouchableOpacity
+                            style={styles.tableCell}
+                            onPress={() => handleComponentPress('Repair')}>
+                            <Text style={styles.cellText}>{item.Repair}</Text>
+                          </TouchableOpacity>
+
+                          {/* Retake */}
+                          <TouchableOpacity
+                            style={styles.tableCell}
+                            onPress={() => handleComponentPress('Retake')}>
+                            <Text style={styles.cellText}>{item.Retake}</Text>
+                          </TouchableOpacity>
+
+                          {/* Failure Rate - not calling API */}
+                          <View style={styles.tableCell}>
+                            <Text style={styles.cellText}>
+                              {item.Failure_Rate}%
+                            </Text>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              </ScrollView>
+              <Pressable
+                style={[styles.closeButton, {marginTop: 15}]}
+                onPress={() => setTableModalVisibleComponent(false)}>
+                <Text style={{color: 'white', fontWeight: 'bold'}}>Close</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+
+
+
+
+
+        <Modal
+  animationType="slide"
+  transparent
+  visible={modalVisibleNew}
+  onRequestClose={() => setModalVisibleNew(false)}
+>
+  <View style={{
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  }}>
+    <View style={{
+      backgroundColor: 'white',
+      borderRadius: 12,
+      padding: 20,
+      height: isLandscape ? '95%' : '60%',
+      width: isLandscape ? '90%' : '95%',
+      elevation: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+    }}>
+      <Text style={{
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 15,
+        textAlign: 'center',
+        color: '#333',
+      }}>
+        Component Details
+      </Text>
+
+      <FlatList
+  data={Array.isArray(selectedComponentDetails) ? selectedComponentDetails : []}
+  keyExtractor={(item, index) => index.toString()}
+  contentContainerStyle={{ marginVertical: 10 }}
+  ListEmptyComponent={() => (
+    <Text
+      style={{
+        textAlign: 'center',
+        marginTop: 20,
+        fontStyle: 'italic',
+        color: '#999',
+      }}>
+      No data available
+    </Text>
+  )}
+  renderItem={({ item }) => (
+    <View
+      style={{
+        backgroundColor: '#ffffff',
+        borderRadius: 10,
+        padding: 10,
+        marginBottom: 15,
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      }}>
+      {Object.entries(item).map(([key, value], i) => {
+        if (
+          [
+            'job_number',
+            'job_offer_date',
+            'unit_number',
+            'component_name',
+            'job_desc_number',
+            'tube_joints',
+            'job_status',
+          ].includes(key)
+        ) {
+          return (
+            <View
+              key={i}
+              style={{
+                flexDirection: 'row',
+                marginBottom: 8,
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}>
+              <Text
+                style={{
+                  fontWeight: '600',
+                  width: '48%',
+                  color: '#444',
+                  flexShrink: 0,
+                }}>
+                {key.replace(/_/g, ' ')}:
+              </Text>
+              <Text
+                style={{
+                  flex: 1,
+                  color: '#555',
+                }}>
+                {value || 'N/A'}
+              </Text>
+            </View>
+          );
+        }
+        return null;
+      })}
+    </View>
+  )}
+/>
+
+
+      <Pressable
+        onPress={() => setModalVisibleNew(false)}
+        style={{
+          backgroundColor: '#007bff',
+          paddingVertical: 12,
+          alignItems: 'center',
+          borderRadius: 8,
+          marginTop: 10,
+        }}>
+        <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>
+          Close
+        </Text>
+      </Pressable>
+    </View>
+  </View>
+</Modal>
+
+
+
+
+
       </View>
     );
   };
@@ -1530,21 +1801,21 @@ const DashBoard = ({navigation}) => {
       stacks: [
         {
           value: item.accepted_count,
-          color: '#4caf50',
+          color: '#038c1c',
           onPress: () =>
-            openUnitModal(item.unit_no, 'Accepted', item.accepted_count),
+            UnitState(item.unit_no, 'Accepted', item.accepted_count),
         },
         {
           value: item.repair_count,
-          color: '#ff9800',
+          color: 'orange',
           onPress: () =>
-            openUnitModal(item.unit_no, 'Repair', item.repair_count),
+            UnitState(item.unit_no, 'Repair', item.repair_count),
         },
         {
           value: item.retake_count,
-          color: '#2196f3',
+          color: '#faab02',
           onPress: () =>
-            openUnitModal(item.unit_no, 'Retake', item.retake_count),
+            UnitState(item.unit_no, 'Retake', item.retake_count),
         },
       ],
     }));
@@ -1620,8 +1891,13 @@ const DashBoard = ({navigation}) => {
               <TouchableOpacity
                 key={index}
                 onPress={() => {
-                  setSelectedXAxisUnit(item);
-                  setModalVisibleXAxisUnit(true);
+                  if (item.label) {
+                    console.log('ite,',item)
+                    UnitState(item.label,'Unit Number');
+                  } else {
+                    console.log('ite,',item)
+                    console.log('❌ Missing welderId or status for item at index', index);
+                  }
                 }}
                 style={{
                   width: 55,
@@ -1711,7 +1987,14 @@ const DashBoard = ({navigation}) => {
           transparent={true}
           onRequestClose={() => setTableModalVisible(false)}>
           <View style={styles.modalContainer}>
-            <View style={[styles.modalBox, {height: '35%', width: '90%'}]}>
+            <View
+              style={[
+                styles.modalBox,
+                {
+                  height: isLandscape ? '90%' : '47%',
+                  width: isLandscape ? '95%' : '90%',
+                },
+              ]}>
               <Text style={styles.modalTitle}>Unit Count Table</Text>
               <ScrollView horizontal>
                 <View style={styles.table}>
@@ -1733,23 +2016,42 @@ const DashBoard = ({navigation}) => {
 
                   {unitData.map((item, index) => (
                     <View key={index} style={styles.tableRow}>
-                      <View style={styles.tableCell}>
+                      {/* Unit No - general fetch without status */}
+                      <TouchableOpacity
+                        style={styles.tableCell}
+                        onPress={() => UnitState(item.unit_no, 'Unit Number')}>
                         <Text style={styles.cellText}>{item.unit_no}</Text>
-                      </View>
-                      <View style={styles.tableCell}>
+                      </TouchableOpacity>
+
+                      {/* Total Jobs - can also call general fetch */}
+                      <TouchableOpacity
+                        style={styles.tableCell}
+                        onPress={() => UnitState(item.unit_no, 'Unit Number')}>
                         <Text style={styles.cellText}>{item.total_jobs}</Text>
-                      </View>
-                      <View style={styles.tableCell}>
+                      </TouchableOpacity>
+
+                      {/* Accepted */}
+                      <TouchableOpacity
+                        style={styles.tableCell}
+                        onPress={() => UnitState(item.unit_no, 'Accepted')}>
                         <Text style={styles.cellText}>
                           {item.accepted_count}
                         </Text>
-                      </View>
-                      <View style={styles.tableCell}>
+                      </TouchableOpacity>
+
+                      {/* Repair */}
+                      <TouchableOpacity
+                        style={styles.tableCell}
+                        onPress={() => UnitState(item.unit_no, 'Repair')}>
                         <Text style={styles.cellText}>{item.repair_count}</Text>
-                      </View>
-                      <View style={styles.tableCell}>
+                      </TouchableOpacity>
+
+                      {/* Retake */}
+                      <TouchableOpacity
+                        style={styles.tableCell}
+                        onPress={() => UnitState(item.unit_no, 'Retake')}>
                         <Text style={styles.cellText}>{item.retake_count}</Text>
-                      </View>
+                      </TouchableOpacity>
                     </View>
                   ))}
                 </View>
@@ -1762,6 +2064,133 @@ const DashBoard = ({navigation}) => {
             </View>
           </View>
         </Modal>
+        <Modal
+  animationType="slide"
+  transparent
+  visible={modalVisibleNewUnit}
+  onRequestClose={() => setModalVisibleNewUnit(false)}
+>
+  <View style={{
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  }}>
+    <View style={{
+      backgroundColor: 'white',
+      borderRadius: 12,
+      padding: 20,
+      height: isLandscape ? '95%' : '60%',
+      width: isLandscape ? '90%' : '95%',
+      elevation: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+    }}>
+      <Text style={{
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 15,
+        textAlign: 'center',
+        color: '#333',
+      }}>
+        Component Details
+      </Text>
+
+      <FlatList
+  data={Array.isArray(selectedComponentDetailsUnit) ? selectedComponentDetailsUnit : []}
+  keyExtractor={(item, index) => index.toString()}
+  contentContainerStyle={{ marginVertical: 10 }}
+  ListEmptyComponent={() => (
+    <Text
+      style={{
+        textAlign: 'center',
+        marginTop: 20,
+        fontStyle: 'italic',
+        color: '#999',
+      }}>
+      No data available
+    </Text>
+  )}
+  renderItem={({ item }) => (
+    <View
+      style={{
+        backgroundColor: '#ffffff',
+        borderRadius: 10,
+        padding: 10,
+        marginBottom: 15,
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      }}>
+      {Object.entries(item).map(([key, value], i) => {
+        if (
+          [
+            'job_number',
+            'job_offer_date',
+            'unit_number',
+            'component_name',
+            'job_desc_number',
+            'tube_joints',
+            'job_status',
+          ].includes(key)
+        ) {
+          return (
+            <View
+              key={i}
+              style={{
+                flexDirection: 'row',
+                marginBottom: 8,
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}>
+              <Text
+                style={{
+                  fontWeight: '600',
+                  width: '48%',
+                  color: '#444',
+                  flexShrink: 0,
+                }}>
+                {key.replace(/_/g, ' ')}:
+              </Text>
+              <Text
+                style={{
+                  flex: 1,
+                  color: '#555',
+                }}>
+                {value || 'N/A'}
+              </Text>
+            </View>
+          );
+        }
+        return null;
+      })}
+    </View>
+  )}
+/>
+
+
+      <Pressable
+        onPress={() => setModalVisibleNewUnit(false)}
+        style={{
+          backgroundColor: '#007bff',
+          paddingVertical: 12,
+          alignItems: 'center',
+          borderRadius: 8,
+          marginTop: 10,
+        }}>
+        <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>
+          Close
+        </Text>
+      </Pressable>
+    </View>
+  </View>
+</Modal>
+
       </View>
     );
   };
