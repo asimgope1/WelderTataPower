@@ -725,10 +725,13 @@ const [itemsShutdown, setItemsShutdown] = useState([]);
           marginVertical: 8,
           marginHorizontal: 10,
           borderRadius: 8,
-          borderWidth: 1,
-          borderColor: '#ddd',
+          // borderWidth: 1,
+          // borderColor: '#ddd',
           elevation: 5,
           backgroundColor: 'white',
+          borderLeftColor: status === 'Old' ? 'red' : 'green',
+          borderLeftWidth: 6,
+
         }}>
         <CheckBox
           checked={selectedJobs.includes(item.sl)} // Check if the job is selected
@@ -1021,14 +1024,15 @@ const [itemsShutdown, setItemsShutdown] = useState([]);
                     keyExtractor={(item, index) => index.toString()}
                     renderItem={renderItem}
                     contentContainerStyle={{paddingBottom: 20}}
-                    ListFooterComponent={<View style={{height: 150}} />}
+                    ListFooterComponent={<View style={{height: 200}} />}
                     ListEmptyComponent={
                       <View
                         style={{
-                          flex: 1,
+                          // flex: 1,
                           justifyContent: 'center',
                           alignItems: 'center',
                           alignSelf: 'center',
+                          // height:150
                         }}>
                         <Text style={styles.emptyListText}>
                           No data available

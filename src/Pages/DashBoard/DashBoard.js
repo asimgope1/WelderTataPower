@@ -395,6 +395,10 @@ const DashBoard = ({navigation}) => {
     } else if (Status === 'Welder ID') {
       // Just keep the base URL without job_status
     } else {
+      alert(
+        " No data found for the given component."
+
+       )
       console.log('❌ API not called for header:', Status);
       setIsLoading(true); // ❌ Hide loader if condition fails
       return;
@@ -423,7 +427,7 @@ const DashBoard = ({navigation}) => {
   const UnitState = async (unitNumber, Status) => {
     console.log('🔧 UnitState called with:', unitNumber, Status);
   setIsLoading(true)
-    const allowedStatuses = ['Accepted', 'Repair', 'Retake'];
+    const allowedStatuses = ['Accepted', 'Repair', 'Retake','Remaining'];
   
     let url = `${BAS_URL}welding/api/v1/unit-stat-details/?unit_number=${encodeURIComponent(unitNumber)}&shutdown_id=${shutdownID}`;
   
@@ -446,6 +450,10 @@ const DashBoard = ({navigation}) => {
         setSelectedComponentDetailsUnit(result.data);  // Update the component detail list
         setModalVisibleNewUnit(true);                 // Show the modal
       } else {
+        alert(
+          " No data found for the given component."
+ 
+         )
         console.log('❌ No unit data found.');
         setIsLoading(false)
 
@@ -467,7 +475,7 @@ const DashBoard = ({navigation}) => {
       componentName,
     )}&shutdown_id=${shutdownID}`;
   
-    const allowedStatuses = ['Accepted', 'Repair', 'Retake'];
+    const allowedStatuses = ['Accepted', 'Repair', 'Retake','Remaining'];
   
     if (allowedStatuses.includes(Status)) {
       url += `&job_status=${Status}`;
@@ -489,6 +497,10 @@ const DashBoard = ({navigation}) => {
         setModalVisibleNew(true); 
         setIsLoading(false) 
       } else {
+        alert(
+         " No data found for the given component."
+
+        )
         console.log('❌ No data found for the given component.');
       }
     } catch (error) {
@@ -826,29 +838,29 @@ const DashBoard = ({navigation}) => {
     const stackData = dashboardData.welder_count.map(item => ({
       label: item.welder_id,
       stacks: [
-        {
-          value: item.Accepted,
-          color: '#038c1c',
-          onPress: () =>
-            WelderState(item.welder_id,'Accepted')
-            // openModal(item.welder_id, 'Accepted', item.Accepted),
-        },
-        {
-          value: item.Repair,
-          color: 'orange',
-          onPress: () => 
-            // openModal(item.welder_id, 'Repair', item.Repair),
-          WelderState(item.welder_id,'Repair')
+        // {
+        //   value: item.Accepted,
+        //   color: '#038c1c',
+        //   onPress: () =>
+        //     WelderState(item.welder_id,'Accepted')
+        //     // openModal(item.welder_id, 'Accepted', item.Accepted),
+        // },
+        // {
+        //   value: item.Repair,
+        //   color: 'orange',
+        //   onPress: () => 
+        //     // openModal(item.welder_id, 'Repair', item.Repair),
+        //   WelderState(item.welder_id,'Repair')
 
-        },
-        {
-          value: item.Retake,
-          color: '#faab02',
-          onPress: () => 
-            // openModal(item.welder_id, 'Retake', item.Retake),
-          WelderState(item.welder_id,'Retake')
+        // },
+        // {
+        //   value: item.Retake,
+        //   color: '#faab02',
+        //   onPress: () => 
+        //     // openModal(item.welder_id, 'Retake', item.Retake),
+        //   WelderState(item.welder_id,'Retake')
 
-        },
+        // },
         {
           value: parseFloat(item.Failure_Rate),
           color: '#f44336',
@@ -863,9 +875,9 @@ const DashBoard = ({navigation}) => {
       const rawMax = Math.max(
         ...data.map(
           item =>
-            item.Accepted +
-            item.Repair +
-            item.Retake +
+            // item.Accepted +
+            // item.Repair +
+            // item.Retake +
             parseFloat(item.Failure_Rate),
         ),
       );
@@ -923,21 +935,40 @@ const DashBoard = ({navigation}) => {
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View>
-            <BarChart
-              stackData={stackData}
-              barWidth={40}
-              spacing={30}
-              noOfSections={6}
-              maxValue={dynamicMaxValue}
-              // barBorderRadius={6}
-              xAxisLabelTextStyle={{fontSize: 10}}
-              yAxisTextStyle={{fontSize: 10}}
-              // showGradient
-              isAnimated
-              animationDuration={800}
-              lineBehindBars={false}
-              dashWidth={0}
-            />
+          <BarChart
+  stackData={stackData}
+  barWidth={40}
+  spacing={30}
+  noOfSections={6}
+  maxValue={dynamicMaxValue}
+  xAxisLabelTextStyle={{ fontSize: 10 }}
+  yAxisTextStyle={{ fontSize: 10 }}
+  isAnimated
+  animationDuration={800}
+  lineBehindBars={false}
+  dashWidth={0}
+  // barInnerComponent={(item) => {
+  //   if (!item || !item.stacks?.length) return null;
+  
+  //   return (
+  //     <Text
+  //       style={{
+  //         // position: 'absolute',
+  //         color: 'white',
+  //         top:100,
+  //         left:8,
+  //         fontSize: 14,
+  //         fontWeight: 'bold',
+  //       }}
+  //     >
+  //       {item.stacks[0].value}
+  //     </Text>
+  //   );
+  // }}
+  
+  
+
+/>
 
             {/* Touchable X-axis Labels */}
             <View
@@ -999,8 +1030,8 @@ const DashBoard = ({navigation}) => {
               <Pressable
                 style={styles.closeButton}
                 onPress={() => setModalVisibleWelder(false)}>
-                <Text style={{color: 'white', fontWeight: 'bold'}}>Close</Text>
-              </Pressable>
+        <Icon name="close" type="material" color="white" size={24} />
+        </Pressable>
             </View>
           </View>
         </Modal>
@@ -1012,123 +1043,127 @@ const DashBoard = ({navigation}) => {
         {/* Table Modal */}
         {/* Table Modal */}
         <Modal
-          visible={tableModalVisibleWelder}
-          animationType="fade"
-          transparent
-          onRequestClose={() => setTableModalVisibleWelder(false)}>
-          <View style={styles.modalContainer}>
-            <View
-              style={[
-                styles.modalBox,
-                {
-                  height: isLandscape ? '90%' : '47%',
-                  width: isLandscape ? '95%' : '90%',
-                },
-              ]}>
-              <Text style={styles.modalTitle}>Welder Count Table</Text>
+  visible={tableModalVisibleWelder}
+  animationType="fade"
+  transparent
+  onRequestClose={() => setTableModalVisibleWelder(false)}>
+  <View style={styles.modalContainer}>
+    <View
+      style={[
+        styles.modalContent,
+        {
+          height: isLandscape ? '90%' : '47%',
+          width: isLandscape ? '95%' : '90%',
+        },
+      ]}>
+      <Text style={styles.modalTitle}>Welder Count Table</Text>
 
-              <ScrollView horizontal>
-                <View style={styles.table}>
-                  {/* Table Headers */}
-                  <View style={[styles.tableRow, styles.headerRow]}>
-                    {[
+      <ScrollView horizontal>
+        <View style={styles.table}>
+          {/* Table Headers */}
+          <View style={[styles.tableRow, styles.headerRow]}>
+            {[
+              'Welder ID',
+              'Name',
+              'Total',
+              'Accepted',
+              'Repair',
+              'Retake',
+              'Failure Rate',
+            ].map((header, index) => (
+              <View
+                key={index}
+                style={[styles.tableCell, styles.headerCell]}>
+                <Text style={styles.headerText}>{header}</Text>
+              </View>
+            ))}
+          </View>
+
+          {/* Table Rows */}
+          <ScrollView style={{maxHeight: 400}}>
+            {dashboardData.welder_count.map((item, rowIndex) => {
+              const isFailureRateHigh =
+                parseFloat(item.Failure_Rate) > 10;
+
+              const rowData = [
+                item.welder_id,
+                item.Name,
+                item.Total,
+                item.Accepted,
+                item.Repair,
+                item.Retake,
+                `${item.Failure_Rate}%`,
+              ];
+
+              const headers = [
+                'Welder ID',
+                'Name',
+                'Total',
+                'Accepted',
+                'Repair',
+                'Retake',
+                'Failure Rate',
+              ];
+
+              return (
+                <View
+                  key={rowIndex}
+                  style={[
+                    styles.tableRow,
+                    isFailureRateHigh && {backgroundColor: '#f8d7da'},
+                  ]}>
+                  {rowData.map((value, cellIndex) => {
+                    const header = headers[cellIndex];
+                    const isPressableHeader = [
                       'Welder ID',
-                      'Name',
-                      'Total',
                       'Accepted',
                       'Repair',
                       'Retake',
-                      'Failure Rate',
-                    ].map((header, index) => (
-                      <View
-                        key={index}
-                        style={[styles.tableCell, styles.headerCell]}>
-                        <Text style={styles.headerText}>{header}</Text>
+                      
+                    ].includes(header);
+
+                    return (
+                      <View key={cellIndex} style={styles.tableCell}>
+                        {isPressableHeader ? (
+                          <Pressable
+                            onPress={() => {
+                              console.log(
+                                `🟩 Welder ID: ${item.welder_id}, Header: ${header}, Value: ${value}`,
+                              );
+                              let a = item.welder_id;
+                              let b = header;
+                              WelderState(a, b);
+                            }}
+                            // android_ripple={{color: '#ccc'}}
+                            style={({pressed}) => ({
+                              opacity: pressed ? 0.6 : 1,
+                              width: '100%',
+                              height: '100%',
+                              justifyContent: 'center',
+                            })}>
+                            <Text style={{textAlign: 'center'}}>{value}</Text>
+                          </Pressable>
+                        ) : (
+                          <Text>{value}</Text>
+                        )}
                       </View>
-                    ))}
-                  </View>
-
-                  {/* Table Rows */}
-                  <ScrollView style={{maxHeight: 400}}>
-                    {dashboardData.welder_count.map((item, rowIndex) => {
-                      const isFailureRateHigh =
-                        parseFloat(item.Failure_Rate) > 10;
-
-                      const rowData = [
-                        item.welder_id,
-                        item.Name,
-                        item.Total,
-                        item.Accepted,
-                        item.Repair,
-                        item.Retake,
-                        `${item.Failure_Rate}%`,
-                      ];
-
-                      const headers = [
-                        'Welder ID',
-                        'Name',
-                        'Total',
-                        'Accepted',
-                        'Repair',
-                        'Retake',
-                        'Failure Rate',
-                      ];
-
-                      return (
-                        <View
-                          key={rowIndex}
-                          style={[
-                            styles.tableRow,
-                            isFailureRateHigh && {backgroundColor: '#f8d7da'},
-                          ]}>
-                          {rowData.map((value, cellIndex) => {
-                            const header = headers[cellIndex];
-                            const isPressableHeader = [
-                              'Welder ID',
-                              'Accepted',
-                              'Repair',
-                              'Retake',
-                            ].includes(header);
-
-                            return (
-                              <View key={cellIndex} style={styles.tableCell}>
-                                {isPressableHeader ? (
-                                  <Pressable
-                                    onPress={() => {
-                                      console.log(
-                                        `🟩 Welder ID: ${item.welder_id}, Header: ${header}, Value: ${value}`,
-                                      );
-                                      let a = item.welder_id;
-                                      let b = header;
-                                      WelderState(a, b);
-                                    }}
-                                    // android_ripple={{color: '#ccc'}}
-                                    style={({pressed}) => ({
-                                      opacity: pressed ? 0.6 : 1,
-                                    })}>
-                                    <Text>{value}</Text>
-                                  </Pressable>
-                                ) : (
-                                  <Text>{value}</Text>
-                                )}
-                              </View>
-                            );
-                          })}
-                        </View>
-                      );
-                    })}
-                  </ScrollView>
+                    );
+                  })}
                 </View>
-              </ScrollView>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </ScrollView>
 
-              <Pressable
-                style={styles.closeButton}
-                onPress={() => setTableModalVisibleWelder(false)}>
-                <Text style={{color: 'white', fontWeight: 'bold'}}>Close</Text>
-              </Pressable>
-            </View>
-          </View>
-        </Modal>
+      <Pressable
+        style={styles.closeButton}
+        onPress={() => setTableModalVisibleWelder(false)}>
+        <Icon name="close" type="material" color="white" size={24} />
+      </Pressable>
+    </View>
+  </View>
+</Modal>
 
         
         <Modal
@@ -1138,31 +1173,30 @@ const DashBoard = ({navigation}) => {
   onRequestClose={() => setWelderDetailsModalVisible(false)}
 >
   <View style={{
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  }}>
-    <View style={{
-      backgroundColor: 'white',
-      borderRadius: 12,
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0, 0, 0, 0.5)', // Dim background
       padding: 20,
-      height: isLandscape ? '95%' : '60%',
-      width: isLandscape ? '90%' : '95%',
-      elevation: 8,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 4,
-    }}>
-      <Text style={{
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginBottom: 15,
-        textAlign: 'center',
-        color: '#333',
-      }}>
-        Details for Welder: {welderName} ({welderDetailsHeader})
+      width:'100%'
+  }}>
+  <View
+      style={[
+        styles.modalContent,
+        {
+          height: isLandscape ? '95%' : '60%',
+          width: isLandscape ? '90%' : '100%',
+        },
+      ]}
+    >
+          <TouchableOpacity
+        style={styles.closeButton}
+        onPress={() =>  setWelderDetailsModalVisible(false)}
+      >
+        <Icon name="close" type="material" color="white" size={24} />
+      </TouchableOpacity>
+      <Text style={styles.modalTitle}>
+        Details for Welder: {welderName} ({welderDetailsData.length})
       </Text>
       <FlatList
   data={welderDetailsData}
@@ -1180,64 +1214,160 @@ const DashBoard = ({navigation}) => {
     </Text>
   )}
   renderItem={({ item }) => (
-    <View
+<View
+  style={{
+    backgroundColor: WHITE,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 0.6,
+    borderColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 6,
+    marginBottom: 16,
+    width: '100%',
+    alignSelf: 'center',
+    minHeight: 180,
+  }}
+>
+<View
+  style={{
+    flexDirection: 'row',
+    // alignItems: 'center',
+    flexWrap: 'wrap-reverse', // prevents wrapping
+    // maxWidth: '105%', 
+
+  }}
+>
+  {/* Job Number */}
+  {'job_number' in item && (
+    <Text
       style={{
-        backgroundColor: '#ffffff',
-        borderRadius: 10,
-        padding: 10,
-        marginBottom: 15,
-        borderWidth: 1,
-        borderColor: '#e0e0e0',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-      }}>
-      {Object.entries(item).map(([key, value], i) => (
-        <View
-          key={i}
-          style={{
-            flexDirection: 'row',
-            marginBottom: 8,
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}>
-          <Text
-            style={{
-              fontWeight: '600',
-              width: '48%',
-              color: '#444',
-              flexShrink: 0,
-            }}>
-            {labelMap[key] || key}:
-          </Text>
-          <Text
-            style={{
-              flex: 1,
-              color: '#555',
-            }}>
-            {String(value)}
-          </Text>
-        </View>
-      ))}
+        fontSize: 13,
+        fontFamily: BOLD,
+        color: 'black',
+        // marginRight: 5,
+        flexShrink: 1, // allow shrinking if it's too long
+      }}
+      // numberOfLines={1}
+      // ellipsizeMode="tail"
+    >
+      {String(item['job_number']) || 'N/A'}
+    </Text>
+  )}
+
+  {/* Job Status */}
+  {'job_status' in item && (
+    <Text
+      style={{
+        fontSize: 13,
+        fontFamily: BOLD,
+        color:
+          item['job_status']?.toLowerCase() === 'accepted'
+            ? 'green'
+            : item['job_status']?.toLowerCase() === 'retake'
+            ? '#faab02'
+            : item['job_status']?.toLowerCase() === 'repair'
+            ? '#f54242'
+            : 'blue',
+        marginRight: 5,
+      }}
+    >
+    (
+      {item['job_status'] && item['job_status'] !== 'null' && item['job_status'] !== 'undefined'
+        ? String(item['job_status'])
+        : 'Fresh'}
+    )
+    </Text>
+  )}
+
+  {/* Status */}
+  {/* {'status' in item && (
+    <Text
+      style={{
+        fontSize: 13,
+        fontFamily: BOLD,
+      }}
+    >
+      ({String(item['status']) || 'N/A'})
+    </Text>
+  )} */}
+</View>
+
+  {/* Render Remaining Fields Except job_number and status */}
+  {Object.entries(item).map(([key, value], i) => {
+  if (key === 'job_number' || key === 'job_status') return null;
+
+  if (key === 'rt_report_number') {
+    return (
+      <View
+        key={'rt_report_line'}
+        style={{ flexDirection: 'row', marginBottom: 8, flexWrap: 'wrap' }}
+      >
+        <Text style={{ fontSize: 13, color: 'black', fontFamily: REGULAR, marginRight: 5 }}>
+          RT Report No.:
+        </Text>
+        <Text style={{ fontSize: 13, color: 'black', fontFamily: REGULAR, marginRight: 2 }}>
+          {value || 'N/A'}
+        </Text>
+        <Text style={{ fontSize: 13, color: 'black', fontFamily: REGULAR, marginRight: 2 }}>
+          /
+        </Text>
+        <Text style={{ fontSize: 13, color: 'black', fontFamily: REGULAR }}>
+          {item['rt_report_date'] || 'N/A'}
+        </Text>
+      </View>
+    );
+  }
+
+  if (key === 'rt_report_date') return null;
+
+  if (key === 'paut_report_number') {
+    return (
+      <View
+        key={'paut_report_line'}
+        style={{ flexDirection: 'row', marginBottom: 8, flexWrap: 'wrap' }}
+      >
+        <Text style={{ fontSize: 13, color: 'black', fontFamily: REGULAR, marginRight: 5 }}>
+          Paut Report No:
+        </Text>
+        <Text style={{ fontSize: 13, color: 'black', fontFamily: REGULAR, marginRight: 2 }}>
+          {value || 'N/A'}
+        </Text>
+        <Text style={{ fontSize: 13, color: 'black', fontFamily: REGULAR, marginRight: 2 }}>
+          /
+        </Text>
+        <Text style={{ fontSize: 13, color: 'black', fontFamily: REGULAR }}>
+          {item['paut_report_date'] || 'N/A'}
+        </Text>
+      </View>
+    );
+  }
+
+  if (key === 'paut_report_date') return null;
+
+  return (
+    <View
+      key={i}
+      style={{ flexDirection: 'row', marginBottom: 8, flexWrap: 'wrap' }}
+    >
+      <Text style={{ fontSize: 13, fontFamily: REGULAR, color: 'black', marginRight: 5 }}>
+        {labelMap[key] || key}:
+      </Text>
+      <Text style={{ fontFamily: REGULAR, color: 'black' }}>
+        {String(value)}
+      </Text>
     </View>
+  );
+})}
+
+</View>
+
+
   )}
 />
-
-
-      <Pressable
-        onPress={() => setWelderDetailsModalVisible(false)}
-        style={{
-          backgroundColor: '#007bff',
-          paddingVertical: 12,
-          alignItems: 'center',
-          borderRadius: 8,
-          marginTop: 10,
-        }}>
-        <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>
-          Close
-        </Text>
-      </Pressable>
     </View>
   </View>
 </Modal>
@@ -1267,7 +1397,7 @@ const DashBoard = ({navigation}) => {
           item.Accepted +
           item.Repair +
           item.Retake +
-          parseFloat(item.Failure_Rate);
+          item.Remaining
         if (sum > max) max = sum;
       });
       return Math.ceil(max / 10) * 10; // Round up to nearest multiple of 10 for cleaner Y-axis
@@ -1295,22 +1425,37 @@ const DashBoard = ({navigation}) => {
           onPress: () =>
            ComponentState(item.pressure_part_component_name, 'Repair', item.Repair),
         },
+        // {
+        //   value: item.Retake,
+        //   color: '#faab02',
+        //   onPress: () =>
+        //     ComponentState(item.pressure_part_component_name, 'Retake', item.Retake),
+        // },
         {
           value: item.Retake,
           color: '#faab02',
           onPress: () =>
-            ComponentState(item.pressure_part_component_name, 'Retake', item.Retake),
+            ComponentState(item.pressure_part_component_name, 'Retake', item.Remaining),
         },
         {
-          value: parseFloat(item.Failure_Rate),
-          color: '#f44336',
+          value: item.Remaining,
+          color: 'blue',
           onPress: () =>
             ComponentState(
-              item.pressure_part_component_name,
-              'Component Name',
-              
+       item.pressure_part_component_name,
+              'Remaining',              
             ),
         },
+        // {
+        //   value: parseFloat(item.Failure_Rate),
+        //   color: '#f44336',
+        //   onPress: () =>
+        //     ComponentState(
+        //       item.pressure_part_component_name,
+        //       'Component Name',
+              
+        //     ),
+        // },
       ],
     }));
 
@@ -1392,6 +1537,52 @@ const DashBoard = ({navigation}) => {
             animationDuration={800}
             lineBehindBars={false}
             dashWidth={0}
+            // showValuesAsTopLabel={true}
+
+            // stepValue={true}
+            showReferenceLine1={true}
+            // showFractionalValues={true}
+            // barInnerComponent={(item, index) => {
+          
+            //   if (!item || !item.stacks?.length) return null;  // Ensure item and stacks are available
+          
+            //   // Filter stacks to show only values greater than 0
+            //   const nonZeroStacks = item.stacks.filter(stack => stack.value > 0);
+          
+            //   // Loop over the filtered stacks to render each stack's value inside the bar
+            //   return nonZeroStacks.map((stack, stackIndex) => {
+            //     // Calculate the previous stack height to position the text correctly
+            //     const previousStacksHeight = nonZeroStacks
+            //       .slice(0, stackIndex)
+            //       .reduce((sum, s) => sum + (s.value / maxValue) * 100, 0);
+          
+            //     // Calculate the current stack height relative to maxValue
+            //     const currentStackHeight = (stack.value / maxValue) * 100;
+          
+            //     // Calculate the vertical position of the text to be in the center of each stack
+            //     const topPosition = previousStacksHeight + currentStackHeight ;
+          
+            //     return (
+            //       <Text
+            //         key={stackIndex}
+            //         style={{
+            //           position: 'absolute',
+            //           top: `${topPosition}%`, // Position text vertically inside the bar
+            //           left: '75%', // Center text horizontally
+            //           transform: [{ translateX: -15 }], // Offset to center text properly
+            //           color: 'white',
+            //           fontSize: 14,
+            //           fontWeight: 'bold',
+            //           // Optional: adjust vertical margin to avoid text overlapping with edges
+            //           marginTop: -5, 
+            //         }}
+            //       >
+            //         {stack.value} {/* Display the value of each stack */}
+            //       </Text>
+            //     );
+            //   });
+            // }}
+            
           />
           <View
             style={{
@@ -1462,8 +1653,8 @@ const DashBoard = ({navigation}) => {
               <Pressable
                 style={styles.closeButton}
                 onPress={() => setModalVisibleComponent(false)}>
-                <Text style={{color: 'white', fontWeight: 'bold'}}>Close</Text>
-              </Pressable>
+        <Icon name="close" type="material" color="white" size={24} />
+        </Pressable>
             </View>
           </View>
         </Modal>
@@ -1501,8 +1692,8 @@ const DashBoard = ({navigation}) => {
               <Pressable
                 style={styles.closeButton}
                 onPress={() => setModalVisibleXAxisComponent(false)}>
-                <Text style={{color: 'white', fontWeight: 'bold'}}>Close</Text>
-              </Pressable>
+        <Icon name="close" type="material" color="white" size={24} />
+        </Pressable>
             </View>
           </View>
         </Modal>
@@ -1511,130 +1702,146 @@ const DashBoard = ({navigation}) => {
 
 
         <Modal
-          visible={tableModalVisibleComponent}
-          animationType="fade"
-          transparent
-          onRequestClose={() => setTableModalVisibleComponent(false)}>
-          <View style={styles.modalContainer}>
+  visible={tableModalVisibleComponent}
+  animationType="fade"
+  transparent
+  onRequestClose={() => setTableModalVisibleComponent(false)}>
+  <View style={styles.modalContainer}>
+    <View
+      style={[
+        styles.modalContent,
+        {
+          height: isLandscape ? '90%' : '47%',
+          width: isLandscape ? '95%' : '90%',
+        },
+      ]}>
+      <Text style={styles.modalTitle}>Component Count Table</Text>
+      <ScrollView horizontal>
+        <View style={styles.table}>
+          <View style={[styles.tableRow, styles.headerRow]}>
             <View
               style={[
-                styles.modalBox,
-                {
-                  height: isLandscape ? '90%' : '47%',
-                  width: isLandscape ? '95%' : '90%',
-                },
+                styles.tableCell,
+                styles.headerCell,
+                styles.leftColumn,
               ]}>
-              <Text style={styles.modalTitle}>Component Count Table</Text>
-              <ScrollView horizontal>
-                <View style={styles.table}>
-                  <View style={[styles.tableRow, styles.headerRow]}>
-                    <View
-                      style={[
-                        styles.tableCell,
-                        styles.headerCell,
-                        styles.leftColumn,
-                      ]}>
-                      <Text style={styles.headerText}>Component Name</Text>
-                    </View>
-                    {[
-                      'Total',
-                      'Accepted',
-                      'Repair',
-                      'Retake',
-                      'Failure Rate',
-                    ].map((header, index) => (
-                      <View
-                        key={index}
-                        style={[styles.tableCell, styles.headerCell]}>
-                        <Text style={styles.headerText}>{header}</Text>
-                      </View>
-                    ))}
+              <Text style={styles.headerText}>Component Name</Text>
+            </View>
+            {[
+              'Total',
+              'Accepted',
+              'Repair',
+              'Retake',
+              'Remaining',
+
+              'Failure Rate',
+            ].map((header, index) => (
+              <View
+                key={index}
+                style={[styles.tableCell, styles.headerCell]}>
+                <Text style={styles.headerText}>{header}</Text>
+              </View>
+            ))}
+          </View>
+
+          <ScrollView style={{maxHeight: 400}}>
+            {dashboardData.component_count.map((item, index) => {
+              const isFailureRateHigh =
+                parseFloat(item.Failure_Rate) > 10;
+
+              const handleComponentPress = status => {
+                const componentName = item.pressure_part_component_name;
+                ComponentState(componentName, status);
+              };
+
+              const handleComponentPressNewModal = (item) => {
+                setSelectedComponentDetails(item); // Store the selected component details
+                setModalVisibleNew(true); // Open the new modal
+              };
+              
+
+              return (
+                <View
+                  key={index}
+                  style={[
+                    styles.tableRow,
+                    isFailureRateHigh && {backgroundColor: '#f8d7da'},
+                  ]}>
+                  {/* Component Name */}
+                  <TouchableOpacity
+                    style={[styles.tableCell, styles.leftColumn]}
+                    onPress={() =>
+                      handleComponentPress('Component Name')
+                    }>
+                    <Text style={[styles.cellText, {width: '100%', height: '100%'}]}>
+                      {item.pressure_part_component_name}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Total */}
+                  <TouchableOpacity
+                    style={styles.tableCell}
+                    onPress={() =>
+                      handleComponentPress('Component Name')
+                    }>
+                    <Text style={[styles.cellText, {width: '100%', height: '100%'}]}>
+                      {item.Total}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Accepted */}
+                  <TouchableOpacity
+                    style={styles.tableCell}
+                    onPress={() => handleComponentPress('Accepted')}>
+                    <Text style={[styles.cellText, {width: '100%', height: '100%'}]}>
+                      {item.Accepted}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Repair */}
+                  <TouchableOpacity
+                    style={styles.tableCell}
+                    onPress={() => handleComponentPress('Repair')}>
+                    <Text style={[styles.cellText, {width: '100%', height: '100%'}]}>
+                      {item.Repair}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Retake */}
+                  <TouchableOpacity
+                    style={styles.tableCell}
+                    onPress={() => handleComponentPress('Retake')}>
+                    <Text style={[styles.cellText, {width: '100%', height: '100%'}]}>
+                      {item.Retake}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <View style={styles.tableCell}>
+                    <Text style={styles.cellText}>
+                      {item.Remaining}
+                    </Text>
                   </View>
 
-                  <ScrollView style={{maxHeight: 400}}>
-                    {dashboardData.component_count.map((item, index) => {
-                      const isFailureRateHigh =
-                        parseFloat(item.Failure_Rate) > 10;
-
-                      const handleComponentPress = status => {
-                        const componentName = item.pressure_part_component_name;
-                        ComponentState(componentName, status);
-                      };
-
-                      const handleComponentPressNewModal = (item) => {
-                        setSelectedComponentDetails(item); // Store the selected component details
-                        setModalVisibleNew(true); // Open the new modal
-                      };
-                      
-
-                      return (
-                        <View
-                          key={index}
-                          style={[
-                            styles.tableRow,
-                            isFailureRateHigh && {backgroundColor: '#f8d7da'},
-                          ]}>
-                          {/* Component Name */}
-                          <TouchableOpacity
-                            style={[styles.tableCell, styles.leftColumn]}
-                            onPress={() =>
-                              handleComponentPress('Component Name')
-                            }>
-                            <Text style={styles.cellText}>
-                              {item.pressure_part_component_name}
-                            </Text>
-                          </TouchableOpacity>
-
-                          {/* Total */}
-                          <TouchableOpacity
-                            style={styles.tableCell}
-                            onPress={() =>
-                              handleComponentPress('Component Name')
-                            }>
-                            <Text style={styles.cellText}>{item.Total}</Text>
-                          </TouchableOpacity>
-
-                          {/* Accepted */}
-                          <TouchableOpacity
-                            style={styles.tableCell}
-                            onPress={() => handleComponentPress('Accepted')}>
-                            <Text style={styles.cellText}>{item.Accepted}</Text>
-                          </TouchableOpacity>
-
-                          {/* Repair */}
-                          <TouchableOpacity
-                            style={styles.tableCell}
-                            onPress={() => handleComponentPress('Repair')}>
-                            <Text style={styles.cellText}>{item.Repair}</Text>
-                          </TouchableOpacity>
-
-                          {/* Retake */}
-                          <TouchableOpacity
-                            style={styles.tableCell}
-                            onPress={() => handleComponentPress('Retake')}>
-                            <Text style={styles.cellText}>{item.Retake}</Text>
-                          </TouchableOpacity>
-
-                          {/* Failure Rate - not calling API */}
-                          <View style={styles.tableCell}>
-                            <Text style={styles.cellText}>
-                              {item.Failure_Rate}%
-                            </Text>
-                          </View>
-                        </View>
-                      );
-                    })}
-                  </ScrollView>
+                  {/* Failure Rate - not calling API */}
+                  <View style={styles.tableCell}>
+                    <Text style={styles.cellText}>
+                      {item.Failure_Rate}%
+                    </Text>
+                  </View>
                 </View>
-              </ScrollView>
-              <Pressable
-                style={[styles.closeButton, {marginTop: 15}]}
-                onPress={() => setTableModalVisibleComponent(false)}>
-                <Text style={{color: 'white', fontWeight: 'bold'}}>Close</Text>
-              </Pressable>
-            </View>
-          </View>
-        </Modal>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </ScrollView>
+      <Pressable
+        style={[styles.closeButton]}
+        onPress={() => setTableModalVisibleComponent(false)}>
+        <Icon name="close" type="material" color="white" size={24} />
+      </Pressable>
+    </View>
+  </View>
+</Modal>
 
 
 
@@ -1646,126 +1853,218 @@ const DashBoard = ({navigation}) => {
   visible={modalVisibleNew}
   onRequestClose={() => setModalVisibleNew(false)}
 >
-  <View style={{
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  }}>
-    <View style={{
-      backgroundColor: 'white',
-      borderRadius: 12,
-      padding: 20,
-      height: isLandscape ? '95%' : '60%',
-      width: isLandscape ? '90%' : '95%',
-      elevation: 8,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 4,
-    }}>
-      <Text style={{
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginBottom: 15,
-        textAlign: 'center',
-        color: '#333',
-      }}>
-        Component Details
-      </Text>
+  <View style={styles.modalContainer}>
+    <View
+      style={[
+        styles.modalContent,
+        {
+          height: isLandscape ? '95%' : '60%',
+          width: isLandscape ? '90%' : '100%',
+        },
+      ]}
+    >
+      <TouchableOpacity
+        style={styles.closeButton}
+        onPress={() => setModalVisibleNew(false)}
+      >
+        <Icon name="close" type="material" color="white" size={24} />
+      </TouchableOpacity>
+
+      <Text style={styles.modalTitle}>
+  Details of Component:  ({selectedComponentDetails?.[0]?.component_name || 'N/A'})({selectedComponentDetails?.length || 0})
+</Text>
+
 
       <FlatList
-  data={Array.isArray(selectedComponentDetails) ? selectedComponentDetails : []}
-  keyExtractor={(item, index) => index.toString()}
-  contentContainerStyle={{ marginVertical: 10 }}
-  ListEmptyComponent={() => (
+        data={Array.isArray(selectedComponentDetails) ? selectedComponentDetails : []}
+        keyExtractor={(item, index) => index.toString()}
+        contentContainerStyle={{ padding: 10 }}
+        ListEmptyComponent={() => (
+          <Text style={styles.noDataText}>No data available</Text>
+        )}
+        renderItem={({ item }) => (
+          <View style={{
+            backgroundColor: WHITE,
+            padding: 16,
+            borderRadius: 12,
+            borderWidth: 0.6,
+            borderColor: '#e0e0e0',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 6,
+            marginBottom: 16,
+            width: '100%',
+            alignSelf: 'center',
+            minHeight: 180,
+          }}>
+          
+    {/* Job Number in its own section */}
+    <View
+  style={{
+    flexDirection: 'row',
+    // alignItems: 'center',
+    flexWrap: 'wrap-reverse', // prevents wrapping
+    // maxWidth: '105%', 
+
+  }}
+>
+  {/* Job Number */}
+  {'job_number' in item && (
     <Text
       style={{
-        textAlign: 'center',
-        marginTop: 20,
-        fontStyle: 'italic',
-        color: '#999',
-      }}>
-      No data available
+        fontSize: 13,
+        fontFamily: BOLD,
+        color: 'black',
+        // marginRight: 5,
+        flexShrink: 1, // allow shrinking if it's too long
+      }}
+      // numberOfLines={1}
+      // ellipsizeMode="tail"
+    >
+      {String(item['job_number']) || 'N/A'}
     </Text>
   )}
-  renderItem={({ item }) => (
-    <View
+
+  {/* Job Status */}
+  {'job_status' in item && (
+    <Text
       style={{
-        backgroundColor: '#ffffff',
-        borderRadius: 10,
-        padding: 10,
-        marginBottom: 15,
-        borderWidth: 1,
-        borderColor: '#e0e0e0',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-      }}>
-      {Object.entries(item).map(([key, value], i) => {
-        if (
-          [
-            'job_number',
-            'job_offer_date',
-            'unit_number',
-            'component_name',
-            'job_desc_number',
-            'tube_joints',
-            'job_status',
-          ].includes(key)
-        ) {
-          return (
-            <View
-              key={i}
-              style={{
-                flexDirection: 'row',
-                marginBottom: 8,
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}>
-              <Text
-                style={{
-                  fontWeight: '600',
-                  width: '48%',
-                  color: '#444',
-                  flexShrink: 0,
-                }}>
-                {key.replace(/_/g, ' ')}:
-              </Text>
-              <Text
-                style={{
-                  flex: 1,
-                  color: '#555',
-                }}>
-                {value || 'N/A'}
-              </Text>
-            </View>
-          );
-        }
-        return null;
-      })}
-    </View>
+        fontSize: 13,
+        fontFamily: BOLD,
+        color:
+          item['job_status']?.toLowerCase() === 'accepted'
+            ? 'green'
+            : item['job_status']?.toLowerCase() === 'retake'
+            ? '#faab02'
+            : item['job_status']?.toLowerCase() === 'repair'
+            ? '#f54242'
+            : 'blue',
+        marginRight: 5,
+      }}
+    >
+        ({item['job_status'] && item['job_status'] !== 'null' && item['job_status'] !== 'undefined'
+        ? String(item['job_status'])
+        : 'Fresh'})
+    </Text>
   )}
-/>
 
+  {/* Status */}
+  {'status' in item && (
+    <Text
+      style={{
+        fontSize: 13,
+        fontFamily: BOLD,
+      }}
+    >
+      ({String(item['status']) || 'N/A'})
+    </Text>
+  )}
+</View>
 
-      <Pressable
-        onPress={() => setModalVisibleNew(false)}
-        style={{
-          backgroundColor: '#007bff',
-          paddingVertical: 12,
-          alignItems: 'center',
-          borderRadius: 8,
-          marginTop: 10,
-        }}>
-        <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>
-          Close
+          
+            {/* Remaining Key-Value Pairs Except Job Number */}
+            {Object.entries(item).map(([key, value], i) => {
+              const displayKeys = {
+                job_number: 'Job Number',
+                job_offer_date: 'Job Offer Date',
+                unit_number: 'Unit Number',
+                component_name: 'Component Name',
+                job_desc_number: 'Job Description No.',
+                tube_joints: 'Tube Joints',
+                job_status: 'Job Status',
+                welder_name:'Welder Name',
+                status:'Status',
+                report_no:'Report No.',
+                report_date:'Report Date'
+              };
+          
+              if (key === 'job_number' || key === 'job_status' || key === 'status') return null;
+            // Combine report_no and report_date in one line
+  if (key === 'report_no') {
+    return (
+      <View
+        key={'report_line'}
+        style={{ flexDirection: 'row', marginBottom: 8, flexWrap: 'wrap' }}
+      >
+        <Text
+          style={{
+            fontSize: 13,
+            color: 'black',
+            fontFamily: REGULAR,
+            marginRight: 5,
+          }}
+        >
+          Report No:
         </Text>
-      </Pressable>
+        <Text
+          style={{
+            fontSize: 13,
+            color: 'black',
+            fontFamily: REGULAR,
+            marginRight: 2,
+          }}
+        >
+          {value || 'N/A'}
+        </Text>
+        <Text
+          style={{
+            fontSize: 13,
+            color: 'black',
+            fontFamily: REGULAR,
+            marginRight: 2,
+          }}
+        >
+          /
+        </Text>
+        <Text
+          style={{
+            fontSize: 13,
+            color: 'black',
+            fontFamily: REGULAR,
+          }}
+        >
+          {item['report_date'] || 'N/A'}
+        </Text>
+      </View>
+    );
+  }
+
+  // Skip report_date as it's already handled
+  if (key === 'report_date') return null;
+              return (
+                <View key={i} style={{ flexDirection: 'row', marginBottom: 8, flexWrap: 'wrap' }}>
+                  <Text style={{
+                    fontSize: 13,
+                    fontFamily: REGULAR,
+                    color: 'black',
+                    marginRight: 5,
+                  }}>
+                    {displayKeys[key]}:
+                  </Text>
+                  <Text style={{
+                    fontSize: 13,
+                    color: 'black',
+                    fontFamily: REGULAR,
+
+                  }}>
+                    {value || 'N/A'}
+                  </Text>
+                </View>
+              );
+            })}
+          
+          </View>
+          
+        )}
+      />
+
+     
     </View>
   </View>
 </Modal>
+
 
 
 
@@ -1791,7 +2090,7 @@ const DashBoard = ({navigation}) => {
 
     const maxUnitCount = Math.max(
       ...unitData.map(
-        item => item.accepted_count + item.repair_count + item.retake_count,
+        item => item.accepted_count + item.repair_count + item.retake_count+item.remaining_count,
       ),
     );
     const dynamicMaxValue = Math.ceil(maxUnitCount * 1.1); // Add 10% buffer
@@ -1816,6 +2115,13 @@ const DashBoard = ({navigation}) => {
           color: '#faab02',
           onPress: () =>
             UnitState(item.unit_no, 'Retake', item.retake_count),
+        },
+
+        {
+          value: item.remaining_count,
+          color: 'blue',
+          onPress: () =>
+            UnitState(item.unit_no, 'Remaining'),
         },
       ],
     }));
@@ -1864,21 +2170,53 @@ const DashBoard = ({navigation}) => {
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <BarChart
-            stackData={stackData}
-            barWidth={40}
-            spacing={30}
-            noOfSections={6}
-            maxValue={dynamicMaxValue}
-            // barBorderRadius={6}
-            xAxisLabelTextStyle={{fontSize: 10}}
-            yAxisTextStyle={{fontSize: 10}}
-            // showGradient={false}
-            isAnimated
-            animationDuration={800}
-            lineBehindBars={false}
-            dashWidth={0}
-          />
+        <BarChart
+  stackData={stackData}
+  barWidth={40}
+  spacing={30}
+  noOfSections={6}
+  maxValue={dynamicMaxValue}
+  xAxisLabelTextStyle={{ fontSize: 10 }}
+  yAxisTextStyle={{ fontSize: 10 }}
+  isAnimated
+  animationDuration={800}
+  lineBehindBars={false}
+  dashWidth={0}
+  // barInnerComponent={(item, index) => {
+  //   if (!item || !item.stacks?.length) return null;
+
+  //   const nonZeroStacks = item.stacks.filter(stack => stack.value > 0);
+  //   const totalValue = nonZeroStacks.reduce((sum, s) => sum + s.value, 0);
+
+  //   return nonZeroStacks.map((stack, stackIndex) => {
+  //     const previousHeightRatio = nonZeroStacks
+  //       .slice(0, stackIndex)
+  //       .reduce((sum, s) => sum + (s.value / dynamicMaxValue), 0);
+
+  //     const currentStackRatio = stack.value / dynamicMaxValue;
+
+  //     return (
+  //       <Text
+  //         key={stackIndex}
+  //         style={{
+  //           position: 'absolute',
+  //           bottom: `${previousHeightRatio * 100 + currentStackRatio * 50}%`, // Center inside the segment
+  //           left: '50%',
+  //           transform: [{ translateX: -15 }],
+  //           color: 'white',
+  //           fontSize: 12,
+  //           fontWeight: 'bold',
+  //           textAlign: 'center',
+  //           zIndex: 10,
+  //         }}
+  //       >
+  //         {stack.value}
+  //       </Text>
+  //     );
+  //   });
+  // }}
+/>
+
           {/* Touchable X-axis Labels */}
           <View
             style={{
@@ -1918,7 +2256,7 @@ const DashBoard = ({navigation}) => {
           transparent={true}
           onRequestClose={() => setUnitModalVisible(false)}>
           <View style={styles.modalContainer}>
-            <View style={styles.modalBox}>
+            <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>
                 {`${selectedUnitData.unitNo} - ${selectedUnitData.countType}`}
               </Text>
@@ -1937,8 +2275,8 @@ const DashBoard = ({navigation}) => {
               <Pressable
                 style={styles.closeButton}
                 onPress={() => setUnitModalVisible(false)}>
-                <Text style={{color: 'white', fontWeight: 'bold'}}>Close</Text>
-              </Pressable>
+        <Icon name="close" type="material" color="white" size={24} />
+        </Pressable>
             </View>
           </View>
         </Modal>
@@ -1974,219 +2312,348 @@ const DashBoard = ({navigation}) => {
               <Pressable
                 style={styles.closeButton}
                 onPress={() => setModalVisibleXAxisUnit(false)}>
-                <Text style={{color: 'white', fontWeight: 'bold'}}>Close</Text>
-              </Pressable>
+        <Icon name="close" type="material" color="white" size={24} />
+        </Pressable>
             </View>
           </View>
         </Modal>
 
         {/* Modal for Unit Count Table */}
         <Modal
-          visible={isTableModalVisible}
-          animationType="fade"
-          transparent={true}
-          onRequestClose={() => setTableModalVisible(false)}>
-          <View style={styles.modalContainer}>
-            <View
-              style={[
-                styles.modalBox,
-                {
-                  height: isLandscape ? '90%' : '47%',
-                  width: isLandscape ? '95%' : '90%',
-                },
-              ]}>
-              <Text style={styles.modalTitle}>Unit Count Table</Text>
-              <ScrollView horizontal>
-                <View style={styles.table}>
-                  <View style={[styles.tableRow, styles.headerRow]}>
-                    {[
-                      'Unit No',
-                      'Total Jobs',
-                      'Accepted',
-                      'Repair',
-                      'Retake',
-                    ].map((header, index) => (
-                      <View
-                        key={index}
-                        style={[styles.tableCell, styles.headerCell]}>
-                        <Text style={styles.headerText}>{header}</Text>
-                      </View>
-                    ))}
-                  </View>
-
-                  {unitData.map((item, index) => (
-                    <View key={index} style={styles.tableRow}>
-                      {/* Unit No - general fetch without status */}
-                      <TouchableOpacity
-                        style={styles.tableCell}
-                        onPress={() => UnitState(item.unit_no, 'Unit Number')}>
-                        <Text style={styles.cellText}>{item.unit_no}</Text>
-                      </TouchableOpacity>
-
-                      {/* Total Jobs - can also call general fetch */}
-                      <TouchableOpacity
-                        style={styles.tableCell}
-                        onPress={() => UnitState(item.unit_no, 'Unit Number')}>
-                        <Text style={styles.cellText}>{item.total_jobs}</Text>
-                      </TouchableOpacity>
-
-                      {/* Accepted */}
-                      <TouchableOpacity
-                        style={styles.tableCell}
-                        onPress={() => UnitState(item.unit_no, 'Accepted')}>
-                        <Text style={styles.cellText}>
-                          {item.accepted_count}
-                        </Text>
-                      </TouchableOpacity>
-
-                      {/* Repair */}
-                      <TouchableOpacity
-                        style={styles.tableCell}
-                        onPress={() => UnitState(item.unit_no, 'Repair')}>
-                        <Text style={styles.cellText}>{item.repair_count}</Text>
-                      </TouchableOpacity>
-
-                      {/* Retake */}
-                      <TouchableOpacity
-                        style={styles.tableCell}
-                        onPress={() => UnitState(item.unit_no, 'Retake')}>
-                        <Text style={styles.cellText}>{item.retake_count}</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </View>
-              </ScrollView>
-              <Pressable
-                style={[styles.closeButton, {marginTop: 15}]}
-                onPress={() => setTableModalVisible(false)}>
-                <Text style={{color: 'white', fontWeight: 'bold'}}>Close</Text>
-              </Pressable>
-            </View>
+  visible={isTableModalVisible}
+  animationType="fade"
+  transparent
+  onRequestClose={() => setTableModalVisible(false)}>
+  <View style={styles.modalContainer}>
+    <View
+      style={[
+        styles.modalContent,
+        {
+          height: isLandscape ? '90%' : '47%',
+          width: isLandscape ? '95%' : '90%',
+        },
+      ]}>
+      <Text style={styles.modalTitle}>Unit Count Table</Text>
+      <ScrollView horizontal>
+        <View style={styles.table}>
+          <View style={[styles.tableRow, styles.headerRow]}>
+            {[
+              'Unit No',
+              'Total Jobs',
+              'Accepted',
+              'Repair',
+              'Retake',
+              'Remaining'
+            ].map((header, index) => (
+              <View
+                key={index}
+                style={[styles.tableCell, styles.headerCell]}>
+                <Text style={styles.headerText}>{header}</Text>
+              </View>
+            ))}
           </View>
-        </Modal>
+
+          <ScrollView style={{ maxHeight: 400 }}>
+            {unitData.map((item, index) => {
+              const handleUnitPress = status => {
+                const unitNumber = item.unit_no;
+                UnitState(unitNumber, status);
+              };
+
+              return (
+                <View key={index} style={styles.tableRow}>
+                  {/* Unit No */}
+                  <TouchableOpacity
+                    style={styles.tableCell}
+                    onPress={() => handleUnitPress('Unit Number')}>
+                    <Text style={[styles.cellText, { width: '100%', height: '100%' }]}>
+                      {item.unit_no}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Total Jobs */}
+                  <TouchableOpacity
+                    style={styles.tableCell}
+                    onPress={() => handleUnitPress('Unit Number')}>
+                    <Text style={[styles.cellText, { width: '100%', height: '100%' }]}>
+                      {item.total_jobs}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Accepted */}
+                  <TouchableOpacity
+                    style={styles.tableCell}
+                    onPress={() => handleUnitPress('Accepted')}>
+                    <Text style={[styles.cellText, { width: '100%', height: '100%' }]}>
+                      {item.accepted_count}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Repair */}
+                  <TouchableOpacity
+                    style={styles.tableCell}
+                    onPress={() => handleUnitPress('Repair')}>
+                    <Text style={[styles.cellText, { width: '100%', height: '100%' }]}>
+                      {item.repair_count}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Retake */}
+                  <TouchableOpacity
+                    style={styles.tableCell}
+                    onPress={() => handleUnitPress('Retake')}>
+                    <Text style={[styles.cellText, { width: '100%', height: '100%' }]}>
+                      {item.retake_count}
+                    </Text>
+                  </TouchableOpacity>
+
+
+                  <View style={styles.tableCell}>
+                    <Text style={styles.cellText}>
+                      {item.remaining_count}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </ScrollView>
+
+      <Pressable style={[styles.closeButton]} onPress={() => setTableModalVisible(false)}>
+        <Icon name="close" type="material" color="white" size={24} />
+      </Pressable>
+    </View>
+  </View>
+</Modal>
+
         <Modal
   animationType="slide"
   transparent
   visible={modalVisibleNewUnit}
   onRequestClose={() => setModalVisibleNewUnit(false)}
 >
-  <View style={{
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  }}>
-    <View style={{
-      backgroundColor: 'white',
-      borderRadius: 12,
-      padding: 20,
-      height: isLandscape ? '95%' : '60%',
-      width: isLandscape ? '90%' : '95%',
-      elevation: 8,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 4,
-    }}>
-      <Text style={{
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginBottom: 15,
-        textAlign: 'center',
-        color: '#333',
-      }}>
-        Component Details
-      </Text>
+  <View style={styles.modalContainer}>
+    <View   style={[
+        styles.modalContent,
+        {
+          height: isLandscape ? '95%' : '60%',
+          width: isLandscape ? '90%' : '100%',
+        },
+      ]}>
+
+<TouchableOpacity
+        style={styles.closeButton}
+        onPress={() =>  setModalVisibleNewUnit(false)}
+      >
+        <Icon name="close" type="material" color="white" size={24} />
+      </TouchableOpacity>
+      <Text style={styles.modalTitle}>
+  Details of Unit:  ({selectedComponentDetailsUnit?.[0]?.component_name || 'N/A'})({selectedComponentDetailsUnit?.length || 0})
+  </Text>
 
       <FlatList
   data={Array.isArray(selectedComponentDetailsUnit) ? selectedComponentDetailsUnit : []}
   keyExtractor={(item, index) => index.toString()}
   contentContainerStyle={{ marginVertical: 10 }}
   ListEmptyComponent={() => (
-    <Text
-      style={{
-        textAlign: 'center',
-        marginTop: 20,
-        fontStyle: 'italic',
-        color: '#999',
-      }}>
-      No data available
-    </Text>
+    <Text style={styles.noDataText}>No data available</Text>
+
   )}
   renderItem={({ item }) => (
     <View
+    style={{
+      backgroundColor: WHITE,
+      padding: 16,
+      borderRadius: 12,
+      borderWidth: 0.6,
+      borderColor: '#e0e0e0',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 6,
+      marginBottom: 16,
+      width: '100%',
+      alignSelf: 'center',
+      minHeight: 180,
+      
+    }}
+      >
+    {/* Job Number in its own section */}
+    <View
+  style={{
+    flexDirection: 'row',
+    // alignItems: 'center',
+    flexWrap: 'wrap-reverse', // prevents wrapping
+    // maxWidth: '105%', 
+
+  }}
+>
+  {/* Job Number */}
+  {'job_number' in item && (
+    <Text
       style={{
-        backgroundColor: '#ffffff',
-        borderRadius: 10,
-        padding: 10,
-        marginBottom: 15,
-        borderWidth: 1,
-        borderColor: '#e0e0e0',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-      }}>
-      {Object.entries(item).map(([key, value], i) => {
-        if (
-          [
-            'job_number',
-            'job_offer_date',
-            'unit_number',
-            'component_name',
-            'job_desc_number',
-            'tube_joints',
-            'job_status',
-          ].includes(key)
-        ) {
-          return (
-            <View
-              key={i}
-              style={{
-                flexDirection: 'row',
-                marginBottom: 8,
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}>
-              <Text
-                style={{
-                  fontWeight: '600',
-                  width: '48%',
-                  color: '#444',
-                  flexShrink: 0,
-                }}>
-                {key.replace(/_/g, ' ')}:
-              </Text>
-              <Text
-                style={{
-                  flex: 1,
-                  color: '#555',
-                }}>
-                {value || 'N/A'}
-              </Text>
-            </View>
-          );
-        }
-        return null;
-      })}
+        fontSize: 13,
+        fontFamily: BOLD,
+        color: 'black',
+        // marginRight: 5,
+        flexShrink: 1, // allow shrinking if it's too long
+      }}
+      // numberOfLines={1}
+      // ellipsizeMode="tail"
+    >
+      {String(item['job_number']) || 'N/A'}
+    </Text>
+  )}
+
+  {/* Job Status */}
+  {'job_status' in item && (
+    <Text
+      style={{
+        fontSize: 13,
+        fontFamily: BOLD,
+        color:
+          item['job_status']?.toLowerCase() === 'accepted'
+            ? 'green'
+            : item['job_status']?.toLowerCase() === 'retake'
+            ? '#faab02'
+            : item['job_status']?.toLowerCase() === 'repair'
+            ? '#f54242'
+            : 'blue',
+        marginRight: 5,
+      }}
+    >
+ ({item['job_status'] && item['job_status'] !== 'null' && item['job_status'] !== 'undefined'
+        ? String(item['job_status'])
+        : 'Fresh'})    </Text>
+  )}
+
+  {/* Status */}
+  {'status' in item && (
+    <Text
+      style={{
+        fontSize: 13,
+        fontFamily: BOLD,
+      }}
+    >
+      ({String(item['status']) || 'N/A'})
+    </Text>
+  )}
+</View>
+
+
+
+  
+    {/* All other fields except job_number */}
+    {Object.entries(item).map(([key, value], i) => {
+  const displayKeys = {
+    job_number: 'Job Number',
+    job_offer_date: 'Job Offer Date',
+    unit_number: 'Unit Number',
+    component_name: 'Component Name',
+    job_desc_number: 'Job Description No.',
+    tube_joints: 'Tube Joints',
+    job_status: 'Job Status',
+    welder_name: 'Welder Name',
+    status: 'Status',
+    report_no: 'Report No.',
+    report_date: 'Report Date',
+  };
+
+  // Skip job_number, job_status, and status
+  if (key === 'job_number' || key === 'job_status' || key === 'status') return null;
+
+  // Combine report_no and report_date in one line
+  if (key === 'report_no') {
+    return (
+      <View
+        key={'report_line'}
+        style={{ flexDirection: 'row', marginBottom: 8, flexWrap: 'wrap' }}
+      >
+        <Text
+          style={{
+            fontSize: 13,
+            color: 'black',
+            fontFamily: REGULAR,
+            marginRight: 5,
+          }}
+        >
+          Report No:
+        </Text>
+        <Text
+          style={{
+            fontSize: 13,
+            color: 'black',
+            fontFamily: REGULAR,
+            marginRight: 2,
+          }}
+        >
+          {value || 'N/A'}
+        </Text>
+        <Text
+          style={{
+            fontSize: 13,
+            color: 'black',
+            fontFamily: REGULAR,
+            marginRight: 2,
+          }}
+        >
+          /
+        </Text>
+        <Text
+          style={{
+            fontSize: 13,
+            color: 'black',
+            fontFamily: REGULAR,
+          }}
+        >
+          {item['report_date'] || 'N/A'}
+        </Text>
+      </View>
+    );
+  }
+
+  // Skip report_date as it's already handled
+  if (key === 'report_date') return null;
+
+  // Regular field display
+  if (!(key in displayKeys)) return null;
+
+  return (
+    <View
+      key={i}
+      style={{ flexDirection: 'row', marginBottom: 8, flexWrap: 'wrap' }}
+    >
+      <Text
+        style={{
+          fontSize: 13,
+          color: 'black',
+          fontFamily: REGULAR,
+          marginRight: 5,
+        }}
+      >
+        {displayKeys[key]}:
+      </Text>
+      <Text
+        style={{
+          fontSize: 13,
+          color: 'black',
+          fontFamily: REGULAR,
+        }}
+      >
+        {value || 'N/A'}
+      </Text>
     </View>
+  );
+})}
+
+  </View>
+  
   )}
 />
 
 
-      <Pressable
-        onPress={() => setModalVisibleNewUnit(false)}
-        style={{
-          backgroundColor: '#007bff',
-          paddingVertical: 12,
-          alignItems: 'center',
-          borderRadius: 8,
-          marginTop: 10,
-        }}>
-        <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>
-          Close
-        </Text>
-      </Pressable>
     </View>
   </View>
 </Modal>
@@ -2845,68 +3312,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 10,
   },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)', // semi-transparent background
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  
-  modalBox: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 20,
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
-    color: '#333',
-  },
-  
-  card: {
-    backgroundColor: '#f9f9f9',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  
-  cardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    flexWrap: 'wrap',
-  },
-  
-  cardLabel: {
-    fontWeight: 'bold',
-    color: '#444',
-    marginRight: 5,
-    minWidth: 110, // keeps labels aligned
-  },
-  
-  cardValue: {
-    color: '#000',
-    flexShrink: 1,
-  },
-  
-  closeButton: {
-    marginTop: 10,
-    backgroundColor: '#007bff',
-    paddingVertical: 10,
-    paddingHorizontal: 25,
-    borderRadius: 8,
-    alignSelf: 'center',
-  },
+
   
   
 });

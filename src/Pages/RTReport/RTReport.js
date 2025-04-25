@@ -839,12 +839,12 @@ const RTReport = ({navigation}) => {
           marginVertical: 8,
           marginHorizontal: 10,
           borderRadius: 8,
-          borderWidth: 1,
-          borderColor: '#ddd',
+          // borderWidth: 1,
+          // borderColor: '#ddd',
           elevation: 5,
           backgroundColor: 'white',
-          borderLeftWidth: 4,
-          borderLeftColor: 'orange',
+          borderLeftWidth: 6,
+          borderLeftColor: status === 'Old' ? 'red' : 'green',
           marginBottom: 10,
         }}>
         {/* Checkbox for individual selection */}
@@ -1147,7 +1147,7 @@ const RTReport = ({navigation}) => {
                     data={data}
                     keyExtractor={(item, index) => index.toString()}
                     renderItem={renderItem}
-                    ListFooterComponent={<View style={{height: 150}} />}
+                    ListFooterComponent={<View style={{height: 300}} />}
                     ListEmptyComponent={
                       <View
                         style={{
