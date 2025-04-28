@@ -1119,7 +1119,6 @@ const DashBoard = ({navigation}) => {
                       'Accepted',
                       'Repair',
                       'Retake',
-                      
                     ].includes(header);
 
                     return (
@@ -1778,16 +1777,11 @@ const DashBoard = ({navigation}) => {
                     </Text>
                   </TouchableOpacity>
 
-                  {/* Total */}
-                  <TouchableOpacity
-                    style={styles.tableCell}
-                    onPress={() =>
-                      handleComponentPress('Component Name')
-                    }>
-                    <Text style={[styles.cellText, {width: '100%', height: '100%'}]}>
-                      {item.Total}
-                    </Text>
-                  </TouchableOpacity>
+                  <View style={styles.tableCell}>
+    <Text style={[styles.cellText, { width: '100%', height: '100%' }]}>
+      {item.Total}
+    </Text>
+  </View>
 
                   {/* Accepted */}
                   <TouchableOpacity
@@ -2372,13 +2366,17 @@ const DashBoard = ({navigation}) => {
                   </TouchableOpacity>
 
                   {/* Total Jobs */}
-                  <TouchableOpacity
+                  {/* <TouchableOpacity
                     style={styles.tableCell}
-                    onPress={() => handleUnitPress('Unit Number')}>
+                    onPress={() => handleUnitPress('Unit Number')}> */}
+
+<View style={styles.tableCell}>
+
                     <Text style={[styles.cellText, { width: '100%', height: '100%' }]}>
                       {item.total_jobs}
                     </Text>
-                  </TouchableOpacity>
+                    </View>
+                  {/* </TouchableOpacity> */}
 
                   {/* Accepted */}
                   <TouchableOpacity

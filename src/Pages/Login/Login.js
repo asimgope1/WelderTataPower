@@ -488,6 +488,14 @@ const Login = ({navigation, route}) => {
                   }}>
                   version: 1.0.1
                 </Text>
+                <Text
+                  style={{
+                    marginTop: 5,
+                    fontSize: RFValue(12),
+                    color: BRAND,
+                  }}>
+                  Date: 28/04/2025
+                </Text>
               </View>
             </ScrollView>
           </ImageBackground>
