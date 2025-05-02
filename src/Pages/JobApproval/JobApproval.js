@@ -649,23 +649,40 @@ const JobApproval = ({navigation}) => {
 
           {/* Job Description Section */}
           <View style={{flex: 1}}>
-            <Text style={styless.cardTitle}>Job Number: {item.job_number}</Text>
-            <Text style={styless.cardTitle}>
-              Component Name: {item.component_name}
-            </Text>
-            <Text style={styless.cardTitle}>
-              Unit Number: {item.unit_number}
-            </Text>
-            <Text style={styless.cardTitle}>
-              Tube Joints: {item.tube_joints}
-            </Text>
-            <Text style={styless.cardTitle}>
-              Job Description Number: {item.job_desc_number}
-            </Text>
-            <Text style={styless.cardTitle}>
-              Job Date: {item.job_offer_date}
-            </Text>
-          </View>
+          <Text style={styless.cardTitle}>
+          Job Number: <Text style={{ fontWeight: 'normal' }}>{item.job_number}</Text>
+  </Text>
+  
+  <Text style={styless.cardTitle}>
+  Component Name: 
+  <Text style={{ fontWeight: 'normal' }}> {item.component_name}</Text>
+  </Text>
+  <Text style={styless.cardTitle}>
+  Unit Number:
+  <Text style={{ fontWeight: 'normal' }}>  {item.unit_number}</Text>
+  </Text>
+  
+  <Text style={styless.cardTitle}>
+  Tube Joints:
+    <Text style={{ fontWeight: 'normal' }}> {item.tube_joints} </Text>
+   
+  </Text>
+  
+  <Text style={styless.cardTitle}>
+  Job Description Number:
+    <Text style={{ fontWeight: 'normal' }}>{item.job_desc_number} </Text>
+    
+  </Text>
+  
+
+  
+  <Text style={styless.cardTitle}>
+  Job Date:
+    <Text style={{ fontWeight: 'normal' }}>{item.job_offer_date} </Text>
+    
+  </Text>
+</View>
+
         </View>
 
         {/* Buttons Section */}

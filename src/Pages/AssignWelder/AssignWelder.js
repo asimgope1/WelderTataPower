@@ -298,7 +298,9 @@ const fetchData = async (params = {}) => {
       const cachedData = await AsyncStorage.getItem('savedJobList');
       if (cachedData) {
         const parsedData = JSON.parse(cachedData);
-        setWelderList(parsedData);
+        // setWelderList(parsedData);
+
+        // this is making the extra call to the API for first time welderlist view
         setLoading(false);
         return;
       }
@@ -360,7 +362,7 @@ const fetchData = async (params = {}) => {
       const cachedData = await AsyncStorage.getItem('savedJobList');
       if (cachedData) {
         const parsedData = JSON.parse(cachedData);
-        setWelderList(parsedData);
+        // setWelderList(parsedData);
       }
     } catch (cacheError) {
       console.error('Error loading cached data:', cacheError);
@@ -379,7 +381,7 @@ useFocusEffect(
         const cachedData = await AsyncStorage.getItem('savedJobList');
         if (cachedData) {
           const parsedData = JSON.parse(cachedData);
-          setWelderList(parsedData);
+          // setWelderList(parsedData);
         }
       } catch (error) {
         console.error('Error loading cached job list:', error);
@@ -462,7 +464,7 @@ useFocusEffect(
         console.log('Welder List:', response.data);
         setData(response.data);
 
-        setWelderList(response.data || []); // Update the state with the fetched list or an empty array if null
+        // setWelderList(response.data || []); // Update the state with the fetched list or an empty array if null
       } else {
         console.log('Error:', response.message);
       }
@@ -527,15 +529,25 @@ useFocusEffect(
   
       {/* Content section on the right */}
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#333' }}>
-          Job Number: {item.job_number}
-        </Text>
-        <Text style={styless.textStyle}>Component Name: {item.component_name}</Text>
-        <Text style={styless.textStyle}>Unit Number: {item.unit_number}</Text>
-        <Text style={styless.textStyle}>Joint Number: {item.joint_number}</Text>
-        <Text style={styless.textStyle}>Job Description Number: {item.job_desc_number}</Text>
-        <Text style={styless.textStyle}>Job Offer Date: {item.job_offer_date}</Text>
-  
+      <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#333' }}>
+    Job Number: <Text style={{ fontWeight: 'normal' }}>{item.job_number}</Text>
+  </Text>
+
+  <Text style={styless.textStyle}>
+    Component Name: <Text style={{ fontWeight: 'normal' }}>{item.component_name}</Text>
+  </Text>
+  <Text style={styless.textStyle}>
+    Unit Number: <Text style={{ fontWeight: 'normal' }}>{item.unit_number}</Text>
+  </Text>
+  <Text style={styless.textStyle}>
+    Joint Number: <Text style={{ fontWeight: 'normal' }}>{item.joint_number}</Text>
+  </Text>
+  <Text style={styless.textStyle}>
+    Job Description Number: <Text style={{ fontWeight: 'normal' }}>{item.job_desc_number}</Text>
+  </Text>
+  <Text style={styless.textStyle}>
+    Job Offer Date: <Text style={{ fontWeight: 'normal' }}>{item.job_offer_date}</Text>
+  </Text>
         <TouchableOpacity
           onPress={() => {
             setSelectedJob(item.sl);

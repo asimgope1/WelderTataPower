@@ -43,18 +43,18 @@ const Joints = ({route, navigation}) => {
     }
   }, [route]);
 
-  useFocusEffect(
-    useCallback(
-      () =>{
-        setSearchQuery('');
-        setFilteredData(data);
-        console.log('Filter cleared');
-        return () => {
-          // Clean up if necessary
-        };
-      },[]
-    )
-  )
+  // useFocusEffect(
+  //   useCallback(
+  //     () =>{
+  //       setSearchQuery('');
+  //       setFilteredData(data);
+  //       console.log('Filter cleared');
+  //       return () => {
+  //         // Clean up if necessary
+  //       };
+  //     },[]
+  //   )
+  // )
 
   // useEffect(() => {
     
@@ -94,6 +94,7 @@ const Joints = ({route, navigation}) => {
     try {
       const response = await GETNETWORK(url, true);
       // console.log('Fetched Data:', JSON.stringify(response.data, null, 2));
+      console.log(response.data)
 
       setData(response?.data || []);
     } catch (error) {
@@ -139,10 +140,15 @@ const formattedDate = new Date(date).toISOString().split('T')[0];
         <Text style={styles.title}>Unit Number:</Text>
         <Text style={styles.value}>{item.unit_number}</Text>
       </View>
-
-  
-
- 
+      <View style={styles.row}>
+        <Text style={styles.title}>Joint Number:</Text>
+        <Text style={styles.value}>{item.component.joint_number}</Text>
+      </View>
+      
+      <View style={styles.row}>
+        <Text style={styles.title}>Tube Joint:</Text>
+        <Text style={styles.value}>{item.tube_joints}</Text>
+      </View>
 
       {item.component && (
         <View style={styles.row}>

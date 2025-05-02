@@ -10,6 +10,8 @@ import {
   Modal,
   StyleSheet,
   Alert,
+  FlatList,
+  Image,
 } from 'react-native';
 import React, {Fragment, useEffect, useState} from 'react';
 import Header from '../../components/Header';
@@ -19,7 +21,7 @@ import {appStyles} from '../../styles/AppStyles';
 import DropDownPicker from 'react-native-dropdown-picker';
 import {Icon} from 'react-native-elements';
 import {pick} from 'react-native-document-picker';
-import {BAS_URL} from '../../constants/url';
+import {BAS_URL, BASE_URL} from '../../constants/url';
 import {GETNETWORK, POSTNETWORK} from '../../utils/Network';
 import {Calendar} from 'react-native-calendars';
 import {getObjByKey} from '../../utils/Storage';
@@ -31,10 +33,13 @@ import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 const RTReportUpload = ({navigation}) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [reportNumber, setReportNumber] = useState('');
+  const [getReports, setGetReports] = useState('');
+  const[modalListModalVisible, setModalListModalVisible] = useState(false);
   const [reportDate, setReportDate] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [selectedReport, setSelectedReport] = useState(null);
 
 
   const handleDateSelect = day => {
@@ -43,6 +48,10 @@ const RTReportUpload = ({navigation}) => {
     setShowModal(false);
   };
 
+  useEffect(() => {
+    console.log('Selected Report Updated:', selectedReport);
+  }, [selectedReport]); // This will log whenever selectedReport is updated
+  
   const handleFilePick = async () => {
     setModalVisible(false); 
     try {
@@ -123,8 +132,6 @@ const RTReportUpload = ({navigation}) => {
   
   
 
-  const [ReportOpen, setReportOpen] = useState(false);
-  const [selectedReport, setSelectedReport] = useState(null);
   const [ReportItems, setReportItems] = useState([]);
   const [token, setToken] = useState('');
 
@@ -160,11 +167,17 @@ const RTReportUpload = ({navigation}) => {
   useEffect(() => {
     setSelectedFile(null);
     setReportNumber('');
+    setGetReports('');
     setReportDate('');
-    setSelectedReport(null);
+    // setSelectedReport(null);
     // Fetch defect types and job statuses when the modal is mounted
     GetReportNumber();
     RetriveData();
+    
+  }, []);
+  useEffect(() => {
+    console.log('hiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii')
+    GetListItem();
   }, []);
 
   const RetriveData = async () => {
@@ -174,6 +187,8 @@ const RTReportUpload = ({navigation}) => {
       setToken(data.token);
     }
   };
+
+
   const GetReportNumber = async () => {
     try {
       const url = `${BAS_URL}welding/api/v1/get-report-numbers/`;
@@ -194,6 +209,107 @@ const RTReportUpload = ({navigation}) => {
       console.error('Error fetching defect and status data:', error);
     }
   };
+
+  
+  const renderItem = ({ item }) => (
+    <View style={styles.card}>
+  <View style={styles.row}>
+    <View style={styles.textColumn}>
+      <Text style={styles.title}>{item.report_no}</Text>
+      <Text style={styles.dateText}>Date: {item.report_date}</Text>
+    </View>
+
+    <TouchableOpacity
+      style={styles.viewIcon}
+      onPress={() => {
+ViewRtReport(item.report_no);
+console.log('helo')
+setModalListModalVisible(true);    
+}}
+    >
+      <Icon name="visibility" size={24} color="#007bff" />
+    </TouchableOpacity>
+  </View>
+</View>
+
+  );
+
+const GetListItem= async()=>{
+
+  try {
+    console.log('inside-------------')
+    const url = `${BAS_URL}welding/api/v1/get-rt-reports/`;
+    const result = await GETNETWORK(url, true);
+    console.log('reporthiiiiiiiiii', result);
+
+    if (result.status === 'success' && result.data?.length > 0) {
+     console.log('object', result.data);
+     setGetReports(result.data);
+    } else {
+      console.error('Failed to fetch data:', result.errors || result.message);
+    }
+  } catch (error) {
+    console.error('Error fetching defect and status data:', error);
+  }
+  finally {
+    setLoading(false);
+  }
+
+}
+
+
+
+const ViewRtReport = async (reportNo) => {
+  try {
+    setLoading(true);
+    console.log('Fetching report for:', reportNo);
+
+    const url = `${BAS_URL}welding/api/v1/view-rt-reports/?report_no=${reportNo}`;
+    const result = await GETNETWORK(url, true);
+
+    if (result?.status === 'success' && result.data?.report_file) {
+      const BASE_DOMAIN = 'https://tatapower.epsumlabs.in';
+let reportFile = result.data.report_file;
+
+// Remove extra /media if present
+if (reportFile.startsWith('/media/media/')) {
+  reportFile = reportFile.replace('/media/media/', '/media/');
+}
+
+const imageUrl = `${BASE_DOMAIN}${reportFile}`;
+
+
+      const updatedReport = {
+        ...result.data,
+        imageUrl,
+      };
+
+      console.log('Updated Selected Report:', updatedReport);
+      setSelectedReport(updatedReport);
+
+      // Delay modal open until state is set
+      setTimeout(() => {
+        setModalListModalVisible(true);
+      }, 100);
+    } else {
+      Alert.alert('Error', result.message || 'Failed to fetch report.');
+    }
+  } catch (error) {
+    console.error('Network error:', error);
+    Alert.alert('Error', 'Network request failed');
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
+
+
+
+
+
+
 
   const UploadReport = async () => {
     setLoading(true);
@@ -256,14 +372,14 @@ const RTReportUpload = ({navigation}) => {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{flex: 1}}>
           <ScrollView
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                colors={[BRAND]}
-                tintColor={BRAND}
-              />
-            }
+            // refreshControl={
+            //   <RefreshControl
+            //     refreshing={refreshing}
+            //     onRefresh={onRefresh}
+            //     colors={[BRAND]}
+            //     tintColor={BRAND}
+            //   />
+            // }
             keyboardShouldPersistTaps={'handled'}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{
@@ -347,6 +463,78 @@ const RTReportUpload = ({navigation}) => {
                 </Text>
                 <Icon name="attachment" size={25} style={{marginLeft: 10}} />
               </TouchableOpacity>
+
+              <View
+  style={{
+    width: WIDTH * 0.95,
+    height: HEIGHT * 0.45,
+    marginTop: 20,
+    alignSelf: 'center',
+  }}>
+  {loading ? (
+<Loader visible={loading} />
+) : (
+    <>
+      {/* Table Header */}
+      <View
+        style={{
+          flexDirection: 'row',
+          borderBottomWidth: 1,
+          borderBottomColor: '#999',
+          paddingBottom: 8,
+          marginBottom: 5,
+          backgroundColor: '#f2f2f2',
+        }}>
+        <Text style={{ flex: 1, fontWeight: 'bold', color: '#000' }}>
+          Sl No.
+        </Text>
+        <Text style={{ flex: 2, fontWeight: 'bold', color: '#000' }}>
+          Report No.
+        </Text>
+        <Text style={{ flex: 2, fontWeight: 'bold', color: '#000' }}>
+          Date
+        </Text>
+        <Text style={{ flex: 1, fontWeight: 'bold', color: '#000', textAlign: 'center' }}>
+          Action
+        </Text>
+      </View>
+
+      {/* Table Rows */}
+      <FlatList
+        data={getReports}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={({ item, index }) => (
+          <View
+            style={{
+              flexDirection: 'row',
+              paddingVertical: 8,
+              borderBottomWidth: 0.5,
+              borderColor: '#ccc',
+              alignItems: 'center',
+            }}>
+            <Text style={{ flex: 1, color: '#333' }}>
+              {index + 1} {/* Displaying Serial Number */}
+            </Text>
+            <Text style={{ flex: 2, color: '#333' }}>{item.report_no}</Text>
+            <Text style={{ flex: 2, color: '#333' }}>{item.report_date}</Text>
+            <TouchableOpacity
+              onPress={() => {
+                ViewRtReport(item.report_no);
+                // setModalListModalVisible(true)
+              }
+              }
+              style={{ flex: 1, alignItems: 'center' }}>
+              <Icon name="visibility" size={22} color="#007bff" />
+            </TouchableOpacity>
+          </View>
+        )}
+      />
+    </>
+  )}
+</View>
+
+
+
               <Modal
         visible={modalVisible}
         transparent={true}
@@ -410,6 +598,56 @@ const RTReportUpload = ({navigation}) => {
           <Calendar style={styles.calendar} onDayPress={handleDateSelect} />
         </View>
       </Modal>
+
+
+
+
+
+      <Modal
+  visible={modalListModalVisible}
+  transparent={true}
+  animationType="slide"
+  onRequestClose={() => setModalListModalVisible(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalContent}>
+      {/* Image */}
+      {selectedReport?.imageUrl ? (
+  <>
+    {loading && (
+      
+      <Loader visible={loading} />
+    )}
+    <Image
+      source={{ uri: selectedReport.imageUrl }}
+      style={styles.modalImage}
+      resizeMode="cover"
+      onLoadStart={() => setLoading(true)}
+      onLoadEnd={() => setLoading(false)}
+    />
+  </>
+) : (
+  <Text>No image available.</Text>
+)}
+
+
+
+      
+      <Text style={styles.modalTitle}>{selectedReport?.report_no}</Text>
+      <Text>By: {selectedReport?.report_by}</Text>
+      <Text>Date: {selectedReport?.report_date}</Text>
+     
+      <TouchableOpacity
+        onPress={() => setModalListModalVisible(false)}
+        style={styles.closeButton}
+      >
+        <Text style={styles.closeButtonText}>Close</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
+
+
       <Loader visible={loading} />
     </Fragment>
   );
@@ -642,6 +880,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   optionText: { color: 'white', fontSize: 16 },
+  card: {
+    backgroundColor: '#fff',
+    padding: 12,
+    marginBottom: 12,
+    borderRadius: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 3,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  textColumn: {
+    flexDirection: 'column',
+    flex: 1,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  dateText: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  viewIcon: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+
+  image: {
+    width: '100%',
+    height: 200,
+    marginTop: 10,
+    borderRadius: 8,
+    backgroundColor: '#eee',
+  },
   cancelButton: {
     marginTop: 10,
     padding: 10,
@@ -651,4 +931,46 @@ const styles = StyleSheet.create({
     backgroundColor: 'red',
   },
   cancelText: { color: 'white', fontSize: 16 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+    width: '90%',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#333',
+  },
+  modalImage: {
+    width: 300,
+    height: 200,
+    resizeMode: 'contain',
+    borderRadius: 10,
+    marginBottom: 15,
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    backgroundColor:'grey'
+  },
+  closeButton: {
+    marginTop: 10,
+    backgroundColor: '#007bff',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 5,
+  },
+  closeButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  
 });

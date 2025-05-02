@@ -932,6 +932,23 @@ const DashBoard = ({navigation}) => {
             </Text>
           </Pressable>
         </View>
+        <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'center',
+          marginBottom: 10,
+        }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }}>
+          <View
+            style={{
+              width: 15,
+              height: 15,
+              backgroundColor: '#f44336',
+              marginRight: 5,
+            }}></View>
+          <Text style={{ fontSize: 12 }}>Failure Rate</Text>
+        </View>
+      </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View>
@@ -1420,7 +1437,7 @@ const DashBoard = ({navigation}) => {
         },
         {
           value: item.Repair,
-          color: 'orange',
+          color: 'red',
           onPress: () =>
            ComponentState(item.pressure_part_component_name, 'Repair', item.Repair),
         },
@@ -1520,6 +1537,57 @@ const DashBoard = ({navigation}) => {
             </Text>
           </Pressable>
         </View>
+             {/* Color Legend */}
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'center',
+          marginBottom: 10,
+        }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }}>
+          <View
+            style={{
+              width: 15,
+              height: 15,
+              backgroundColor: '#038c1c',
+              marginRight: 5,
+            }}></View>
+          <Text style={{ fontSize: 12 }}>Accepted</Text>
+        </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }}>
+          <View
+            style={{
+              width: 15,
+              height: 15,
+              backgroundColor: 'red',
+              marginRight: 5,
+            }}></View>
+          <Text style={{ fontSize: 12 }}>Repair</Text>
+        </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }}>
+          <View
+            style={{
+              width: 15,
+              height: 15,
+              backgroundColor: '#faab02',
+              marginRight: 5,
+            }}></View>
+          <Text style={{ fontSize: 12 }}>Retake</Text>
+        </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View
+            style={{
+              width: 15,
+              height: 15,
+              backgroundColor: 'blue',
+              marginRight: 5,
+            }}></View>
+          <Text style={{ fontSize: 12 }}>Remaining</Text>
+        </View>
+      </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <BarChart
@@ -1810,11 +1878,13 @@ const DashBoard = ({navigation}) => {
                     </Text>
                   </TouchableOpacity>
 
-                  <View style={styles.tableCell}>
+                  <TouchableOpacity
+                    style={styles.tableCell}
+                    onPress={() => handleComponentPress('Remaining')}>
                     <Text style={styles.cellText}>
                       {item.Remaining}
                     </Text>
-                  </View>
+                  </TouchableOpacity>
 
                   {/* Failure Rate - not calling API */}
                   <View style={styles.tableCell}>
@@ -1897,13 +1967,46 @@ const DashBoard = ({navigation}) => {
     {/* Job Number in its own section */}
     <View
   style={{
-    flexDirection: 'row',
-    // alignItems: 'center',
-    flexWrap: 'wrap-reverse', // prevents wrapping
-    // maxWidth: '105%', 
-
+    flexDirection: 'column', // Arrange job status and job number vertically
+    paddingBottom: 10,  // Optional, to add space between sections
   }}
 >
+  {/* Job Status and Status */}
+  {'job_status' in item && 'status' in item && (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+      {/* Job Status */}
+      <Text
+        style={{
+          fontSize: 13,
+          fontFamily: BOLD,
+          color:
+            item['job_status']?.toLowerCase() === 'accepted'
+              ? 'green'
+              : item['job_status']?.toLowerCase() === 'retake'
+              ? '#faab02'
+              : item['job_status']?.toLowerCase() === 'repair'
+              ? '#f54242'
+              : 'blue',
+          marginRight: 5,
+        }}
+      >
+        ({item['job_status'] && item['job_status'] !== 'null' && item['job_status'] !== 'undefined'
+          ? String(item['job_status'])
+          : 'New'})
+      </Text>
+
+      {/* Status */}
+      <Text
+        style={{
+          fontSize: 13,
+          fontFamily: BOLD,
+        }}
+      >
+        ({item['status']?.toLowerCase() === 'new' ? 'Fresh' : String(item['status']) || 'N/A'})
+      </Text>
+    </View>
+  )}
+
   {/* Job Number */}
   {'job_number' in item && (
     <Text
@@ -1911,51 +2014,15 @@ const DashBoard = ({navigation}) => {
         fontSize: 13,
         fontFamily: BOLD,
         color: 'black',
-        // marginRight: 5,
         flexShrink: 1, // allow shrinking if it's too long
+        marginTop: 5, // Adds space between job status and job number
       }}
-      // numberOfLines={1}
-      // ellipsizeMode="tail"
     >
       {String(item['job_number']) || 'N/A'}
     </Text>
   )}
-
-  {/* Job Status */}
-  {'job_status' in item && (
-    <Text
-      style={{
-        fontSize: 13,
-        fontFamily: BOLD,
-        color:
-          item['job_status']?.toLowerCase() === 'accepted'
-            ? 'green'
-            : item['job_status']?.toLowerCase() === 'retake'
-            ? '#faab02'
-            : item['job_status']?.toLowerCase() === 'repair'
-            ? '#f54242'
-            : 'blue',
-        marginRight: 5,
-      }}
-    >
-        ({item['job_status'] && item['job_status'] !== 'null' && item['job_status'] !== 'undefined'
-        ? String(item['job_status'])
-        : 'Fresh'})
-    </Text>
-  )}
-
-  {/* Status */}
-  {'status' in item && (
-    <Text
-      style={{
-        fontSize: 13,
-        fontFamily: BOLD,
-      }}
-    >
-      ({String(item['status']) || 'N/A'})
-    </Text>
-  )}
 </View>
+
 
           
             {/* Remaining Key-Value Pairs Except Job Number */}
@@ -2100,7 +2167,7 @@ const DashBoard = ({navigation}) => {
         },
         {
           value: item.repair_count,
-          color: 'orange',
+          color: 'red',
           onPress: () =>
             UnitState(item.unit_no, 'Repair', item.repair_count),
         },
@@ -2162,6 +2229,59 @@ const DashBoard = ({navigation}) => {
             </Text>
           </TouchableOpacity>
         </View>
+
+        
+      {/* Color Legend */}
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'center',
+          marginBottom: 10,
+        }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }}>
+          <View
+            style={{
+              width: 15,
+              height: 15,
+              backgroundColor: '#038c1c',
+              marginRight: 5,
+            }}></View>
+          <Text style={{ fontSize: 12 }}>Accepted</Text>
+        </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }}>
+          <View
+            style={{
+              width: 15,
+              height: 15,
+              backgroundColor: 'red',
+              marginRight: 5,
+            }}></View>
+          <Text style={{ fontSize: 12 }}>Repair</Text>
+        </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }}>
+          <View
+            style={{
+              width: 15,
+              height: 15,
+              backgroundColor: '#faab02',
+              marginRight: 5,
+            }}></View>
+          <Text style={{ fontSize: 12 }}>Retake</Text>
+        </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View
+            style={{
+              width: 15,
+              height: 15,
+              backgroundColor: 'blue',
+              marginRight: 5,
+            }}></View>
+          <Text style={{ fontSize: 12 }}>Remaining</Text>
+        </View>
+      </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <BarChart
@@ -2405,12 +2525,13 @@ const DashBoard = ({navigation}) => {
                     </Text>
                   </TouchableOpacity>
 
-
-                  <View style={styles.tableCell}>
+                  <TouchableOpacity
+                    style={styles.tableCell}
+                    onPress={() => handleUnitPress('Remaining')}>
                     <Text style={styles.cellText}>
                       {item.remaining_count}
                     </Text>
-                  </View>
+                  </TouchableOpacity>
                 </View>
               );
             })}
@@ -2481,13 +2602,46 @@ const DashBoard = ({navigation}) => {
     {/* Job Number in its own section */}
     <View
   style={{
-    flexDirection: 'row',
-    // alignItems: 'center',
-    flexWrap: 'wrap-reverse', // prevents wrapping
-    // maxWidth: '105%', 
-
+    flexDirection: 'column', // Arrange job status, status, and job number vertically
+    paddingBottom: 10,  // Optional, to add space between sections
   }}
 >
+  {/* Job Status and Status */}
+  {'job_status' in item && 'status' in item && (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+      {/* Job Status */}
+      <Text
+        style={{
+          fontSize: 13,
+          fontFamily: BOLD,
+          color:
+            item['job_status']?.toLowerCase() === 'accepted'
+              ? 'green'
+              : item['job_status']?.toLowerCase() === 'retake'
+              ? '#faab02'
+              : item['job_status']?.toLowerCase() === 'repair'
+              ? '#f54242'
+              : 'blue',
+          marginRight: 5,
+        }}
+      >
+        ({item['job_status'] && item['job_status'] !== 'null' && item['job_status'] !== 'undefined'
+          ? String(item['job_status'])
+          : 'New'})
+      </Text>
+
+      {/* Status */}
+      <Text
+        style={{
+          fontSize: 13,
+          fontFamily: BOLD,
+        }}
+      >
+        ({item['status']?.toLowerCase() === 'new' ? 'Fresh' : String(item['status']) || 'N/A'})
+      </Text>
+    </View>
+  )}
+
   {/* Job Number */}
   {'job_number' in item && (
     <Text
@@ -2495,47 +2649,11 @@ const DashBoard = ({navigation}) => {
         fontSize: 13,
         fontFamily: BOLD,
         color: 'black',
-        // marginRight: 5,
         flexShrink: 1, // allow shrinking if it's too long
+        marginTop: 5, // Adds space between job status/status and job number
       }}
-      // numberOfLines={1}
-      // ellipsizeMode="tail"
     >
       {String(item['job_number']) || 'N/A'}
-    </Text>
-  )}
-
-  {/* Job Status */}
-  {'job_status' in item && (
-    <Text
-      style={{
-        fontSize: 13,
-        fontFamily: BOLD,
-        color:
-          item['job_status']?.toLowerCase() === 'accepted'
-            ? 'green'
-            : item['job_status']?.toLowerCase() === 'retake'
-            ? '#faab02'
-            : item['job_status']?.toLowerCase() === 'repair'
-            ? '#f54242'
-            : 'blue',
-        marginRight: 5,
-      }}
-    >
- ({item['job_status'] && item['job_status'] !== 'null' && item['job_status'] !== 'undefined'
-        ? String(item['job_status'])
-        : 'Fresh'})    </Text>
-  )}
-
-  {/* Status */}
-  {'status' in item && (
-    <Text
-      style={{
-        fontSize: 13,
-        fontFamily: BOLD,
-      }}
-    >
-      ({String(item['status']) || 'N/A'})
     </Text>
   )}
 </View>

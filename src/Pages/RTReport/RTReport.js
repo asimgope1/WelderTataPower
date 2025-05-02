@@ -857,50 +857,60 @@ const RTReport = ({navigation}) => {
         {/* Job Details */}
         <Text
           style={{fontSize: 16, color: '#333'}}
-          numberOfLines={1}
-          ellipsizeMode="tail">
+          // numberOfLines={1}
+          // ellipsizeMode="tail"
+          >
           <Text style={{fontWeight: 'bold'}}>Job Number:</Text>{' '}
           {item.job_number}
         </Text>
         <Text
           style={{fontSize: 16, color: '#333'}}
-          numberOfLines={1}
-          ellipsizeMode="tail">
+          // numberOfLines={1}
+          // ellipsizeMode="tail"
+          
+          >
           <Text style={{fontWeight: 'bold'}}>Component Name:</Text>{' '}
           {item.component_name}
         </Text>
         <Text
           style={{fontSize: 16, color: '#333'}}
-          numberOfLines={1}
-          ellipsizeMode="tail">
+          // numberOfLines={1}
+          // ellipsizeMode="tail"
+          >
           <Text style={{fontWeight: 'bold'}}>Unit Number:</Text>{' '}
           {item.unit_number}
         </Text>
         <Text
           style={{fontSize: 16, color: '#333'}}
-          numberOfLines={1}
-          ellipsizeMode="tail">
+          // numberOfLines={1}
+          // ellipsizeMode="tail"
+          
+          >
           <Text style={{fontWeight: 'bold'}}>Tube Joints:</Text>{' '}
           {item.tube_joints}
         </Text>
         <Text
           style={{fontSize: 16, color: '#333'}}
-          numberOfLines={1}
-          ellipsizeMode="tail">
+          // numberOfLines={1}
+          // ellipsizeMode="tail"
+          
+          >
           <Text style={{fontWeight: 'bold'}}>Job Description Number:</Text>{' '}
           {item.job_desc_number}
         </Text>
         <Text
           style={{fontSize: 16, color: '#333'}}
-          numberOfLines={1}
-          ellipsizeMode="tail">
+          // numberOfLines={1}
+          // ellipsizeMode="tail"
+          >
           <Text style={{fontWeight: 'bold'}}>Job Offer Date:</Text>{' '}
           {item.job_offer_date}
         </Text>
         <Text
           style={{fontSize: 16, color: '#333'}}
-          numberOfLines={1}
-          ellipsizeMode="tail">
+          // numberOfLines={1}
+          // ellipsizeMode="tail"
+          >
           <Text style={{fontWeight: 'bold'}}>RT-Number & Date :</Text>{' '}
           {item.report_no} : {item.report_date}
         </Text>
